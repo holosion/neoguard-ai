@@ -21,8 +21,8 @@ def start_session(
     db: DbSession,
     user: User = Depends(require_roles("admin", "clinician")),
 ):
+    device = db.scalar(select(Device).where(Device.id == payload.device_id).with_for_update())
     patient = db.get(Patient, payload.patient_id)
-    device = db.get(Device, payload.device_id)
     if patient is None or device is None:
         raise HTTPException(status_code=404, detail="Patient or device not found")
     if device.status != "active":

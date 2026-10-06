@@ -9,11 +9,16 @@ class Settings(BaseSettings):
     app_name: str = "NeoGuard Backend"
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg://neoguard:change-me@localhost:5432/neoguard"
-    jwt_secret_key: str = "development-only-change-this-secret"
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://localhost:5173"]
     reading_stale_after_seconds: int = 600
+    device_sync_min_interval_seconds: int = 5
+    login_identifier_max_attempts: int = 5
+    login_identifier_window_seconds: int = 900
+    login_source_max_attempts: int = 20
+    login_source_window_seconds: int = 600
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_email: str = "admin@neoguard.local"
     bootstrap_admin_password: str | None = None
@@ -31,6 +36,13 @@ class Settings(BaseSettings):
     @classmethod
     def blank_password_is_unset(cls, value):
         return value or None
+
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def reject_weak_jwt_secret(cls, value: str) -> str:
+        if len(value) < 32 or value.lower().startswith("replace_with"):
+            raise ValueError("JWT_SECRET_KEY must be a unique secret of at least 32 characters")
+        return value
 
 
 @lru_cache

@@ -1,11 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func, select
 
 from app.api.deps import CurrentUser, DbSession, require_roles
 from app.core.config import settings
-from app.models import MonitoringSession, Patient, Reading, RiskProfile, User
+from app.models import Device, MonitoringSession, Patient, Reading, RiskProfile, User
 from app.schemas.resources import (
     PatientCreate,
     PatientListItem,
@@ -21,26 +21,51 @@ router = APIRouter(prefix="/patients", tags=["patients"])
 
 
 @router.get("", response_model=list[PatientListItem])
-def list_patients(db: DbSession, user: CurrentUser):
-    patients = db.scalars(select(Patient).order_by(Patient.patient_code)).all()
+def list_patients(
+    db: DbSession,
+    response: Response,
+    user: CurrentUser,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+):
+    total = db.scalar(select(func.count(Patient.id))) or 0
+    patients = db.scalars(select(Patient).order_by(Patient.patient_code).offset(offset).limit(limit)).all()
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Next-Offset"] = str(offset + len(patients)) if offset + len(patients) < total else ""
+    patient_ids = [patient.id for patient in patients]
+    sessions = db.scalars(
+        select(MonitoringSession).where(
+            MonitoringSession.patient_id.in_(patient_ids), MonitoringSession.status == "active"
+        )
+    ).all() if patient_ids else []
+    session_by_patient = {session.patient_id: session for session in sessions}
+    session_ids = [session.id for session in sessions]
+    ranked_readings = (
+        select(
+            Reading,
+            func.row_number().over(
+                partition_by=Reading.session_id,
+                order_by=(Reading.measured_at.desc(), Reading.id.desc()),
+            ).label("reading_rank"),
+        ).where(Reading.session_id.in_(session_ids)).subquery()
+        if session_ids else None
+    )
+    latest_by_session = {}
+    if ranked_readings is not None:
+        latest_rows = db.execute(
+            select(Reading).join(ranked_readings, Reading.id == ranked_readings.c.id).where(
+                ranked_readings.c.reading_rank == 1
+            )
+        ).scalars().all()
+        latest_by_session = {reading.session_id: reading for reading in latest_rows}
     result = []
     now = datetime.now(UTC)
     for patient in patients:
-        session = db.scalar(
-            select(MonitoringSession).where(
-                MonitoringSession.patient_id == patient.id,
-                MonitoringSession.status == "active",
-            )
-        )
+        session = session_by_patient.get(patient.id)
         latest = None
         status_value = "unmonitored"
         if session:
-            latest = db.scalar(
-                select(Reading)
-                .where(Reading.session_id == session.id)
-                .order_by(Reading.measured_at.desc())
-                .limit(1)
-            )
+            latest = latest_by_session.get(session.id)
             status_value = "empty" if latest is None else (
                 "stale" if latest.measured_at < now - timedelta(seconds=settings.reading_stale_after_seconds) else "fresh"
             )
@@ -162,12 +187,21 @@ def patient_readings(
     data_status = "empty" if latest is None else (
         "stale" if latest.measured_at < now - timedelta(seconds=settings.reading_stale_after_seconds) else "fresh"
     )
+    last_device_sync_at = db.scalar(
+        select(func.max(Device.last_sync_received_at)).where(
+            Device.id.in_(select(MonitoringSession.device_id).where(MonitoringSession.id.in_(session_ids)))
+        )
+    ) if session_ids else None
+    last_received_at = db.scalar(
+        select(func.max(Reading.received_at)).where(Reading.session_id.in_(session_ids))
+    ) if session_ids else None
     return ReadingHistory(
         patient_code=patient.patient_code,
         readings=list(reversed(readings)),
         data_status=data_status,
         last_measured_at=latest.measured_at if latest else None,
-        last_synced_at=latest.received_at if latest else None,
+        last_synced_at=last_received_at,
+        last_device_sync_at=last_device_sync_at,
         stale_after_seconds=settings.reading_stale_after_seconds,
     )
 

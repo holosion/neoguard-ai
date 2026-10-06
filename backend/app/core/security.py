@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 
@@ -40,3 +41,11 @@ def issue_device_secret() -> str:
 
 def hash_device_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
+
+
+def hash_login_key(value: str) -> str:
+    return hmac.new(
+        settings.jwt_secret_key.encode("utf-8"),
+        value.strip().lower().encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()

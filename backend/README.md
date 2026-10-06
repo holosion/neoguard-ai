@@ -36,10 +36,14 @@ Use SQLAlchemy 2 models and Alembic migrations as the schema source of truth. Ke
 | `component_health_logs` | Timestamped self-check results for registered components. |
 | `thresholds` | Parameter, value, unit, source, version/effective time and enabled status. |
 | `audit_log` | Actor, action, resource, time and minimal structured details for sensitive staff actions. |
+| `login_failures` | HMAC-keyed failed-login counters used for identifier and source throttles; raw usernames and IP addresses are not stored. |
+| `model_registry` | Future model version, artifact hash/reference, training import, evaluation metrics and approval status. |
+| `risk_scores` | Reserved immutable inference snapshots with model reference, feature snapshot, explanation and data window; no current service writes predictions. |
+| `outcome_labels` | Reviewed outcomes with provenance, kept distinct from model predictions and alerts. |
 
-### Add with the AI milestone
+### AI groundwork (not active inference)
 
-`risk_scores` should link to the patient and the monitoring session, and save score, category, `model_version`, feature snapshot, explanation, computation time, and the data window used. `outcome_labels` and dataset subject/import records belong in the isolated training-data area, with provenance and label source. Add them when the training pipeline is defined rather than treating generated labels as ground truth. Trend aggregates can be derived from readings first; add a cache table only if measured query performance requires it.
+The database now reserves versioned model metadata, score snapshots, and provenance-bearing outcome labels. These tables are storage contracts only: no model is trained, loaded, or used to generate a clinical score. Future inference should only use an explicitly approved model, documented features, and evaluated labels. Keep archive subjects separate from clinical patients. Trend aggregates can be derived from readings first; add a cache table only if measured query performance requires it.
 
 The provided archives have now shaped the training-data storage models too: `dataset_imports`, `dataset_import_rows`, `dataset_subjects`, and `dataset_observations` are separate from `patients`, `monitoring_sessions`, and live `readings`. See [docs/archive-data-storage.md](docs/archive-data-storage.md) for the inspected fields, quality issues, and archive-specific mapping rules.
 
@@ -157,19 +161,19 @@ uvicorn app.main:app --reload
 
 Install and start PostgreSQL locally before these commands, and ensure `psql` is on your PATH. The initial Alembic revision is in `migrations/versions`; inspect it and apply it with `alembic upgrade head`. For future model changes, generate a new revision with `alembic revision --autogenerate -m "describe change"` and review it before upgrading. Set a unique `JWT_SECRET_KEY` and the matching PostgreSQL password in `.env`; do not commit `.env`.
 
-The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`). Admins create staff accounts with `POST /api/v1/auth/users`. Admin device provisioning returns its random `device_secret` once; store that value securely on the device and send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
+The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`) and has database-backed identifier/source throttling. Admins create staff accounts with `POST /api/v1/auth/users`. Admin device provisioning returns its random `device_secret` once; rotate it through `POST /api/v1/devices/{id}/rotate-secret` if lost or exposed, then send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
 
 Sync schema validation rejects a malformed batch with HTTP 422. Valid events in an accepted request return per-event `accepted`, `duplicate`, or `rejected` results. Store each event UUID in the device's offline queue and remove it only after an accepted/duplicate acknowledgment. A transaction persists readings, generated threshold alerts, telemetry and component checks together. Threshold alert generation is rule-based and independent of the unimplemented risk model.
 
 ### Implemented routes
 
 - Staff: `POST /auth/login`, `GET /auth/me`, admin-only `POST /auth/users`.
-- Patients: list/create/detail/update, risk profile get/upsert, readings history, and an explicit not-available risk-score response.
-- Devices: list/detail, admin provisioning, and device-authenticated batch sync.
+- Patients: paginated list (`limit`, `offset`, `X-Total-Count`, `X-Next-Offset`), create/detail/update, risk profile get/upsert, readings history, and an explicit not-available risk-score response. `last_synced_at` is the newest server receipt of any reading; `last_device_sync_at` is the newest successful sync contact.
+- Devices: list/detail, admin provisioning and credential rotation, plus device-authenticated batch sync with a configurable minimum interval.
 - Sessions: list/start/stop with database uniqueness constraints for active patient/device assignments.
 - Alerts: filter/list and acknowledge with staff identity and audit record.
-- Admin: overview and device connection/telemetry summary.
+- Admin: overview and device connection, telemetry, and per-component health summary.
 
 This is a development scaffold, not a clinically validated or deployment-hardened medical system. The threshold defaults are configurable starting points that need an approved clinical source and review before any care use. Apply TLS, secret rotation, backups, access reviews, retention policy, and operational monitoring before deployment beyond a controlled prototype.
 
-The live smoke command exercises authentication, patient/device/session creation, device sync and deduplication, readings, and threshold alerts against the configured PostgreSQL database. It removes its temporary patient/device/session/reading/alert rows afterward; it leaves the bootstrap admin and threshold configuration in place.
+The live smoke command exercises login throttling, role access, patient/device/session creation, device credential rotation, quality-aware alerts, component health, pagination, device sync deduplication/rate limits, clock validation, and active-session/device-status races against PostgreSQL. It removes the temporary patient/device/session/reading/alert/user rows afterward; it leaves the bootstrap admin and threshold configuration in place.

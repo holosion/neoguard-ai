@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 
 from app.api.deps import CurrentUser, DbSession, require_roles
 from app.core.config import settings
-from app.models import Alert, Device, DeviceTelemetry, MonitoringSession, Reading
+from app.models import Alert, ComponentHealthLog, Device, DeviceComponent, DeviceTelemetry, MonitoringSession, Reading
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_roles("admin"))])
 
@@ -37,14 +37,63 @@ def overview(db: DbSession, user: CurrentUser):
 def device_health(db: DbSession, user: CurrentUser):
     now = datetime.now(UTC)
     devices = db.scalars(select(Device).order_by(Device.device_code)).all()
+    device_ids = [device.id for device in devices]
+    telemetry_ranked = select(
+        DeviceTelemetry,
+        func.row_number().over(
+            partition_by=DeviceTelemetry.device_id,
+            order_by=(DeviceTelemetry.reported_at.desc(), DeviceTelemetry.id.desc()),
+        ).label("telemetry_rank"),
+    ).where(DeviceTelemetry.device_id.in_(device_ids)).subquery() if device_ids else None
+    latest_telemetry = {}
+    if telemetry_ranked is not None:
+        latest_telemetry = {
+            row.device_id: row
+            for row in db.execute(
+                select(DeviceTelemetry).join(telemetry_ranked, DeviceTelemetry.id == telemetry_ranked.c.id).where(
+                    telemetry_ranked.c.telemetry_rank == 1
+                )
+            ).scalars().all()
+        }
+    components = db.scalars(
+        select(DeviceComponent).where(DeviceComponent.device_id.in_(device_ids)).order_by(
+            DeviceComponent.device_id, DeviceComponent.component_type
+        )
+    ).all() if device_ids else []
+    component_ids = [component.id for component in components]
+    checks_ranked = select(
+        ComponentHealthLog,
+        func.row_number().over(
+            partition_by=ComponentHealthLog.component_id,
+            order_by=(ComponentHealthLog.checked_at.desc(), ComponentHealthLog.id.desc()),
+        ).label("check_rank"),
+    ).where(ComponentHealthLog.component_id.in_(component_ids)).subquery() if component_ids else None
+    latest_checks = {}
+    if checks_ranked is not None:
+        latest_checks = {
+            row.component_id: row
+            for row in db.execute(
+                select(ComponentHealthLog).join(
+                    checks_ranked, ComponentHealthLog.id == checks_ranked.c.id
+                ).where(checks_ranked.c.check_rank == 1)
+            ).scalars().all()
+        }
+    components_by_device = {}
+    for component in components:
+        check = latest_checks.get(component.id)
+        components_by_device.setdefault(component.device_id, []).append({
+            "component_id": component.id,
+            "component_type": component.component_type,
+            "is_critical": component.is_critical,
+            "status": check.status if check else "not_checked",
+            "checked_at": check.checked_at if check else None,
+            "received_at": check.received_at if check else None,
+            "error_code": check.error_code if check else None,
+            "details": check.details if check else None,
+        })
     response = []
     for device in devices:
-        telemetry = db.scalar(
-            select(DeviceTelemetry)
-            .where(DeviceTelemetry.device_id == device.id)
-            .order_by(DeviceTelemetry.reported_at.desc())
-            .limit(1)
-        )
+        telemetry = latest_telemetry.get(device.id)
         last_contact = device.last_seen_online
         response.append(
             {
@@ -66,6 +115,7 @@ def device_health(db: DbSession, user: CurrentUser):
                     }
                     if telemetry else None
                 ),
+                "components": components_by_device.get(device.id, []),
             }
         )
     return response

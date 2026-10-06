@@ -1,10 +1,12 @@
 from datetime import UTC, datetime, timedelta
+from math import ceil
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import AuthenticatedDevice, CurrentUser, DbSession, require_roles
+from app.core.config import settings
 from app.core.security import hash_device_secret, issue_device_secret
 from app.models import (
     ComponentHealthLog,
@@ -20,6 +22,7 @@ from app.schemas.resources import (
     DeviceCreate,
     DeviceCreated,
     DevicePublic,
+    DeviceSecretOut,
     DeviceUpdate,
     DeviceSyncIn,
     DeviceSyncOut,
@@ -78,10 +81,23 @@ def update_device(
     db: DbSession,
     user: User = Depends(require_roles("admin")),
 ):
-    device = db.get(Device, device_id)
+    device = db.scalar(select(Device).where(Device.id == device_id).with_for_update())
     if device is None:
         raise HTTPException(status_code=404, detail="Device not found")
-    for key, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    if updates.get("status") not in (None, "active", device.status):
+        active_session = db.scalar(
+            select(MonitoringSession.id).where(
+                MonitoringSession.device_id == device.id,
+                MonitoringSession.status == "active",
+            )
+        )
+        if active_session is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Stop the device's active monitoring session before changing its status.",
+            )
+    for key, value in updates.items():
         setattr(device, key, value)
     record_audit(db, user_id=user.id, action="update_device", resource_type="device", resource_id=device.id)
     db.commit()
@@ -89,10 +105,35 @@ def update_device(
     return device
 
 
+@router.post("/{device_id}/rotate-secret", response_model=DeviceSecretOut)
+def rotate_device_secret(
+    device_id: int,
+    db: DbSession,
+    user: User = Depends(require_roles("admin")),
+):
+    device = db.scalar(select(Device).where(Device.id == device_id).with_for_update())
+    if device is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    credential = db.scalar(select(DeviceCredential).where(DeviceCredential.device_id == device.id))
+    if credential is None:
+        raise HTTPException(status_code=409, detail="Device has no credential to rotate")
+    secret = issue_device_secret()
+    credential.secret_hash = hash_device_secret(secret)
+    credential.is_active = True
+    credential.revoked_at = None
+    credential.created_at = datetime.now(UTC)
+    record_audit(db, user_id=user.id, action="rotate_device_secret", resource_type="device", resource_id=device.id)
+    db.commit()
+    return DeviceSecretOut(device_code=device.device_code, device_secret=secret, created_at=credential.created_at)
+
+
 @router.post("/sync", response_model=DeviceSyncOut)
 def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevice):
     if payload.device_code != device.device_code:
         raise HTTPException(status_code=403, detail="Payload device_code does not match authenticated device")
+    device = db.scalar(select(Device).where(Device.id == device.id).with_for_update())
+    if device is None or device.status != "active":
+        raise HTTPException(status_code=403, detail="Device is not active")
     session = db.scalar(
         select(MonitoringSession).where(
             MonitoringSession.device_id == device.id,
@@ -103,24 +144,60 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
         raise HTTPException(status_code=409, detail="Device has no active monitoring session")
 
     now = datetime.now(UTC)
-    threshold_values = active_thresholds(db)
-    results: list[SyncItemResult] = []
+    if device.last_sync_received_at is not None:
+        elapsed = (now - device.last_sync_received_at).total_seconds()
+        minimum = settings.device_sync_min_interval_seconds
+        if elapsed < minimum:
+            retry_after = max(1, ceil(minimum - elapsed))
+            raise HTTPException(
+                status_code=429,
+                detail="Device sync rate limit exceeded",
+                headers={"Retry-After": str(retry_after)},
+            )
     device.last_seen_online = now
+    device.last_sync_received_at = now
     if payload.firmware_version:
         device.firmware_version = payload.firmware_version
 
-    for item in payload.readings:
-        existing = db.scalar(
-            select(Reading).where(
-                Reading.device_id == device.id,
-                Reading.device_event_id == item.event_id,
-            )
+    threshold_values = active_thresholds(db)
+    results: list[SyncItemResult] = []
+    event_ids = list({item.event_id for item in payload.readings})
+    existing_rows = db.scalars(
+        select(Reading).where(
+            Reading.device_id == device.id,
+            Reading.device_event_id.in_(event_ids),
         )
-        if existing:
+    ).all() if event_ids else []
+    existing_by_event = {row.device_event_id: row for row in existing_rows}
+    future_event_ids = {
+        item.event_id for item in payload.readings if item.measured_at > now + timedelta(minutes=5)
+    }
+    has_writable_payload = (
+        any(item.event_id not in existing_by_event and item.event_id not in future_event_ids for item in payload.readings)
+        or payload.telemetry is not None
+        or bool(payload.component_checks)
+    )
+    if not has_writable_payload:
+        db.commit()
+        for item in payload.readings:
+            if item.event_id in existing_by_event:
+                results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing_by_event[item.event_id].id))
+            else:
+                results.append(SyncItemResult(event_id=item.event_id, status="rejected", reason="Measurement timestamp is too far in the future"))
+        return DeviceSyncOut(device_code=device.device_code, received_at=now, readings=results)
+
+    new_event_ids: set = set()
+    for item in payload.readings:
+        existing = existing_by_event.get(item.event_id)
+        if existing is not None:
             results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing.id))
             continue
-        if item.measured_at > now + timedelta(minutes=5):
+        if item.event_id in future_event_ids:
             results.append(SyncItemResult(event_id=item.event_id, status="rejected", reason="Measurement timestamp is too far in the future"))
+            continue
+        if item.event_id in new_event_ids:
+            existing_id = next((result.reading_id for result in results if result.event_id == item.event_id), None)
+            results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing_id))
             continue
         reading = Reading(
             session_id=session.id,
@@ -135,6 +212,8 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
         db.add(reading)
         db.flush()
         create_threshold_alerts(db, reading, threshold_values)
+        new_event_ids.add(item.event_id)
+        existing_by_event[item.event_id] = reading
         results.append(SyncItemResult(event_id=item.event_id, status="accepted", reading_id=reading.id))
 
     if payload.telemetry:

@@ -83,6 +83,7 @@ class Device(Base):
     hardware_version: Mapped[str | None] = mapped_column(String(30))
     location: Mapped[str | None] = mapped_column(String(120))
     last_seen_online: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_sync_received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=utc_now)
 
@@ -129,6 +130,7 @@ class MonitoringSession(Base):
         ),
         Index("uq_active_session_device", "device_id", unique=True, postgresql_where=text("status = 'active'")),
         Index("uq_active_session_patient", "patient_id", unique=True, postgresql_where=text("status = 'active'")),
+        UniqueConstraint("patient_id", "id", name="uq_session_patient_id"),
     )
 
 
@@ -218,6 +220,14 @@ class DatasetImport(Base):
     )
 
 
+class LoginFailure(Base):
+    __tablename__ = "login_failures"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    identifier_hash: Mapped[str] = mapped_column(String(64), index=True)
+    source_hash: Mapped[str] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
 class DatasetImportRow(Base):
     """Staging/provenance row; never queried by live patient dashboard endpoints."""
 
@@ -297,6 +307,93 @@ class DatasetObservation(Base):
             ondelete="CASCADE",
         ),
         Index("ix_dataset_observation_subject_date", "subject_id", "observed_on"),
+    )
+
+
+class ModelRegistry(Base):
+    """Versioned metadata for future models; artifacts themselves stay in controlled file storage."""
+
+    __tablename__ = "model_registry"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    model_key: Mapped[str] = mapped_column(String(80), index=True)
+    version: Mapped[str] = mapped_column(String(40))
+    task_type: Mapped[str] = mapped_column(String(40))
+    status: Mapped[str] = mapped_column(String(20), default="candidate", index=True)
+    artifact_uri: Mapped[str | None] = mapped_column(Text)
+    artifact_sha256: Mapped[str | None] = mapped_column(String(64))
+    training_dataset_import_id: Mapped[int | None] = mapped_column(
+        ForeignKey("dataset_imports.id", ondelete="SET NULL"), index=True
+    )
+    metrics: Mapped[dict | None] = mapped_column(JSONB)
+    validation_notes: Mapped[str | None] = mapped_column(Text)
+    created_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("model_key", "version", name="uq_model_key_version"),
+        CheckConstraint("status IN ('candidate', 'approved', 'retired')", name="ck_model_registry_status"),
+    )
+
+
+class RiskScore(Base):
+    """Future inference record; no endpoint currently creates scores."""
+
+    __tablename__ = "risk_scores"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id", ondelete="RESTRICT"), index=True)
+    session_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    model_registry_id: Mapped[int] = mapped_column(ForeignKey("model_registry.id", ondelete="RESTRICT"), index=True)
+    score: Mapped[float] = mapped_column(Numeric(6, 5))
+    risk_category: Mapped[str] = mapped_column(String(20))
+    target: Mapped[str] = mapped_column(String(80))
+    data_window_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    data_window_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    feature_snapshot: Mapped[dict] = mapped_column(JSONB)
+    explanation: Mapped[dict | None] = mapped_column(JSONB)
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        CheckConstraint("score >= 0 AND score <= 1", name="ck_risk_score_range"),
+        CheckConstraint("risk_category IN ('low', 'moderate', 'high', 'critical')", name="ck_risk_score_category"),
+        CheckConstraint(
+            "data_window_start IS NULL OR data_window_end IS NULL OR data_window_start <= data_window_end",
+            name="ck_risk_score_window",
+        ),
+        ForeignKeyConstraint(
+            ["patient_id", "session_id"],
+            ["monitoring_sessions.patient_id", "monitoring_sessions.id"],
+            name="fk_risk_score_patient_session",
+            ondelete="RESTRICT",
+        ),
+    )
+
+
+class OutcomeLabel(Base):
+    """Explicitly reviewed outcome labels, separate from model predictions and live alerts."""
+
+    __tablename__ = "outcome_labels"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id", ondelete="CASCADE"), index=True)
+    dataset_subject_id: Mapped[int | None] = mapped_column(ForeignKey("dataset_subjects.id", ondelete="CASCADE"), index=True)
+    target: Mapped[str] = mapped_column(String(80), index=True)
+    label_value: Mapped[dict] = mapped_column(JSONB)
+    source: Mapped[str] = mapped_column(String(200))
+    evidence_reference: Mapped[str | None] = mapped_column(Text)
+    observed_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    observed_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_status: Mapped[str] = mapped_column(String(20), default="unreviewed", index=True)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint(
+            "(patient_id IS NOT NULL AND dataset_subject_id IS NULL) OR "
+            "(patient_id IS NULL AND dataset_subject_id IS NOT NULL)",
+            name="ck_outcome_label_exactly_one_subject",
+        ),
+        CheckConstraint("review_status IN ('unreviewed', 'confirmed', 'rejected')", name="ck_outcome_label_review_status"),
+        CheckConstraint("observed_from IS NULL OR observed_to IS NULL OR observed_from <= observed_to", name="ck_outcome_label_window"),
     )
 
 

@@ -107,10 +107,17 @@ class DevicePublic(ORMModel):
     hardware_version: str | None
     location: str | None
     last_seen_online: datetime | None
+    last_sync_received_at: datetime | None
 
 
 class DeviceCreated(DevicePublic):
     device_secret: str
+
+
+class DeviceSecretOut(BaseModel):
+    device_code: str
+    device_secret: str
+    created_at: datetime
 
 
 class SessionCreate(BaseModel):
@@ -213,6 +220,7 @@ class ReadingHistory(BaseModel):
     data_status: Literal["empty", "fresh", "stale"]
     last_measured_at: datetime | None
     last_synced_at: datetime | None
+    last_device_sync_at: datetime | None = None
     stale_after_seconds: int
 
 
