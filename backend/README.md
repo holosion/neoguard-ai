@@ -145,16 +145,17 @@ From a terminal in `backend/`:
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-py -m pip install -r requirements.txt
+py -m pip install -r requirements-dev.txt
 Copy-Item .env.example .env
-docker compose up -d postgres
-alembic revision --autogenerate -m "initial schema"
+psql -U postgres -c "CREATE ROLE neoguard LOGIN PASSWORD 'set-a-local-password';"
+psql -U postgres -c "CREATE DATABASE neoguard OWNER neoguard;"
 alembic upgrade head
 py -m scripts.seed_admin
+py -m scripts.smoke_test_live
 uvicorn app.main:app --reload
 ```
 
-Inspect the generated initial migration before applying it. Keep migration files in version control. Set a unique `JWT_SECRET_KEY` and PostgreSQL password in `.env`; do not commit `.env`. The Compose password is only for local development.
+Install and start PostgreSQL locally before these commands, and ensure `psql` is on your PATH. The initial Alembic revision is in `migrations/versions`; inspect it and apply it with `alembic upgrade head`. For future model changes, generate a new revision with `alembic revision --autogenerate -m "describe change"` and review it before upgrading. Set a unique `JWT_SECRET_KEY` and the matching PostgreSQL password in `.env`; do not commit `.env`.
 
 The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`). Admins create staff accounts with `POST /api/v1/auth/users`. Admin device provisioning returns its random `device_secret` once; store that value securely on the device and send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
 
@@ -170,3 +171,5 @@ Sync schema validation rejects a malformed batch with HTTP 422. Valid events in 
 - Admin: overview and device connection/telemetry summary.
 
 This is a development scaffold, not a clinically validated or deployment-hardened medical system. The threshold defaults are configurable starting points that need an approved clinical source and review before any care use. Apply TLS, secret rotation, backups, access reviews, retention policy, and operational monitoring before deployment beyond a controlled prototype.
+
+The live smoke command exercises authentication, patient/device/session creation, device sync and deduplication, readings, and threshold alerts against the configured PostgreSQL database. It removes its temporary patient/device/session/reading/alert rows afterward; it leaves the bootstrap admin and threshold configuration in place.

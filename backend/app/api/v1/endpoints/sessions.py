@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import CurrentUser, DbSession, require_roles
-from app.models import Device, MonitoringSession, Patient
+from app.models import Device, MonitoringSession, Patient, User
 from app.schemas.resources import SessionCreate, SessionPublic
 from app.services.audit import record_audit
 
@@ -19,7 +19,7 @@ def list_sessions(db: DbSession, user: CurrentUser):
 def start_session(
     payload: SessionCreate,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin", "clinician")),
+    user: User = Depends(require_roles("admin", "clinician")),
 ):
     patient = db.get(Patient, payload.patient_id)
     device = db.get(Device, payload.device_id)
@@ -48,7 +48,7 @@ def start_session(
 def stop_session(
     session_id: int,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin", "clinician")),
+    user: User = Depends(require_roles("admin", "clinician")),
 ):
     session = db.scalar(select(MonitoringSession).where(MonitoringSession.id == session_id).with_for_update())
     if session is None:

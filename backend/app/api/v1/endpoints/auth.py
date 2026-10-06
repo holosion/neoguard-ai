@@ -25,8 +25,8 @@ def me(user: CurrentUser):
     return user
 
 
-@router.post("/users", response_model=UserPublic, status_code=201, dependencies=[Depends(require_roles("admin"))])
-def create_user(payload: UserCreate, db: DbSession, admin: CurrentUser):
+@router.post("/users", response_model=UserPublic, status_code=201)
+def create_user(payload: UserCreate, db: DbSession, admin: User = Depends(require_roles("admin"))):
     if db.scalar(select(User).where(or_(User.username == payload.username, User.email == payload.email))):
         raise HTTPException(status_code=409, detail="Username or email already exists")
     user = User(

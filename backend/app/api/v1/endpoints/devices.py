@@ -14,6 +14,7 @@ from app.models import (
     DeviceTelemetry,
     MonitoringSession,
     Reading,
+    User,
 )
 from app.schemas.resources import (
     DeviceCreate,
@@ -39,7 +40,7 @@ def list_devices(db: DbSession, user: CurrentUser):
 def create_device(
     payload: DeviceCreate,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin")),
+    user: User = Depends(require_roles("admin")),
 ):
     if db.scalar(select(Device).where(Device.device_code == payload.device_code)):
         raise HTTPException(status_code=409, detail="Device code already exists")
@@ -75,7 +76,7 @@ def update_device(
     device_id: int,
     payload: DeviceUpdate,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin")),
+    user: User = Depends(require_roles("admin")),
 ):
     device = db.get(Device, device_id)
     if device is None:

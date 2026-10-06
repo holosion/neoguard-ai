@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession, require_roles
 from app.core.config import settings
-from app.models import MonitoringSession, Patient, Reading, RiskProfile
+from app.models import MonitoringSession, Patient, Reading, RiskProfile, User
 from app.schemas.resources import (
     PatientCreate,
     PatientListItem,
@@ -56,7 +56,11 @@ def list_patients(db: DbSession, user: CurrentUser):
 
 
 @router.post("", response_model=PatientPublic, status_code=201)
-def create_patient(payload: PatientCreate, db: DbSession, user: CurrentUser = Depends(require_roles("admin", "clinician"))):
+def create_patient(
+    payload: PatientCreate,
+    db: DbSession,
+    user: User = Depends(require_roles("admin", "clinician")),
+):
     if db.scalar(select(Patient).where(Patient.patient_code == payload.patient_code)):
         raise HTTPException(status_code=409, detail="Patient code already exists")
     patient = Patient(**payload.model_dump())
@@ -81,7 +85,7 @@ def update_patient(
     patient_id: int,
     payload: PatientUpdate,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin", "clinician")),
+    user: User = Depends(require_roles("admin", "clinician")),
 ):
     patient = db.get(Patient, patient_id)
     if patient is None:
@@ -106,7 +110,7 @@ def upsert_risk_profile(
     patient_id: int,
     payload: RiskProfileUpsert,
     db: DbSession,
-    user: CurrentUser = Depends(require_roles("admin", "clinician")),
+    user: User = Depends(require_roles("admin", "clinician")),
 ):
     if db.get(Patient, patient_id) is None:
         raise HTTPException(status_code=404, detail="Patient not found")
