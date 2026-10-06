@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^git init -b main; git remote add origin https://github\\.com/holosion/neoguard-ai\\.git; git remote -v; git status --short --branch$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
