@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from math import ceil
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -30,8 +31,10 @@ from app.schemas.resources import (
 )
 from app.services.alerts import active_thresholds, create_threshold_alerts
 from app.services.audit import record_audit
+from app.services.risk import score_session
 
 router = APIRouter(prefix="/devices", tags=["devices"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=list[DevicePublic])
@@ -134,15 +137,6 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
     device = db.scalar(select(Device).where(Device.id == device.id).with_for_update())
     if device is None or device.status != "active":
         raise HTTPException(status_code=403, detail="Device is not active")
-    session = db.scalar(
-        select(MonitoringSession).where(
-            MonitoringSession.device_id == device.id,
-            MonitoringSession.status == "active",
-        )
-    )
-    if session is None:
-        raise HTTPException(status_code=409, detail="Device has no active monitoring session")
-
     now = datetime.now(UTC)
     if device.last_sync_received_at is not None:
         elapsed = (now - device.last_sync_received_at).total_seconds()
@@ -169,35 +163,27 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
         )
     ).all() if event_ids else []
     existing_by_event = {row.device_event_id: row for row in existing_rows}
-    future_event_ids = {
-        item.event_id for item in payload.readings if item.measured_at > now + timedelta(minutes=5)
-    }
-    has_writable_payload = (
-        any(item.event_id not in existing_by_event and item.event_id not in future_event_ids for item in payload.readings)
-        or payload.telemetry is not None
-        or bool(payload.component_checks)
-    )
-    if not has_writable_payload:
-        db.commit()
-        for item in payload.readings:
-            if item.event_id in existing_by_event:
-                results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing_by_event[item.event_id].id))
-            else:
-                results.append(SyncItemResult(event_id=item.event_id, status="rejected", reason="Measurement timestamp is too far in the future"))
-        return DeviceSyncOut(device_code=device.device_code, received_at=now, readings=results)
-
-    new_event_ids: set = set()
-    for item in payload.readings:
+    session_ids = sorted({item.session_id for item in payload.readings})
+    sessions = db.scalars(select(MonitoringSession).where(MonitoringSession.id.in_(session_ids)).order_by(MonitoringSession.id).with_for_update()).all() if session_ids else []
+    sessions_by_id = {s.id: s for s in sessions}
+    changed_sessions = set()
+    indexed_results = {}
+    # Replay in observation order; response order still matches the device batch.
+    for index, item in sorted(enumerate(payload.readings), key=lambda pair: pair[1].measured_at):
         existing = existing_by_event.get(item.event_id)
         if existing is not None:
-            results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing.id))
+            same = (existing.session_id == item.session_id and existing.measured_at == item.measured_at
+                    and existing.heart_rate_bpm == item.heart_rate_bpm and existing.spo2_percent == item.spo2_percent
+                    and (float(existing.temperature_c) if existing.temperature_c is not None else None) == item.temperature_c
+                    and existing.quality == item.quality)
+            indexed_results[index] = SyncItemResult(event_id=item.event_id, status="duplicate" if same else "rejected",
+                                                   reading_id=existing.id if same else None,
+                                                   reason=None if same else "Event ID was reused with different data")
             continue
-        if item.event_id in future_event_ids:
-            results.append(SyncItemResult(event_id=item.event_id, status="rejected", reason="Measurement timestamp is too far in the future"))
-            continue
-        if item.event_id in new_event_ids:
-            existing_id = next((result.reading_id for result in results if result.event_id == item.event_id), None)
-            results.append(SyncItemResult(event_id=item.event_id, status="duplicate", reading_id=existing_id))
+        session = sessions_by_id.get(item.session_id)
+        reason = validate_reading_session(item, session, device.id, now)
+        if reason:
+            indexed_results[index] = SyncItemResult(event_id=item.event_id, status="rejected", reason=reason)
             continue
         reading = Reading(
             session_id=session.id,
@@ -212,9 +198,11 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
         db.add(reading)
         db.flush()
         create_threshold_alerts(db, reading, threshold_values)
-        new_event_ids.add(item.event_id)
+        changed_sessions.add(session.id)
         existing_by_event[item.event_id] = reading
-        results.append(SyncItemResult(event_id=item.event_id, status="accepted", reading_id=reading.id))
+        indexed_results[index] = SyncItemResult(event_id=item.event_id, status="accepted", reading_id=reading.id)
+
+    results = [indexed_results[i] for i in range(len(payload.readings))]
 
     if payload.telemetry:
         telemetry = payload.telemetry
@@ -255,4 +243,25 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Sync conflicted with another device operation; retry the batch") from exc
+    # AI has its own transaction. Failure cannot roll back acknowledged sensor data.
+    if changed_sessions:
+        try:
+            for session_id in sorted(changed_sessions):
+                score_session(db, session_id)
+            db.commit()
+        except Exception:
+            db.rollback()
+            logger.exception("Prototype scoring failed after readings were safely committed")
     return DeviceSyncOut(device_code=device.device_code, received_at=now, readings=results)
+
+
+def validate_reading_session(item, session, device_id, now):
+    if session is None or session.device_id != device_id:
+        return "Session does not belong to this device"
+    if item.measured_at > now + timedelta(minutes=5):
+        return "Measurement timestamp is too far in the future"
+    if item.measured_at < session.started_at:
+        return "Measurement predates its monitoring session"
+    if session.ended_at is not None and item.measured_at > session.ended_at:
+        return "Measurement is after its monitoring session ended"
+    return None

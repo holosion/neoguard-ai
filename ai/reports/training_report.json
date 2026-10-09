@@ -1,0 +1,91 @@
+{
+  "seed": 20261009,
+  "sessions": 480,
+  "scenario_counts": {
+    "normal": 60,
+    "cooling": 60,
+    "desaturation": 60,
+    "combined": 60,
+    "recovery": 60,
+    "artifact": 60,
+    "near_threshold": 60,
+    "dropout": 60
+  },
+  "sampling_seconds": 5,
+  "feature_window_seconds": 120,
+  "label_horizon_seconds": 120,
+  "label_definition": "Latent simulated temperature <36.5C or SpO2 <90%, now or within 120 seconds; not diagnosis",
+  "validation_scope": "synthetic_only",
+  "test_used_for_threshold_selection": false,
+  "decision_threshold": 0.75,
+  "split_subject_counts": {
+    "train": 288,
+    "validation": 96,
+    "test": 96
+  },
+  "test": {
+    "rows": 19272,
+    "positive_rows": 5375,
+    "precision": 0.9377000213356091,
+    "recall": 0.8176744186046512,
+    "average_precision": 0.9475180913275495,
+    "roc_auc": 0.9748069969928259,
+    "brier_score": 0.04762633696289487,
+    "confusion_matrix_tn_fp_fn_tp": [
+      13605,
+      292,
+      980,
+      4395
+    ]
+  },
+  "test_event_metrics": {
+    "events": 49,
+    "events_detected_by_onset": 44,
+    "event_sensitivity": 0.8979591836734694,
+    "warning_episodes": 144,
+    "warning_episode_precision": 0.7361111111111112,
+    "false_warning_episodes": 38,
+    "monitoring_hours": 26.766666666666666,
+    "false_warning_episodes_per_hour": 1.4196762141967623,
+    "median_lead_seconds_among_detected": 107.5
+  },
+  "threshold_baseline": {
+    "rows": 19272,
+    "positive_rows": 5375,
+    "precision": 0.9939715456956836,
+    "recall": 0.7668837209302326,
+    "average_precision": 0.8272772018620466,
+    "roc_auc": 0.882542385758345,
+    "brier_score": 0.06631382316313823,
+    "confusion_matrix_tn_fp_fn_tp": [
+      13872,
+      25,
+      1253,
+      4122
+    ]
+  },
+  "threshold_baseline_event_metrics": {
+    "events": 49,
+    "events_detected_by_onset": 25,
+    "event_sensitivity": 0.5102040816326531,
+    "warning_episodes": 104,
+    "warning_episode_precision": 0.8076923076923077,
+    "false_warning_episodes": 20,
+    "monitoring_hours": 26.766666666666666,
+    "false_warning_episodes_per_hour": 0.7471980074719801,
+    "median_lead_seconds_among_detected": 0.0
+  },
+  "limitations": [
+    "No clinical validation or clinical probability calibration",
+    "Train and test share a synthetic generator",
+    "Threshold-derived simulated future events",
+    "Daily archive data excluded from time-series training",
+    "False-alarm and lead-time results describe the simulated scenarios only"
+  ],
+  "runtime": {
+    "python": "3.13.13",
+    "numpy": "2.4.6",
+    "sklearn": "1.9.0"
+  },
+  "artifact_sha256": "546bed4ef216d1bbc734ad3473d440ae4ac743e72128cb67ec872d1e0c73e6a8"
+}

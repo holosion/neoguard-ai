@@ -16,6 +16,7 @@ from app.schemas.resources import (
     RiskProfileUpsert,
 )
 from app.services.audit import record_audit
+from app.services.risk import risk_response
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -75,6 +76,7 @@ def list_patients(
                 active_session=session,
                 latest_reading=latest,
                 data_status=status_value,
+                risk=risk_response(db, session, latest=latest, now=now),
             )
         )
     return result
@@ -210,5 +212,5 @@ def patient_readings(
 def patient_risk_score(patient_id: int, db: DbSession, user: CurrentUser):
     if db.get(Patient, patient_id) is None:
         raise HTTPException(status_code=404, detail="Patient not found")
-    # The model is intentionally not enabled until it has a documented training/validation pipeline.
-    return {"patient_id": patient_id, "status": "not_available", "score": None, "message": "No validated risk model is configured."}
+    session = db.scalar(select(MonitoringSession).where(MonitoringSession.patient_id == patient_id, MonitoringSession.status == "active"))
+    return {"patient_id": patient_id, **risk_response(db, session)}
