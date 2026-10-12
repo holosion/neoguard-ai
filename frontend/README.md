@@ -7,8 +7,8 @@ React 18 + Vite, React Router, Zustand, Axios, Tailwind, React Hook Form + Zod, 
     npm run dev
 
 ## Connecting to the NeoGuard backend
-`.env` points at `http://localhost:8000/api/v1` and mock mode is off. Start the backend first (`uvicorn app.main:app --reload` in `backend/`), then `npm run dev`.
-The backend allows the origins `http://localhost:5173` and `http://localhost:3000` (CORS), which covers Vite's default port.
+Copy `.env.example` to `.env`; mock mode is off and the API path is `/api/v1`. Vite proxies API requests to `http://127.0.0.1:8000`, and serves the frontend at `http://127.0.0.1:5173` with a fixed port. Start the backend first (`uvicorn app.main:app --reload` in `backend/`), then `npm run dev`, or use `../start-local.ps1` for the configured local stack.
+For a separately hosted frontend, set `VITE_API_BASE_URL` to the backend URL and add the frontend origin to backend `CORS_ORIGINS`.
 All response mapping is in `src/api/backend.js`.
 
 Works with the backend as it is today: sign in, patient list, patient detail, readings, experimental risk score, alerts and acknowledgement, devices (register with one-time secret, edit, retire), device health, start session, create staff account.

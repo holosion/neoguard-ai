@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
-const client = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
+const client = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1' });
 
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
