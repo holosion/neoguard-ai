@@ -5,6 +5,7 @@ export const useAlertStore = create((set, get) => ({
   alerts: [],
   loading: true,
   error: null,
+  clear: () => set({ alerts: [], loading: true, error: null }),
   refresh: async () => {
     try {
       const { data } = await alertsApi.getAll();

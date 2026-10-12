@@ -1,8 +1,10 @@
 from app.models.entities import (  # noqa: F401
     Alert,
+    AccessRequest,
     AuditLog,
     Base,
     ComponentHealthLog,
+    Clinic,
     DatasetImport,
     DatasetImportRow,
     DatasetObservation,

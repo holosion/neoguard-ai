@@ -2,10 +2,10 @@ import { vitalStatus, trendArrow } from '../../utils/vitals';
 
 const META = { hr: ['Heart rate', 'bpm'], spo2: ['SpO₂', '%'], temp: ['Temperature', '°C'] };
 
-export default function VitalsCard({ metric, readings, stale }) {
+export default function VitalsCard({ metric, readings, stale, thresholds }) {
   const [label, unit] = META[metric];
   const value = readings.length ? readings[readings.length - 1][metric] : null;
-  const status = vitalStatus(metric, value);
+  const status = vitalStatus(metric, value, thresholds);
   const bad = !status.ok && !stale;
   return (
     <div className={`rounded-xl border p-4 ${bad ? 'border-red-300 bg-red-50' : 'border-slate-200 bg-white'} ${stale ? 'text-slate-500' : ''}`}>

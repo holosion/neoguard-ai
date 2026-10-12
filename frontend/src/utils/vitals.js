@@ -1,7 +1,5 @@
-import { VITAL_THRESHOLDS as T } from './constants';
-
 // Returns { ok, text } for one value. Text always states the reason, so status never depends on colour alone.
-export function vitalStatus(metric, v) {
+export function vitalStatus(metric, v, T) {
   if (v == null) return { ok: true, text: 'No reading' };
   if (metric === 'hr') {
     if (v < T.hr.low) return { ok: false, text: `Low, below ${T.hr.low} bpm` };

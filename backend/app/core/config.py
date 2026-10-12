@@ -2,12 +2,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "NeoGuard Backend"
+    environment: str = "development"
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg://neoguard:change-me@localhost:5432/neoguard"
     jwt_secret_key: str
@@ -16,6 +17,7 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000", "http://localhost:5173"]
     reading_stale_after_seconds: int = 600
     device_sync_min_interval_seconds: int = 5
+    max_request_body_bytes: int = 2_000_000
     ai_mode: str = "prototype"
     ai_model_path: str = str(Path(__file__).resolve().parents[3] / "ai" / "artifacts" / "risk_model.json")
     login_identifier_max_attempts: int = 5
@@ -53,6 +55,28 @@ class Settings(BaseSettings):
         if value not in ("disabled", "prototype"):
             raise ValueError("AI_MODE must be disabled or prototype; clinical mode is unsupported")
         return value
+
+    @field_validator("environment")
+    @classmethod
+    def validate_environment(cls, value: str) -> str:
+        if value not in ("development", "test", "production"):
+            raise ValueError("APP_ENV must be development, test, or production")
+        return value
+
+    @field_validator("cors_origins")
+    @classmethod
+    def validate_cors_origins(cls, value: list[str]) -> list[str]:
+        if "*" in value:
+            raise ValueError("CORS_ORIGINS cannot contain '*'")
+        return list(dict.fromkeys(value))
+
+    @model_validator(mode="after")
+    def production_origins_must_be_explicit(self):
+        if self.environment == "production" and any("localhost" in origin or "127.0.0.1" in origin for origin in self.cors_origins):
+            raise ValueError("Production CORS_ORIGINS must contain only deployed frontend origins")
+        if self.max_request_body_bytes < 1024:
+            raise ValueError("MAX_REQUEST_BODY_BYTES must be at least 1024")
+        return self
 
 
 @lru_cache

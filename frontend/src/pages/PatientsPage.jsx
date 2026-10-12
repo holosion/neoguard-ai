@@ -12,6 +12,7 @@ import { timeAgo } from '../utils/formatters';
 
 export default function PatientsPage() {
   const role = useAuthStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
   const canManage = SESSION_MANAGER_ROLES.includes(role);
   const { data: patients, loading, error, refetch } = useFetch(() => patientsApi.getAllWithStatus(), { interval: POLL_INTERVAL_MS });
   const [filter, setFilter] = useState('all');
@@ -61,12 +62,13 @@ export default function PatientsPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
-                <tr>{['Patient', 'Monitoring', 'Device', 'Risk', 'Last reading', 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
+                <tr>{['Patient', ...(isAdmin ? ['Clinic ID'] : []), 'Monitoring', 'Device', 'Risk', 'Last reading', 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {shown.map((p) => (
                   <tr key={p.id} className={`border-t border-slate-100 ${p.monitored ? '' : 'text-slate-500'}`}>
                     <td className="px-3 py-3 font-semibold"><Link to={`/patients/${p.id}`} className="text-brand">{p.patient_code}</Link></td>
+                    {isAdmin && <td className="px-3 py-3">{p.clinic_id}</td>}
                     <td className="px-3 py-3">{p.monitored ? 'Monitored' : 'Not monitored'}</td>
                     <td className="px-3 py-3">{p.device_code}</td>
                     <td className="px-3 py-3">{p.monitored ? <RiskBadge category={p.risk_category} /> : '—'}</td>

@@ -1,19 +1,18 @@
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { VITAL_THRESHOLDS as T } from '../../utils/constants';
 import { clock } from '../../utils/formatters';
 
-export const METRICS = {
-  hr: { label: 'Heart rate', unit: 'bpm', domain: [80, 180], bands: [{ y1: 80, y2: T.hr.low, c: '#FEF0E0' }, { y1: T.hr.high, y2: 180, c: '#FEF0E0' }] },
-  spo2: { label: 'SpO₂', unit: '%', domain: [80, 100], bands: [{ y1: 80, y2: T.spo2.low, c: '#FDECEA' }] },
-  temp: { label: 'Temperature', unit: '°C', domain: [35, 38], bands: [{ y1: T.temp.moderate_low, y2: T.temp.low, c: '#FFF6D6' }, { y1: 35, y2: T.temp.moderate_low, c: '#FDECEA' }] },
-};
+export const metricsFor = (t) => ({
+  hr: { label: 'Heart rate', unit: 'bpm', domain: [80, 180], bands: [{ y1: 80, y2: t.hr_low, c: '#FEF0E0' }, { y1: t.hr_high, y2: 180, c: '#FEF0E0' }] },
+  spo2: { label: 'SpO₂', unit: '%', domain: [80, 100], bands: [{ y1: 80, y2: t.spo2_low, c: '#FDECEA' }] },
+  temp: { label: 'Temperature', unit: '°C', domain: [35, 38], bands: [{ y1: t.temp_moderate_low, y2: t.temp_low, c: '#FFF6D6' }, { y1: 35, y2: t.temp_moderate_low, c: '#FDECEA' }] },
+});
 
 const SEVERITY_COLOR = { critical: '#B3261E', high: '#B54708', medium: '#8A6100', low: '#1E6B3A' };
 
-export default function TrendChart({ readings, metric, alerts = [] }) {
-  const m = METRICS[metric];
-  const data = readings.map((r) => ({ t: new Date(r.recorded_at).getTime(), hr: r.hr, spo2: r.spo2, temp: r.temp }));
-  if (!data.length) return <p className="py-10 text-center text-slate-500">No readings in this time range.</p>;
+export default function TrendChart({ readings, metric, alerts = [], thresholds }) {
+  const m = metricsFor(thresholds)[metric];
+  const data = readings.filter((r) => r.quality === 'ok' && r[metric] != null).map((r) => ({ t: new Date(r.recorded_at).getTime(), hr: r.hr, spo2: r.spo2, temp: r.temp }));
+  if (data.length < 3) return <p className="py-10 text-center text-slate-500">Not enough valid readings to show a trend ({data.length} of 3 required).</p>;
 
   // Place each alert on the nearest reading for this metric (AI trend alerts show on every chart).
   const markers = alerts

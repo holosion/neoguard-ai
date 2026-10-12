@@ -62,7 +62,7 @@ export default function OverviewPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-slate-600">
-              <tr>{['Device', 'Health', 'Issue', 'Battery', 'WiFi', 'Storage'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
+              <tr>{['Device', 'Health', 'Issue', 'Battery', 'WiFi'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
             </thead>
             <tbody>
               {data.device_health.map((d) => (
@@ -72,7 +72,6 @@ export default function OverviewPage() {
                   <td className="px-3 py-3">{d.issue ?? '—'}</td>
                   <td className="px-3 py-3">{d.battery != null ? `${d.battery}%` : '—'}</td>
                   <td className="px-3 py-3">{d.wifi_dbm != null ? `${d.wifi_dbm} dBm` : '—'}</td>
-                  <td className="px-3 py-3">{d.storage_pct != null ? `${d.storage_pct}%` : '—'}</td>
                 </tr>
               ))}
             </tbody>

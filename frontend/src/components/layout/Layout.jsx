@@ -5,8 +5,10 @@ import Sidebar from './Sidebar';
 import { useAlertStore } from '../../store/alertStore';
 import { POLL_INTERVAL_MS } from '../../utils/constants';
 import { tokenExpiry } from '../../utils/token';
+import { useAuthStore } from '../../store/authStore';
 
 export default function Layout({ role }) {
+  const actualRole = useAuthStore((s) => s.user?.role);
   const [open, setOpen] = useState(false);
   const [minsLeft, setMinsLeft] = useState(null);
   const refresh = useAlertStore((s) => s.refresh);
@@ -32,7 +34,7 @@ export default function Layout({ role }) {
   return (
     <div className="flex min-h-screen">
       {open && <div className="fixed inset-0 z-10 bg-black/40 md:hidden" onClick={() => setOpen(false)} aria-hidden="true" />}
-      <Sidebar role={role} open={open} onClose={() => setOpen(false)} />
+      <Sidebar role={actualRole ?? role} open={open} onClose={() => setOpen(false)} />
       <div className="min-w-0 flex-1">
         <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <button onClick={() => setOpen(true)} aria-label="Open menu" className="rounded-lg border border-slate-300 p-2">

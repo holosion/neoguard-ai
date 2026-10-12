@@ -1,15 +1,20 @@
-# Run locally
+# Local run
 
-Run `./start-local.ps1` from the repository root. It starts PostgreSQL, FastAPI, and the connected frontend in background processes and checks HTTP readiness.
+The repo uses one React frontend (`Frontend/`), one FastAPI backend (`backend/`), and PostgreSQL. AI scoring and device firmware remain separate follow-up work.
+
+## Prerequisites
+
+- Python environment at `backend/.venv` with `backend/requirements-dev.txt` installed
+- Node.js and frontend packages installed with `npm ci` in `Frontend/`
+- PostgreSQL on `127.0.0.1:55432`, configured in ignored `backend/.env`; or the bundled local PostgreSQL runtime and data directory under ignored `.local/`
+- Database schema applied with `alembic upgrade head` from `backend/`
+
+Copy `backend/.env.example` to `backend/.env`, set a unique `JWT_SECRET_KEY`, and set `DATABASE_URL` for the local PostgreSQL instance. Do not commit `.env` files.
+
+Run `./start-local.ps1` from the repository root. It starts PostgreSQL when the bundled runtime exists, starts FastAPI and Vite in the background, then checks HTTP readiness.
 
 - Frontend: http://127.0.0.1:5173
 - API docs: http://127.0.0.1:8000/docs
-- PostgreSQL: `127.0.0.1:55432`, database `neoguard`.
-- Login: `admin`; password is `BOOTSTRAP_ADMIN_PASSWORD` in `backend/.env`.
-- Logs: `.local/backend.*.log`, `.local/frontend.*.log`, `.local/postgres-server.log`.
+- Backend API prefix: `/api/v1`
 
-Secrets are in ignored `.env` files. Mock mode is disabled. Vite proxies `/api/v1` to the backend on port 8000. For a separately hosted production frontend, configure `VITE_API_BASE_URL` and backend CORS origins.
-
-Dependencies are installed in `.venv` and `frontend/node_modules`; database migrations are applied. The existing integration database is separate. To repeat API/database verification, run `../.venv/Scripts/python.exe -m scripts.smoke_test_live` from `backend/`; it cleans up its temporary records.
-
-`neonatal-dashboard/` is a separate visual prototype. The backend-connected application is `frontend/`.
+For a separately hosted frontend, set `VITE_API_BASE_URL` and configure backend `CORS_ORIGINS` with the frontend origin.

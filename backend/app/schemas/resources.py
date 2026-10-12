@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
-from app.schemas.common import DeviceStatus, ORMModel, Role, SessionStatus
+from app.schemas.common import DeviceStatus, ORMModel, Role, SessionStatus, StrictInput
 
 
 class UserPublic(ORMModel):
@@ -13,13 +13,23 @@ class UserPublic(ORMModel):
     email: str
     role: Role
     is_active: bool
+    clinic_id: int | None
 
 
-class UserCreate(BaseModel):
+class UserCreate(StrictInput):
     username: str = Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_.-]+$")
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
-    role: Literal["admin", "nurse", "clinician"]
+    role: Literal["nurse", "clinician"]
+    clinic_id: int | None = Field(default=None, gt=0)
+
+
+class UserAdminPublic(UserPublic):
+    status: Literal["active", "disabled"]
+
+
+class UserStatusChange(StrictInput):
+    action: Literal["disable", "enable"]
 
 
 class Token(BaseModel):
@@ -27,15 +37,16 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-class PatientCreate(BaseModel):
+class PatientCreate(StrictInput):
     patient_code: str = Field(min_length=3, max_length=20, pattern=r"^[A-Za-z0-9_-]+$")
     sex: Literal["M", "F", "U"] | None = None
     birth_date: date | None = None
     gestational_age_weeks: int | None = Field(default=None, ge=20, le=45)
     birth_weight_kg: float | None = Field(default=None, ge=0.3, le=8)
+    clinic_id: int | None = Field(default=None, gt=0)
 
 
-class PatientUpdate(BaseModel):
+class PatientUpdate(StrictInput):
     sex: Literal["M", "F", "U"] | None = None
     birth_date: date | None = None
     gestational_age_weeks: int | None = Field(default=None, ge=20, le=45)
@@ -44,6 +55,7 @@ class PatientUpdate(BaseModel):
 
 class PatientPublic(ORMModel):
     id: int
+    clinic_id: int
     patient_code: str
     sex: str | None
     birth_date: date | None
@@ -52,7 +64,7 @@ class PatientPublic(ORMModel):
     created_at: datetime
 
 
-class RiskProfileUpsert(BaseModel):
+class RiskProfileUpsert(StrictInput):
     low_birth_weight: bool | None = None
     prematurity: bool | None = None
     home_birth: bool | None = None
@@ -75,22 +87,23 @@ class RiskProfilePublic(ORMModel):
     updated_by_user_id: int | None
 
 
-class ComponentCreate(BaseModel):
+class ComponentCreate(StrictInput):
     component_type: str = Field(min_length=2, max_length=50)
     pin_or_address: str | None = Field(default=None, max_length=50)
     is_critical: bool = True
 
 
-class DeviceCreate(BaseModel):
+class DeviceCreate(StrictInput):
     device_code: str = Field(min_length=3, max_length=30, pattern=r"^[A-Za-z0-9_-]+$")
     name: str | None = Field(default=None, max_length=80)
     status: DeviceStatus = "inactive"
     hardware_version: str | None = Field(default=None, max_length=30)
     location: str | None = Field(default=None, max_length=120)
     components: list[ComponentCreate] = Field(default_factory=list)
+    clinic_id: int | None = Field(default=None, gt=0)
 
 
-class DeviceUpdate(BaseModel):
+class DeviceUpdate(StrictInput):
     name: str | None = Field(default=None, max_length=80)
     status: DeviceStatus | None = None
     firmware_version: str | None = Field(default=None, max_length=30)
@@ -100,6 +113,7 @@ class DeviceUpdate(BaseModel):
 
 class DevicePublic(ORMModel):
     id: int
+    clinic_id: int
     device_code: str
     name: str | None
     status: str
@@ -120,13 +134,14 @@ class DeviceSecretOut(BaseModel):
     created_at: datetime
 
 
-class SessionCreate(BaseModel):
+class SessionCreate(StrictInput):
     patient_id: int = Field(gt=0)
     device_id: int = Field(gt=0)
 
 
 class SessionPublic(ORMModel):
     id: int
+    clinic_id: int
     patient_id: int
     device_id: int
     started_by_user_id: int | None
@@ -135,7 +150,7 @@ class SessionPublic(ORMModel):
     status: SessionStatus
 
 
-class ReadingIn(BaseModel):
+class ReadingIn(StrictInput):
     session_id: int = Field(gt=0, description="Original session ID retained with the event in the device offline queue")
     event_id: UUID
     measured_at: datetime
@@ -153,7 +168,7 @@ class ReadingIn(BaseModel):
         return self
 
 
-class TelemetryIn(BaseModel):
+class TelemetryIn(StrictInput):
     reported_at: datetime
     battery_percent: int | None = Field(default=None, ge=0, le=100)
     wifi_rssi_dbm: int | None = Field(default=None, ge=-127, le=0)
@@ -167,7 +182,7 @@ class TelemetryIn(BaseModel):
         return value
 
 
-class ComponentCheckIn(BaseModel):
+class ComponentCheckIn(StrictInput):
     component_type: str = Field(min_length=2, max_length=50)
     checked_at: datetime
     status: Literal["ok", "error", "timeout", "not_detected", "drift_detected"]
@@ -182,7 +197,7 @@ class ComponentCheckIn(BaseModel):
         return value
 
 
-class DeviceSyncIn(BaseModel):
+class DeviceSyncIn(StrictInput):
     device_code: str = Field(min_length=3, max_length=30)
     firmware_version: str | None = Field(default=None, max_length=30)
     readings: list[ReadingIn] = Field(default_factory=list, max_length=500)
@@ -245,3 +260,58 @@ class PatientListItem(BaseModel):
     latest_reading: ReadingPublic | None
     data_status: Literal["unmonitored", "empty", "fresh", "stale"]
     risk: dict | None = None
+
+
+class ClinicPublic(ORMModel):
+    id: int
+    name: str
+    code: str
+    is_active: bool
+
+
+class ClinicCreate(StrictInput):
+    name: str = Field(min_length=2, max_length=120)
+    code: str = Field(min_length=2, max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+class AccessRequestCreate(StrictInput):
+    username: str = Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_.-]+$")
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+    role: Literal["nurse", "clinician"]
+    clinic_id: int = Field(gt=0)
+
+
+class AccessRequestPublic(ORMModel):
+    id: int
+    username: str
+    email: str
+    role: Literal["nurse", "clinician"]
+    clinic_id: int
+    status: Literal["pending", "approved", "rejected"]
+    created_at: datetime
+    reviewed_at: datetime | None
+
+
+class AccessRequestDecision(StrictInput):
+    action: Literal["approve", "reject"]
+
+
+class TelemetryPublic(ORMModel):
+    id: int
+    device_id: int
+    reported_at: datetime
+    received_at: datetime
+    battery_percent: int | None
+    wifi_rssi_dbm: int | None
+    uptime_seconds: int | None
+
+
+class ThresholdPublic(BaseModel):
+    parameter: str
+    value: float
+    unit: str
+    source: str
+    description: str | None
+    version: int | str
+    effective_from: datetime | None = None

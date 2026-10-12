@@ -7,6 +7,8 @@ import { useFetch } from '../../hooks/useFetch';
 import { patientsApi } from '../../api/patients';
 import { sessionsApi } from '../../api/sessions';
 import { errorText } from '../../utils/errors';
+import { useAuthStore } from '../../store/authStore';
+import { authApi } from '../../api/auth';
 
 const field = 'mt-1 min-h-[44px] w-full rounded-lg border border-slate-400 px-3 text-base';
 const primary = 'min-h-[44px] rounded-lg bg-brand px-4 font-semibold text-white disabled:opacity-60';
@@ -19,20 +21,25 @@ const schema = z.object({
   birth_date: z.string(),
   gestational_age_weeks: num(20, 45, 'Enter a number from 20 to 45'),
   birth_weight_kg: num(0.3, 8, 'Enter a weight from 0.3 to 8 kg'),
+  clinic_id: z.string().optional(),
 });
 
 export function PatientFormModal({ onClose, onDone }) {
   const [error, setError] = useState(null);
+  const role = useAuthStore((s) => s.user?.role);
+  const { data: clinics } = useFetch(() => authApi.clinics());
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: { sex: '' } });
   const submit = async (v) => {
     setError(null);
     try {
+      if (role === 'admin' && !v.clinic_id) { setError('Choose a clinic.'); return; }
       await patientsApi.create({
         patient_code: v.patient_code,
         sex: v.sex || null,
         birth_date: v.birth_date || null,
         gestational_age_weeks: v.gestational_age_weeks ? Number(v.gestational_age_weeks) : null,
         birth_weight_kg: v.birth_weight_kg ? Number(v.birth_weight_kg) : null,
+        ...(role === 'admin' ? { clinic_id: Number(v.clinic_id) } : {}),
       });
       onDone();
     } catch (e) {
@@ -54,6 +61,7 @@ export function PatientFormModal({ onClose, onDone }) {
         <label className="mt-3 block text-sm">Birth date<input type="date" className={field} {...register('birth_date')} /></label>
         <label className="mt-3 block text-sm">Gestational age (weeks)<input inputMode="numeric" className={field} {...register('gestational_age_weeks')} /></label>{err('gestational_age_weeks')}
         <label className="mt-3 block text-sm">Birth weight (kg)<input inputMode="decimal" className={field} {...register('birth_weight_kg')} /></label>{err('birth_weight_kg')}
+        {role === 'admin' && <label className="mt-3 block text-sm">Clinic<select className={field} {...register('clinic_id')}><option value="">Choose a clinic</option>{clinics?.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}</select></label>}
         {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className={secondary}>Cancel</button>
@@ -66,6 +74,7 @@ export function PatientFormModal({ onClose, onDone }) {
 
 export function StartSessionModal({ patient, onClose, onDone }) {
   const { data: devices, loading } = useFetch(() => sessionsApi.availableDevices());
+  const availableDevices = (devices ?? []).filter((device) => device.clinic_id === patient.clinic_id);
   const [deviceId, setDeviceId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -82,14 +91,14 @@ export function StartSessionModal({ patient, onClose, onDone }) {
   };
   return (
     <Modal title={`Start monitoring ${patient.patient_code}`} onClose={onClose}>
-      {loading ? <p className="text-slate-500">Loading devices…</p> : !devices?.length ? (
+      {loading ? <p className="text-slate-500">Loading devices…</p> : !availableDevices.length ? (
         <p className="text-sm text-slate-700">No device is ready. A device must be active and not already in use. Ask an administrator to activate one.</p>
       ) : (
         <>
           <label className="block text-sm">Device
             <select className={field} value={deviceId} onChange={(e) => setDeviceId(e.target.value)}>
               <option value="">Choose a device</option>
-              {devices.map((d) => <option key={d.id} value={d.id}>{d.device_code}{d.location && d.location !== '—' ? `, ${d.location}` : ''}</option>)}
+              {availableDevices.map((d) => <option key={d.id} value={d.id}>{d.device_code}{d.location && d.location !== '—' ? `, ${d.location}` : ''}</option>)}
             </select>
           </label>
           <p className="mt-2 text-xs text-slate-500">Monitoring starts now. Start the session before placing the sensors on the baby.</p>
@@ -98,7 +107,7 @@ export function StartSessionModal({ patient, onClose, onDone }) {
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className={secondary}>Cancel</button>
-        {devices?.length > 0 && <button onClick={save} disabled={!deviceId || busy} className={primary}>{busy ? 'Starting…' : 'Start session'}</button>}
+        {availableDevices.length > 0 && <button onClick={save} disabled={!deviceId || busy} className={primary}>{busy ? 'Starting…' : 'Start session'}</button>}
       </div>
     </Modal>
   );

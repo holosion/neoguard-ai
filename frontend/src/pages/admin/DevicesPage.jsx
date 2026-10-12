@@ -38,12 +38,13 @@ export default function DevicesPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
-                <tr>{['Code', 'Name', 'Status', 'Patient', 'Health', 'Last seen', 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
+                <tr>{['Code', 'Clinic ID', 'Name', 'Status', 'Patient', 'Health', 'Last seen', 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {devices.map((d) => (
                   <tr key={d.id} className={`border-t border-slate-100 ${d.status === 'retired' ? 'text-slate-500' : ''}`}>
                     <td className="px-3 py-3 font-semibold">{d.device_code}</td>
+                    <td className="px-3 py-3">{d.clinic_id}</td>
                     <td className="px-3 py-3">{d.name}<div className="text-xs text-slate-500">{d.location}</div></td>
                     <td className="px-3 py-3">{STATUS[d.status]}</td>
                     <td className="px-3 py-3">{d.patient_code ?? (d.sending_without_patient ? <b className="text-amber-800">Sending, no patient</b> : '—')}</td>

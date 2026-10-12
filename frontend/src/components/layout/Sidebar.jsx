@@ -47,7 +47,7 @@ export default function Sidebar({ role, open, onClose }) {
       </nav>
       <div className="mt-auto border-t border-slate-700 pt-3 text-sm">
         <div className="text-white">{user?.username ?? user?.name ?? 'Signed in'}</div>
-        <div className="text-slate-400">{role === 'admin' ? 'Administrator' : 'Nurse'}</div>
+        <div className="text-slate-400">{role === 'admin' ? 'Administrator' : role === 'clinician' ? 'Clinical officer' : 'Nurse'}</div>
         <button onClick={logout} className="mt-2 w-full rounded-lg border border-slate-600 py-2 hover:bg-slate-800">Sign out</button>
       </div>
     </aside>

@@ -1,21 +1,24 @@
 // Adapter for the real NeoGuard FastAPI backend (/api/v1).
-// It turns the backend's response shapes into the shapes the pages use, so the pages work in both mock and real mode.
+// It turns the backend's response shapes into the shapes the pages use.
 import client from './client';
 
 const get = (url, params) => client.get(url, { params }).then((r) => r.data);
 const ok = (data) => ({ data });
+async function allPages(url, params = {}, pageSize = 100) {
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    const response = await client.get(url, { params: { ...params, limit: pageSize, offset } });
+    rows.push(...response.data);
+    const next = Number(response.headers['x-next-offset']);
+    if (!Number.isFinite(next) || next <= offset) break;
+    offset = next;
+  }
+  return rows;
+}
 const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
 const PARAM = { temperature_c: 'temp', spo2_percent: 'spo2', heart_rate_bpm: 'hr', quality: 'quality' };
 
-// component_type values must match what the firmware sends in component_checks.
-export const DEFAULT_COMPONENTS = [
-  { component_type: 'rtc_ds3231', pin_or_address: 'I2C 0x68', is_critical: true },
-  { component_type: 'max30102', pin_or_address: 'I2C 0x57', is_critical: true },
-  { component_type: 'ds18b20', pin_or_address: 'GPIO 4', is_critical: true },
-  { component_type: 'buzzer', pin_or_address: 'GPIO 23', is_critical: true },
-  { component_type: 'lcd', pin_or_address: 'I2C 0x27', is_critical: false },
-  { component_type: 'microsd', pin_or_address: 'SPI', is_critical: false },
-];
 const COMP_LABEL = { rtc_ds3231: 'RTC (DS3231)', max30102: 'MAX30102', ds18b20: 'DS18B20', buzzer: 'Buzzer', lcd: 'LCD', microsd: 'Storage (microSD)' };
 
 const mapReading = (r) => ({
@@ -31,9 +34,7 @@ const mapReading = (r) => ({
 // Triage category comes from the rule-based alerts (the safe path). The experimental AI warning can raise it to "high".
 async function patientList() {
   const [items, devices, alerts] = await Promise.all([
-    get('/patients', { limit: 100 }),
-    get('/devices'),
-    get('/alerts', { acknowledged: false, limit: 500 }),
+    allPages('/patients'), allPages('/devices'), allPages('/alerts', { acknowledged: false }),
   ]);
   const deviceCode = Object.fromEntries(devices.map((d) => [d.id, d.device_code]));
   const worst = {};
@@ -48,6 +49,7 @@ async function patientList() {
     const r = it.latest_reading;
     return {
       id: it.patient.id,
+      clinic_id: it.patient.clinic_id,
       patient_code: it.patient.patient_code,
       monitored: !!s,
       session_id: s?.id ?? null,
@@ -69,9 +71,8 @@ function featureLabel(f) {
 
 async function alertList(params = {}) {
   const [alerts, sessions, patients] = await Promise.all([
-    get('/alerts', { limit: 200, ...(params.patient_id ? { patient_id: params.patient_id } : {}) }),
-    get('/sessions'),
-    get('/patients', { limit: 100 }),
+    allPages('/alerts', params.patient_id ? { patient_id: params.patient_id } : {}),
+    allPages('/sessions'), allPages('/patients'),
   ]);
   const code = Object.fromEntries(patients.map((p) => [p.patient.id, p.patient.patient_code]));
   const bySession = Object.fromEntries(sessions.map((s) => [s.id, s.patient_id]));
@@ -94,16 +95,17 @@ async function alertList(params = {}) {
 
 // ---- devices ----------------------------------------------------------------
 function healthOf(h) {
+  if (!h?.components?.length) return 'warn';
   const bad = (h?.components ?? []).filter((c) => !['ok', 'not_checked'].includes(c.status));
   if (bad.some((c) => c.is_critical)) return 'fail';
-  if (bad.length || h?.connection_status !== 'online') return 'warn';
+  if (bad.length || h.components.some((c) => c.status === 'not_checked') || h?.connection_status !== 'online') return 'warn';
   return 'ok';
 }
 
 // admin=false skips /admin/device-health (admin only), so nurses and clinicians still get the device list.
 async function deviceRows(admin = true) {
   const [devices, health, sessions, patients] = await Promise.all([
-    get('/devices'), admin ? get('/admin/device-health') : Promise.resolve([]), get('/sessions'), get('/patients', { limit: 100 }),
+    allPages('/devices'), admin ? allPages('/admin/device-health') : Promise.resolve([]), allPages('/sessions'), allPages('/patients'),
   ]);
   const hById = Object.fromEntries(health.map((h) => [h.device_id, h]));
   const code = Object.fromEntries(patients.map((p) => [p.patient.id, p.patient.patient_code]));
@@ -114,6 +116,7 @@ async function deviceRows(admin = true) {
     const bad = (h?.components ?? []).filter((c) => !['ok', 'not_checked'].includes(c.status));
     return {
       id: d.id,
+      clinic_id: d.clinic_id,
       device_code: d.device_code,
       name: d.name ?? d.device_code,
       location: d.location ?? '—',
@@ -123,8 +126,7 @@ async function deviceRows(admin = true) {
       last_seen_at: d.last_seen_online,
       battery: h?.latest_telemetry?.battery_percent ?? null,
       wifi_dbm: h?.latest_telemetry?.wifi_rssi_dbm ?? null,
-      storage_pct: null, // the backend does not receive storage usage yet
-      issue: bad.length ? bad.map((c) => `${COMP_LABEL[c.component_type] ?? c.component_type}: ${c.status.replace(/_/g, ' ')}`).join('; ') : h?.connection_status === 'stale' ? 'No recent contact' : null,
+      issue: bad.length ? bad.map((c) => `${COMP_LABEL[c.component_type] ?? c.component_type}: ${c.status.replace(/_/g, ' ')}`).join('; ') : !h?.components?.length ? 'No components registered' : h.components.some((c) => c.status === 'not_checked') ? 'Component health not checked yet' : h?.connection_status === 'stale' ? 'No recent contact' : null,
       _health: h,
     };
   });
@@ -139,7 +141,7 @@ export const backend = {
   patientsAll: async () => ok(await patientList()),
   createPatient: (body) => client.post('/patients', body),
   sessions: async () => {
-    const [sessions, patients, devices] = await Promise.all([get('/sessions'), get('/patients', { limit: 100 }), get('/devices')]);
+    const [sessions, patients, devices] = await Promise.all([allPages('/sessions'), allPages('/patients'), allPages('/devices')]);
     const pc = Object.fromEntries(patients.map((p) => [p.patient.id, p.patient.patient_code]));
     const dc = Object.fromEntries(devices.map((d) => [d.id, d.device_code]));
     return ok(sessions.map((s) => ({ id: s.id, patient_id: s.patient_id, patient_code: pc[s.patient_id] ?? `Patient ${s.patient_id}`, device_id: s.device_id, device_code: dc[s.device_id] ?? `Device ${s.device_id}`, started_at: s.started_at, ended_at: s.ended_at, status: s.status })));
@@ -161,15 +163,20 @@ export const backend = {
   // auth
   me: () => client.get('/auth/me'),
   createUser: (body) => client.post('/auth/users', body),
-  requestAccess: (body) => client.post('/auth/request-access', body), // not in the backend yet
-  users: async () => { const e = new Error('not_supported'); e.notSupported = true; throw e; }, // GET /auth/users is not in the backend yet
-  userAction: async () => { const e = new Error('not_supported'); e.notSupported = true; throw e; },
+  requestAccess: (body) => client.post('/auth/request-access', body),
+  users: async () => ok(await allPages('/auth/users')),
+  userAction: (id, action) => client.patch(`/auth/users/${id}`, { action }),
+  clinics: async () => ok(await get('/auth/clinics')),
+  createClinic: (body) => client.post('/admin/clinics', body),
+  thresholds: async () => ok(await get('/thresholds')),
+  accessRequests: async () => ok(await allPages('/auth/access-requests')),
+  decideAccessRequest: (id, body) => client.patch(`/auth/access-requests/${id}`, body),
 
   // patients
   patients: async () => ok((await patientList()).filter((p) => p.monitored)),
   unassignedPatients: async () => {
-    const items = await get('/patients', { limit: 100 });
-    return ok(items.filter((i) => !i.active_session).map((i) => ({ id: i.patient.id, patient_code: i.patient.patient_code })));
+    const items = await allPages('/patients');
+    return ok(items.filter((i) => !i.active_session).map((i) => ({ id: i.patient.id, patient_code: i.patient.patient_code, clinic_id: i.patient.clinic_id })));
   },
   patient: async (id) => {
     let p = (await patientList()).find((x) => x.id === Number(id));
@@ -177,15 +184,23 @@ export const backend = {
       const base = await get(`/patients/${id}`);
       p = { id: base.id, patient_code: base.patient_code, monitored: false, risk_category: 'no_data', device_code: '—', last_reading_at: null, latest_reading: null };
     }
-    const sessions = await get('/sessions');
+    const sessions = await allPages('/sessions');
     const mine = sessions.filter((s) => s.patient_id === Number(id));
     const s = mine.find((x) => x.status === 'active') ?? mine[0];
     return ok({ ...p, session_started_at: s?.started_at ?? null, sync: null });
   },
   readings: async (id) => {
     const from = new Date(Date.now() - 30 * 60000).toISOString();
-    const res = await get(`/patients/${id}/readings`, { from, limit: 1000 });
-    return ok(res.readings.map(mapReading));
+    const rows = [];
+    let offset = 0;
+    while (true) {
+      const res = await client.get(`/patients/${id}/readings`, { params: { from, limit: 500, offset } });
+      rows.push(...res.data.readings);
+      const next = Number(res.headers['x-next-offset']);
+      if (!Number.isFinite(next) || next <= offset) break;
+      offset = next;
+    }
+    return ok(rows.map(mapReading).sort((a, b) => new Date(a.recorded_at) - new Date(b.recorded_at)));
   },
   risk: async (id) => {
     const r = await get(`/patients/${id}/risk-score`);
@@ -210,7 +225,9 @@ export const backend = {
     const row = (await deviceRows()).find((d) => d.id === Number(id));
     const h = row._health;
     const t = h?.latest_telemetry;
-    const point = (v) => (v == null ? [] : [{ t: new Date(t.reported_at).getTime(), v }]);
+    const from = new Date(Date.now() - 24 * 60 * 60000).toISOString();
+    const history = await allPages(`/devices/${id}/telemetry`, { from }, 500);
+    const series = (key) => history.filter((item) => item[key] != null).map((item) => ({ t: new Date(item.reported_at).getTime(), v: Number(item[key]) })).sort((a, b) => a.t - b.t);
     const { _health, ...device } = row;
     return ok({
       ...device,
@@ -218,13 +235,13 @@ export const backend = {
         name: COMP_LABEL[c.component_type] ?? c.component_type,
         status: c.status === 'ok' ? 'ok' : c.status === 'not_checked' ? 'warn' : c.is_critical ? 'fail' : 'warn',
         detail: c.status === 'ok' ? 'Working' : c.status === 'not_checked' ? 'Not checked yet' : [c.status.replace(/_/g, ' '), c.error_code, c.details ? JSON.stringify(c.details) : null].filter(Boolean).join(' · '),
-        interface: '—',
+        interface: c.pin_or_address ?? '—',
         critical: c.is_critical,
       })),
-      telemetry: { battery: point(t?.battery_percent), wifi: point(t?.wifi_rssi_dbm) },
+      telemetry: { battery: series('battery_percent'), wifi: series('wifi_rssi_dbm') },
     });
   },
-  registerDevice: (body) => client.post('/devices', { device_code: body.device_code, name: body.name, location: body.location, status: 'inactive', components: DEFAULT_COMPONENTS }).then((r) => ({ data: r.data })),
+  registerDevice: (body) => client.post('/devices', { clinic_id: body.clinic_id, device_code: body.device_code, name: body.name, location: body.location, status: 'inactive', components: [] }).then((r) => ({ data: r.data })),
   updateDevice: (id, body) => client.patch(`/devices/${id}`, body),
   decommission: (id) => client.patch(`/devices/${id}`, { status: 'retired' }),
   // The backend starts a session at the current time. Back-dating is not supported yet.
@@ -237,15 +254,14 @@ export const backend = {
     const [ov, rows, alerts] = await Promise.all([get('/admin/overview'), deviceRows(), alertList()]);
     const urgent = alerts.filter((a) => ['critical', 'high'].includes(a.severity));
     const monitored = rows.filter((d) => d.patient_code);
-    const lag = Math.max(0, ...monitored.map((d) => minutesAgo(d.last_seen_at) ?? 0));
     return ok({
       devices_online: ov.devices.online_recently,
       devices_total: ov.devices.active,
       active_sessions: ov.active_sessions,
       critical_alerts: urgent.length,
       unacknowledged_critical: urgent.filter((a) => !a.acknowledged_at).length,
-      sync_lag_min: lag,
-      pending_users: null, // needs GET /auth/users on the backend
+      sync_lag_min: Math.ceil((ov.sync_lag_seconds ?? 0) / 60),
+      pending_users: (await backend.accessRequests()).data.filter((request) => request.status === 'pending').length,
       attention: monitored.filter((d) => (minutesAgo(d.last_seen_at) ?? 999) > 30).map((d) => ({ id: d.id, text: `${d.device_code} has sent no readings for ${minutesAgo(d.last_seen_at) ?? 'many'} min but the session for ${d.patient_code} is still open.` })),
       device_health: rows.filter((d) => d.status !== 'retired').map(({ _health, ...d }) => d),
       recent_alerts: urgent.slice(0, 5),

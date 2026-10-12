@@ -1,22 +1,25 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { usePatientDetail } from '../../hooks/usePatientDetail';
+import { useFetch } from '../../hooks/useFetch';
+import { adminApi } from '../../api/admin';
 import { useAlertStore } from '../../store/alertStore';
 import RiskBadge from '../../components/ui/Badge';
 import Skeleton from '../../components/ui/Skeleton';
 import VitalsCard from '../../components/vitals/VitalsCard';
 import StaleIndicator from '../../components/vitals/StaleIndicator';
-import TrendChart, { METRICS } from '../../components/charts/TrendChart';
+import TrendChart, { metricsFor } from '../../components/charts/TrendChart';
 import RiskScorePanel from '../../components/risk/RiskScorePanel';
 import AlertTimeline from '../../components/alerts/AlertTimeline';
 import { downloadCsv } from '../../utils/csv';
 import { recoveredSync } from '../../utils/sync';
-import { STALE_AFTER_MINUTES, VITAL_THRESHOLDS as T } from '../../utils/constants';
+import { STALE_AFTER_MINUTES } from '../../utils/constants';
 import { clock, minutesSince, timeAgo } from '../../utils/formatters';
 
 export default function PatientDetailPage() {
   const { id } = useParams();
   const { patient, readings, risk, loading, error, refetch } = usePatientDetail(id);
+  const { data: thresholdRows } = useFetch(() => adminApi.getThresholds());
   const alerts = useAlertStore((s) => s.alerts).filter((a) => a.patient_id === Number(id));
   const acknowledge = useAlertStore((s) => s.acknowledge);
   const [metric, setMetric] = useState('temp');
@@ -31,6 +34,8 @@ export default function PatientDetailPage() {
     );
   }
 
+  const limits = Object.fromEntries((thresholdRows ?? []).map((row) => [row.parameter, row.value]));
+  const thresholdReady = ['hr_low', 'hr_high', 'spo2_low', 'temp_low', 'temp_moderate_low', 'temp_severe_low'].every((key) => limits[key] !== undefined);
   const stale = patient.data_status ? patient.data_status === 'stale' : minutesSince(patient.last_reading_at) > STALE_AFTER_MINUTES;
   const sync = patient.sync ?? recoveredSync(readings);
 
@@ -64,23 +69,21 @@ export default function PatientDetailPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {['hr', 'spo2', 'temp'].map((m) => <VitalsCard key={m} metric={m} readings={readings} stale={stale} />)}
+        {thresholdReady ? ['hr', 'spo2', 'temp'].map((m) => <VitalsCard key={m} metric={m} readings={readings} stale={stale} thresholds={{ hr: { low: limits.hr_low, high: limits.hr_high }, spo2: { low: limits.spo2_low }, temp: { low: limits.temp_low, moderate_low: limits.temp_moderate_low, severe_low: limits.temp_severe_low } }} />) : <p className="col-span-3 py-4 text-center text-sm text-slate-500">Loading server threshold configuration…</p>}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="mr-auto font-semibold">Trend, last 30 min</h2>
-          {Object.entries(METRICS).map(([k, v]) => (
+          {Object.entries(thresholdReady ? metricsFor(limits) : {}).map(([k, v]) => (
             <button key={k} onClick={() => setMetric(k)} aria-pressed={metric === k}
               className={`min-h-[36px] rounded-full border px-4 text-sm ${metric === k ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white'}`}>
               {v.label}
             </button>
           ))}
         </div>
-        <TrendChart readings={readings} metric={metric} alerts={alerts} />
-        <p className="mt-2 text-xs text-slate-500">
-          Shaded bands show out-of-range values. Triangles mark alerts. Limits: heart rate {T.hr.low} to {T.hr.high} bpm, SpO₂ below {T.spo2.low}%, temperature below {T.temp.low} °C (moderate below {T.temp.moderate_low} °C, severe below {T.temp.severe_low} °C).
-        </p>
+        {thresholdReady ? <TrendChart readings={readings} metric={metric} alerts={alerts} thresholds={limits} /> : <p className="py-10 text-center text-slate-500">Loading server threshold configuration…</p>}
+        {thresholdReady && <p className="mt-2 text-xs text-slate-500">Shaded bands show server configured out-of-range values. Triangles mark alerts.</p>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
