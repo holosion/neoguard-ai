@@ -131,6 +131,7 @@ class MonitoringSession(Base):
         Index("uq_active_session_device", "device_id", unique=True, postgresql_where=text("status = 'active'")),
         Index("uq_active_session_patient", "patient_id", unique=True, postgresql_where=text("status = 'active'")),
         UniqueConstraint("patient_id", "id", name="uq_session_patient_id"),
+        UniqueConstraint("device_id", "id", name="uq_session_device_id"),
     )
 
 
@@ -149,6 +150,8 @@ class Reading(Base):
 
     __table_args__ = (
         UniqueConstraint("device_id", "device_event_id", name="uq_reading_device_event"),
+        ForeignKeyConstraint(["device_id", "session_id"], ["monitoring_sessions.device_id", "monitoring_sessions.id"],
+                             name="fk_reading_device_session", ondelete="RESTRICT"),
         CheckConstraint("heart_rate_bpm IS NULL OR heart_rate_bpm BETWEEN 40 AND 220", name="ck_reading_hr"),
         CheckConstraint("spo2_percent IS NULL OR spo2_percent BETWEEN 50 AND 100", name="ck_reading_spo2"),
         CheckConstraint("temperature_c IS NULL OR temperature_c BETWEEN 30 AND 42", name="ck_reading_temp"),
@@ -337,7 +340,7 @@ class ModelRegistry(Base):
 
 
 class RiskScore(Base):
-    """Future inference record; no endpoint currently creates scores."""
+    """Immutable versioned inference snapshot, explicitly scoped by its model metadata."""
 
     __tablename__ = "risk_scores"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -354,6 +357,7 @@ class RiskScore(Base):
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     __table_args__ = (
+        UniqueConstraint("session_id", "model_registry_id", "data_window_end", name="uq_risk_score_window_model"),
         CheckConstraint("score >= 0 AND score <= 1", name="ck_risk_score_range"),
         CheckConstraint("risk_category IN ('low', 'moderate', 'high', 'critical')", name="ck_risk_score_category"),
         CheckConstraint(

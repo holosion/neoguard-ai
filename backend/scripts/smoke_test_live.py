@@ -110,6 +110,7 @@ def run_smoke_flow() -> None:
                 "readings": [
                     {
                         "event_id": event_id,
+                        "session_id": session_id,
                         "measured_at": measured_at,
                         "heart_rate_bpm": 98,
                         "spo2_percent": 88,
@@ -118,6 +119,7 @@ def run_smoke_flow() -> None:
                     },
                     {
                         "event_id": str(uuid4()),
+                        "session_id": session_id,
                         "measured_at": measured_at,
                         "heart_rate_bpm": 40,
                         "spo2_percent": 50,
@@ -151,7 +153,7 @@ def run_smoke_flow() -> None:
                 "/api/v1/devices/sync",
                 headers=device_headers,
                 json={"device_code": f"SMK-{suffix}", "readings": [{
-                    "event_id": str(uuid4()), "measured_at": measured_at, "heart_rate_bpm": 100, "quality": "ok"
+                    "event_id": str(uuid4()), "session_id": session_id, "measured_at": measured_at, "heart_rate_bpm": 100, "quality": "ok"
                 }]},
             )
             assert rate_limited.status_code == 429, rate_limited.text
@@ -160,7 +162,7 @@ def run_smoke_flow() -> None:
                 "/api/v1/devices/sync",
                 headers=device_headers,
                 json={"device_code": f"SMK-{suffix}", "readings": [{
-                    "event_id": str(uuid4()), "measured_at": "2026-01-01T00:00:00", "heart_rate_bpm": 100
+                    "event_id": str(uuid4()), "session_id": session_id, "measured_at": "2026-01-01T00:00:00", "heart_rate_bpm": 100
                 }]},
             )
             assert malformed_clock.status_code == 422, malformed_clock.text
@@ -170,7 +172,7 @@ def run_smoke_flow() -> None:
                 "/api/v1/devices/sync",
                 headers=device_headers,
                 json={"device_code": f"SMK-{suffix}", "readings": [{
-                    "event_id": str(uuid4()), "measured_at": "2099-01-01T00:00:00Z", "heart_rate_bpm": 100
+                    "event_id": str(uuid4()), "session_id": session_id, "measured_at": "2099-01-01T00:00:00Z", "heart_rate_bpm": 100
                 }]},
             )
             assert future_clock.status_code == 200 and future_clock.json()["readings"][0]["status"] == "rejected", future_clock.text

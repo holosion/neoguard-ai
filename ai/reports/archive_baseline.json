@@ -1,0 +1,32 @@
+{
+  "purpose": "Exploratory reproduction of undocumented source label; never deployed",
+  "validation_scope": "unverified_source_labels",
+  "features": [
+    "temperature_c",
+    "heart_rate_bpm",
+    "oxygen_saturation"
+  ],
+  "excluded_invalid_spo2_rows": 7,
+  "split_subjects": {
+    "train": 60,
+    "validation": 20,
+    "test": 20
+  },
+  "test": {
+    "rows": 600,
+    "positive_rows": 78,
+    "precision": 1.0,
+    "recall": 0.02564102564102564,
+    "average_precision": 0.26485350612021075,
+    "roc_auc": 0.603411435307987,
+    "brier_score": 0.1093144078400184,
+    "confusion_matrix_tn_fp_fn_tp": [
+      522,
+      0,
+      76,
+      2
+    ]
+  },
+  "majority_accuracy": 0.87,
+  "limitation": "Labels are not verified clinical events; vitals alone may not explain their derivation."
+}

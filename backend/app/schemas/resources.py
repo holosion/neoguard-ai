@@ -136,6 +136,7 @@ class SessionPublic(ORMModel):
 
 
 class ReadingIn(BaseModel):
+    session_id: int = Field(gt=0, description="Original session ID retained with the event in the device offline queue")
     event_id: UUID
     measured_at: datetime
     heart_rate_bpm: int | None = Field(default=None, ge=40, le=220)
@@ -243,3 +244,4 @@ class PatientListItem(BaseModel):
     active_session: SessionPublic | None
     latest_reading: ReadingPublic | None
     data_status: Literal["unmonitored", "empty", "fresh", "stale"]
+    risk: dict | None = None

@@ -33,9 +33,9 @@ def start_session(
         raise HTTPException(status_code=409, detail="Device already has an active monitoring session")
     session = MonitoringSession(patient_id=patient.id, device_id=device.id, started_by_user_id=user.id)
     db.add(session)
-    db.flush()
-    record_audit(db, user_id=user.id, action="start_session", resource_type="session", resource_id=session.id)
     try:
+        db.flush()
+        record_audit(db, user_id=user.id, action="start_session", resource_type="session", resource_id=session.id)
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -50,9 +50,12 @@ def stop_session(
     db: DbSession,
     user: User = Depends(require_roles("admin", "clinician")),
 ):
-    session = db.scalar(select(MonitoringSession).where(MonitoringSession.id == session_id).with_for_update())
+    session = db.get(MonitoringSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    # Match sync/start lock order: device first, then session.
+    db.scalar(select(Device).where(Device.id == session.device_id).with_for_update())
+    session = db.scalar(select(MonitoringSession).where(MonitoringSession.id == session_id).with_for_update().execution_options(populate_existing=True))
     if session.status != "active":
         raise HTTPException(status_code=409, detail="Session is already closed")
     session.status = "stopped"

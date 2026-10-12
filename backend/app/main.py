@@ -7,15 +7,16 @@ from app.core.config import settings
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="Offline-first neonatal monitoring API. Risk estimates remain unavailable until a validated model is configured.",
+    description="Offline-first neonatal monitoring API. AI scores are synthetic research estimates, not clinically validated probabilities.",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
+    expose_headers=["X-Total-Count", "X-Next-Offset", "Retry-After"],
 )
 
 app.include_router(api_router, prefix=settings.api_v1_prefix)

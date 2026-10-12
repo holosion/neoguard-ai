@@ -1,0 +1,8 @@
+.venv/
+.local/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+ai/data/
+ai/reports/*.csv
+*.log

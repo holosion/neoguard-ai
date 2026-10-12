@@ -1,0 +1,180 @@
+[
+  {
+    "archive": "archive.zip",
+    "member": "newborn_health_monitoring_with_risk.csv",
+    "member_sha256": "09aefbc8282b3c05dcd9d2de52204408dd4d5407d1e9f99c5ecb0319521b1386",
+    "archive_sha256": "a3261e7c1b3c8895b9675f830697d8281b3c974d3724e3708854545382536b1c",
+    "rows": 3000,
+    "columns": {
+      "baby_id": {
+        "missing": 0,
+        "unique": 100
+      },
+      "gender": {
+        "missing": 0,
+        "unique": 2
+      },
+      "gestational_age_weeks": {
+        "missing": 0,
+        "unique": 53
+      },
+      "birth_weight_kg": {
+        "missing": 0,
+        "unique": 73
+      },
+      "birth_length_cm": {
+        "missing": 0,
+        "unique": 54
+      },
+      "birth_head_circumference_cm": {
+        "missing": 0,
+        "unique": 46
+      },
+      "date": {
+        "missing": 0,
+        "unique": 391
+      },
+      "age_days": {
+        "missing": 0,
+        "unique": 30
+      },
+      "weight_kg": {
+        "missing": 0,
+        "unique": 309
+      },
+      "length_cm": {
+        "missing": 0,
+        "unique": 121
+      },
+      "head_circumference_cm": {
+        "missing": 0,
+        "unique": 77
+      },
+      "temperature_c": {
+        "missing": 0,
+        "unique": 22
+      },
+      "heart_rate_bpm": {
+        "missing": 0,
+        "unique": 71
+      },
+      "respiratory_rate_bpm": {
+        "missing": 0,
+        "unique": 33
+      },
+      "oxygen_saturation": {
+        "missing": 0,
+        "unique": 8
+      },
+      "feeding_type": {
+        "missing": 0,
+        "unique": 3
+      },
+      "feeding_frequency_per_day": {
+        "missing": 0,
+        "unique": 6
+      },
+      "urine_output_count": {
+        "missing": 0,
+        "unique": 6
+      },
+      "stool_count": {
+        "missing": 0,
+        "unique": 6
+      },
+      "jaundice_level_mg_dl": {
+        "missing": 0,
+        "unique": 142
+      },
+      "apgar_score": {
+        "missing": 2900,
+        "unique": 5
+      },
+      "immunizations_done": {
+        "missing": 0,
+        "unique": 2
+      },
+      "reflexes_normal": {
+        "missing": 0,
+        "unique": 2
+      },
+      "risk_level": {
+        "missing": 0,
+        "unique": 2
+      }
+    },
+    "staging_file": "newborn_staging.jsonl",
+    "status": "review",
+    "source_url": null,
+    "license": null,
+    "excluded_fields": [
+      "name"
+    ],
+    "approved_for_clinical_training": false
+  },
+  {
+    "archive": "archive_1.zip",
+    "member": "Hypothermia.csv",
+    "member_sha256": "e697d91c9a26cf1de32ca079e97ffc97e7108552375bef94fc62a3a53876834b",
+    "archive_sha256": "600622a2442ad1679f34873937610c9ac164800b98cab72cfb5508906b0aede5",
+    "rows": 200,
+    "columns": {
+      "case": {
+        "missing": 0,
+        "unique": 200
+      },
+      "date": {
+        "missing": 0,
+        "unique": 14
+      },
+      "time": {
+        "missing": 0,
+        "unique": 128
+      },
+      "weight": {
+        "missing": 0,
+        "unique": 119
+      },
+      "t.nur": {
+        "missing": 0,
+        "unique": 9
+      },
+      "t.or": {
+        "missing": 0,
+        "unique": 13
+      },
+      "t.1": {
+        "missing": 0,
+        "unique": 21
+      },
+      "t.2": {
+        "missing": 0,
+        "unique": 30
+      },
+      "t.3": {
+        "missing": 83,
+        "unique": 20
+      },
+      "t.4": {
+        "missing": 179,
+        "unique": 9
+      },
+      "t.5": {
+        "missing": 196,
+        "unique": 4
+      },
+      "t.6": {
+        "missing": 199,
+        "unique": 2
+      }
+    },
+    "staging_file": "hypothermia_staging.jsonl",
+    "status": "review",
+    "source_url": null,
+    "license": null,
+    "excluded_fields": [
+      "code"
+    ],
+    "approved_for_clinical_training": false
+  }
+]
