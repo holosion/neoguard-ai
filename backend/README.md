@@ -37,13 +37,13 @@ Use SQLAlchemy 2 models and Alembic migrations as the schema source of truth. Ke
 | `thresholds` | Parameter, value, unit, source, version/effective time and enabled status. |
 | `audit_log` | Actor, action, resource, time and minimal structured details for sensitive staff actions. |
 | `login_failures` | HMAC-keyed failed-login counters used for identifier and source throttles; raw usernames and IP addresses are not stored. |
-| `model_registry` | Future model version, artifact hash/reference, training import, evaluation metrics and approval status. |
-| `risk_scores` | Reserved immutable inference snapshots with model reference, feature snapshot, explanation and data window; no current service writes predictions. |
+| `model_registry` | Model version, artifact hash/reference, training import, evaluation metrics and approval status; synthetic models are candidates. |
+| `risk_scores` | Immutable experimental inference snapshots with model reference, feature snapshot, explanation and data window. |
 | `outcome_labels` | Reviewed outcomes with provenance, kept distinct from model predictions and alerts. |
 
-### AI groundwork (not active inference)
+### Experimental AI inference
 
-The database now reserves versioned model metadata, score snapshots, and provenance-bearing outcome labels. These tables are storage contracts only: no model is trained, loaded, or used to generate a clinical score. Future inference should only use an explicitly approved model, documented features, and evaluated labels. Keep archive subjects separate from clinical patients. Trend aggregates can be derived from readings first; add a cache table only if measured query performance requires it.
+The backend now loads the saved JSON warning model and persists experimental score snapshots after device sync when `AI_MODE=prototype`. The model is trained on simulated sessions and registered as a candidate; its scores have no clinical validation. `AI_MODE=disabled` turns scoring off. Availability states and feature contributions are returned by the patient risk-score endpoint. See [the AI guide](../ai/README.md) for training results, reproduction and database verification. Archive subjects remain separate from clinical patients.
 
 The provided archives have now shaped the training-data storage models too: `dataset_imports`, `dataset_import_rows`, `dataset_subjects`, and `dataset_observations` are separate from `patients`, `monitoring_sessions`, and live `readings`. See [docs/archive-data-storage.md](docs/archive-data-storage.md) for the inspected fields, quality issues, and archive-specific mapping rules.
 
@@ -97,7 +97,7 @@ Prefix endpoints with `/api/v1`. Use resource IDs in routes, pagination for hist
 | `GET /alerts?patient_id=&acknowledged=` | Filtered alert history; `POST /alerts/{id}/acknowledge` records authenticated user and time. |
 | `GET /devices/{id}/health` | Last seen, latest telemetry, component status and stale/offline status. |
 | `GET /admin/overview` | Counts and latest timestamps computed from stored records. |
-| `GET /patients/{id}/risk-score` | Later: latest persisted score/explanation, or a clear `not_available` / `insufficient_data` result. |
+| `GET /patients/{id}/risk-score` | Latest persisted prototype score/explanation, or an explicit availability state such as `insufficient_data`, `disabled` or `stale`. |
 
 Return `200` with an empty collection for a valid query with no rows. The frontend owns loading UI. Return freshness metadata for readings/devices. Treat insufficient risk data as an expected availability state (for example, `200` with `status: "insufficient_data"`), not a malformed-request `400`.
 
@@ -110,6 +110,7 @@ Return `200` with an empty collection for a valid query with no rows. The fronte
   "readings": [
     {
       "event_id": "a stable UUID generated and stored by the device",
+      "session_id": 1,
       "measured_at": "2026-10-06T09:00:00Z",
       "heart_rate_bpm": 145,
       "spo2_percent": 96,
@@ -130,7 +131,7 @@ Return `200` with an empty collection for a valid query with no rows. The fronte
 }
 ```
 
-The RTC timestamp is the observation time; server receipt time is recorded independently. The device should retain unacknowledged event IDs and resend them until the API confirms receipt. The API should acknowledge individual event outcomes so one malformed reading does not cause an infinite retry of an otherwise valid batch.
+The RTC timestamp is the observation time; server receipt time is recorded independently. Each buffered reading retains its original `session_id` even after the device is reassigned. The device should retain unacknowledged event IDs and resend them until the API confirms receipt. The API acknowledges individual event outcomes so one rejected reading does not cause an infinite retry of an otherwise valid batch.
 
 ## AI integration boundary
 
@@ -163,12 +164,12 @@ Install and start PostgreSQL locally before these commands, and ensure `psql` is
 
 The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`) and has database-backed identifier/source throttling. Admins create staff accounts with `POST /api/v1/auth/users`. Admin device provisioning returns its random `device_secret` once; rotate it through `POST /api/v1/devices/{id}/rotate-secret` if lost or exposed, then send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
 
-Sync schema validation rejects a malformed batch with HTTP 422. Valid events in an accepted request return per-event `accepted`, `duplicate`, or `rejected` results. Store each event UUID in the device's offline queue and remove it only after an accepted/duplicate acknowledgment. A transaction persists readings, generated threshold alerts, telemetry and component checks together. Threshold alert generation is rule-based and independent of the unimplemented risk model.
+Sync schema validation rejects a malformed batch with HTTP 422. Valid events in an accepted request return per-event `accepted`, `duplicate`, or `rejected` results. Store each event UUID in the device's offline queue and remove it only after an accepted/duplicate acknowledgment. A transaction persists readings, generated threshold alerts, telemetry and component checks together. Experimental inference follows independently, so inference failure does not undo saved readings. Threshold alerts remain rule-based.
 
 ### Implemented routes
 
 - Staff: `POST /auth/login`, `GET /auth/me`, admin-only `POST /auth/users`.
-- Patients: paginated list (`limit`, `offset`, `X-Total-Count`, `X-Next-Offset`), create/detail/update, risk profile get/upsert, readings history, and an explicit not-available risk-score response. `last_synced_at` is the newest server receipt of any reading; `last_device_sync_at` is the newest successful sync contact.
+- Patients: paginated list (`limit`, `offset`, `X-Total-Count`, `X-Next-Offset`), create/detail/update, risk profile get/upsert, readings history, and experimental risk-score or explicit availability responses. `last_synced_at` is the newest server receipt of any reading; `last_device_sync_at` is the newest successful sync contact.
 - Devices: list/detail, admin provisioning and credential rotation, plus device-authenticated batch sync with a configurable minimum interval.
 - Sessions: list/start/stop with database uniqueness constraints for active patient/device assignments.
 - Alerts: filter/list and acknowledge with staff identity and audit record.
