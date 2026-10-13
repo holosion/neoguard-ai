@@ -25,6 +25,8 @@ Training overwrites the generated model and reports. Change the seed for a new a
 
 `AI_MODE=prototype` enables experimental scoring after successful device sync. `AI_MODE=disabled` disables model scoring. `AI_MODEL_PATH` optionally selects a model file. Deterministic threshold alerts operate independently.
 
+To review the supplied ZIP datasets, run `python -m ai.audit_archives` from the project root, then run `python -m scripts.import_training_archives` from `backend/`. The audit writes de-identified staging files under ignored `ai/data/`; imports remain review-only rows in separate dataset tables and never create clinical patients or readings. Re-run the audit if `ai/data/` is absent.
+
 Readings must include their original `session_id`, a stable `event_id` and a timezone-aware `measured_at`. The backend keeps buffered readings with their original assignment, including stopped sessions, subject to session timestamp validation. Historical readings do not trigger a current score.
 
 The patient risk-score endpoint reports availability explicitly, including `prototype`, `disabled`, `model_unavailable`, `threshold_configuration_mismatch`, `unmonitored`, `insufficient_data` and `stale`. Prototype responses include the model version, feature contributions, data window and synthetic-only notice.

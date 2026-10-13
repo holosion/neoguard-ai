@@ -14,18 +14,20 @@ const schema = z.object({
   email: z.string().email('Enter a valid email address'),
   role: z.enum(['nurse', 'clinician']),
   clinic_id: z.string().min(1, 'Choose a clinic'),
-  password: z.string().min(12, 'Use at least 12 characters'),
+  password: z.string().optional().or(z.literal('')).refine((value) => !value || value.length >= 12, 'Use at least 12 characters'),
 });
 
 function CreateAccount({ clinics, onCreated }) {
   const [msg, setMsg] = useState(null);
+  const [provisioned, setProvisioned] = useState(null);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: { role: 'nurse' } });
   const submit = async (v) => {
-    setMsg(null);
+    setMsg(null); setProvisioned(null);
     try {
-      await adminApi.createUser({ ...v, clinic_id: Number(v.clinic_id) });
+      const { data } = await adminApi.createUser({ ...v, password: v.password || undefined, clinic_id: Number(v.clinic_id) });
       reset({ role: 'nurse', clinic_id: '' });
-      setMsg({ ok: true, text: `Account ${v.username} created.` });
+      setProvisioned({ username: data.username, password: data.temporary_password });
+      setMsg({ ok: true, text: `Account ${v.username} created. Give the temporary password to the staff member through a secure channel.` });
       onCreated();
     } catch (e) {
       setMsg({ ok: false, text: e.response?.data?.detail ?? 'Could not create the account. Check the details and try again.' });
@@ -42,9 +44,10 @@ function CreateAccount({ clinics, onCreated }) {
         <label className="text-sm">Email<input className={field} {...register('email')} />{err('email')}</label>
         <label className="text-sm">Clinic<select className={field} {...register('clinic_id')}><option value="">Choose a clinic</option>{clinics?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>{err('clinic_id')}</label>
         <label className="text-sm">Role<select className={field} {...register('role')}><option value="nurse">Nurse</option><option value="clinician">Clinical officer</option></select></label>
-        <label className="text-sm">Temporary password<input type="password" autoComplete="new-password" className={field} {...register('password')} />{err('password')}</label>
+        <label className="text-sm">Temporary password (optional)<input type="password" autoComplete="new-password" className={field} {...register('password')} /><span className="mt-1 block text-xs text-slate-500">Leave blank to generate a strong temporary password.</span>{err('password')}</label>
       </div>
       {msg && <p role={msg.ok ? 'status' : 'alert'} className={`mt-3 text-sm ${msg.ok ? 'text-green-800' : 'text-red-700'}`}>{msg.text}</p>}
+      {provisioned && <div className="mt-3 rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm"><p className="font-semibold">Temporary password for {provisioned.username} (shown once)</p><code className="mt-1 block break-all">{provisioned.password}</code><button type="button" onClick={() => navigator.clipboard?.writeText(provisioned.password)} className="mt-2 underline">Copy password</button><p className="mt-1 text-xs">It expires in 24 hours. The user must change it before opening the dashboard.</p></div>}
       <button disabled={isSubmitting || !clinics?.length} className="mt-4 min-h-[44px] rounded-lg bg-brand px-4 font-semibold text-white disabled:opacity-60">{isSubmitting ? 'Creating…' : 'Create account'}</button>
     </form>
   );
@@ -67,12 +70,23 @@ function CreateClinic({ onCreated }) {
 }
 
 export default function UsersPage() {
+  const [resetCredential, setResetCredential] = useState(null);
+  const [resetError, setResetError] = useState(null);
   const users = useFetch(() => adminApi.getUsers());
   const requests = useFetch(() => adminApi.getAccessRequests());
   const clinics = useFetch(() => adminApi.getClinics());
   const refetch = () => { users.refetch(); requests.refetch(); };
   const decide = (id, action) => async () => { await adminApi.decideAccessRequest(id, { action }); await requests.refetch(); if (action === 'approve') await users.refetch(); };
   const act = (id, action) => async () => { await adminApi.userAction(id, action); await users.refetch(); };
+  const resetPassword = (user) => async () => {
+    setResetCredential(null); setResetError(null);
+    try {
+      const { data } = await adminApi.resetPassword(user.id);
+      setResetCredential({ userId: user.id, username: user.username, password: data.temporary_password });
+    } catch (error) {
+      setResetError(error.response?.data?.detail ?? 'Could not reset the password. Try again.');
+    }
+  };
   const th = 'px-3 py-2 font-medium';
   const pending = requests.data ?? [];
   const staff = (users.data ?? []).filter((u) => ['active', 'disabled'].includes(u.status));
@@ -82,6 +96,7 @@ export default function UsersPage() {
       <h1 className="text-2xl font-bold">Users</h1>
       <CreateClinic onCreated={clinics.refetch} />
       <CreateAccount clinics={clinics.data} onCreated={refetch} />
+      {resetError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{resetError}</p>}
       {(users.error || requests.error || clinics.error) && <div role="alert" className="rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900">Could not load all user management data. <button onClick={refetch} className="underline">Retry</button></div>}
       {requests.loading ? <Skeleton rows={3} /> : <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="mb-1 font-semibold">Pending requests ({pending.length})</h2>
@@ -93,7 +108,7 @@ export default function UsersPage() {
       </div>}
       {users.loading ? <Skeleton rows={3} /> : <div className="rounded-xl border border-slate-200 bg-white p-4"><h2 className="mb-3 font-semibold">Staff accounts</h2><div className="overflow-x-auto"><table className="w-full min-w-[640px] text-left text-sm">
         <thead className="bg-slate-50 text-slate-600"><tr>{['Username', 'Email', 'Clinic', 'Role', 'Status', 'Action'].map((h) => <th scope="col" key={h} className={th}>{h}</th>)}</tr></thead>
-        <tbody>{staff.map((u) => <tr key={u.id} className={`border-t border-slate-100 ${u.status === 'disabled' ? 'text-slate-500' : ''}`}><td className="px-3 py-3 font-semibold">{u.username}</td><td className="px-3 py-3">{u.email}</td><td className="px-3 py-3">{clinics.data?.find((c) => c.id === u.clinic_id)?.name ?? '—'}</td><td className="px-3 py-3">{ROLE[u.role]}</td><td className="px-3 py-3">{u.status === 'active' ? 'Active' : 'Disabled'}</td><td className="px-3 py-3">{u.role !== 'admin' && (u.status === 'active' ? <AsyncButton onClick={act(u.id, 'disable')} className="border border-slate-300">Disable</AsyncButton> : <AsyncButton onClick={act(u.id, 'enable')} className="border border-slate-300">Enable</AsyncButton>)}</td></tr>)}</tbody>
+        <tbody>{staff.map((u) => <tr key={u.id} className={`border-t border-slate-100 ${u.status === 'disabled' ? 'text-slate-500' : ''}`}><td className="px-3 py-3 font-semibold">{u.username}</td><td className="px-3 py-3">{u.email}</td><td className="px-3 py-3">{clinics.data?.find((c) => c.id === u.clinic_id)?.name ?? '—'}</td><td className="px-3 py-3">{ROLE[u.role]}</td><td className="px-3 py-3">{u.status === 'disabled' ? 'Disabled' : u.must_change_password ? 'Password change required' : 'Active'}</td><td className="px-3 py-3"><div className="flex flex-wrap gap-2">{u.role !== 'admin' && (u.status === 'active' ? <AsyncButton onClick={act(u.id, 'disable')} className="border border-slate-300">Disable</AsyncButton> : <AsyncButton onClick={act(u.id, 'enable')} className="border border-slate-300">Enable</AsyncButton>)}{u.role !== 'admin' && <AsyncButton onClick={resetPassword(u)} className="border border-slate-300">Reset password</AsyncButton>}</div>{resetCredential?.userId === u.id && <div className="mt-2 rounded border border-blue-300 bg-blue-50 p-2 text-xs text-slate-900"><p className="font-semibold">Temporary password (shown once)</p><code className="block break-all">{resetCredential.password}</code><button onClick={() => navigator.clipboard?.writeText(resetCredential.password)} className="mt-1 underline">Copy</button><p className="mt-1">Expires in 24 hours; a password change is required.</p></div>}</td></tr>)}</tbody>
       </table></div></div>}
     </div>
   );

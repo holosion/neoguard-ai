@@ -14,6 +14,7 @@ client.interceptors.response.use(
     if (error.response?.status === 401) {
       sessionStorage.removeItem('access_token');
       sessionStorage.removeItem('user');
+      sessionStorage.removeItem('must_change_password');
       window.location.href = '/login?expired=1';
     }
     return Promise.reject(error);

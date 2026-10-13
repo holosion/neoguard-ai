@@ -19,13 +19,25 @@ class UserPublic(ORMModel):
 class UserCreate(StrictInput):
     username: str = Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_.-]+$")
     email: EmailStr
-    password: str = Field(min_length=12, max_length=128)
+    password: str | None = Field(default=None, min_length=12, max_length=128)
     role: Literal["nurse", "clinician"]
     clinic_id: int | None = Field(default=None, gt=0)
 
 
 class UserAdminPublic(UserPublic):
     status: Literal["active", "disabled"]
+    must_change_password: bool
+    password_expires_at: datetime | None
+
+
+class UserProvisioned(UserPublic):
+    temporary_password: str
+
+
+class TemporaryPasswordOut(BaseModel):
+    user_id: int
+    temporary_password: str
+    password_expires_at: datetime
 
 
 class UserStatusChange(StrictInput):
@@ -35,6 +47,13 @@ class UserStatusChange(StrictInput):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    role: Role
+    must_change_password: bool = False
+
+
+class PasswordChange(StrictInput):
+    old_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
 
 
 class PatientCreate(StrictInput):
@@ -126,6 +145,11 @@ class DevicePublic(ORMModel):
 
 class DeviceCreated(DevicePublic):
     device_secret: str
+
+
+class DeviceSessionOut(BaseModel):
+    device_code: str
+    session_id: int | None
 
 
 class DeviceSecretOut(BaseModel):

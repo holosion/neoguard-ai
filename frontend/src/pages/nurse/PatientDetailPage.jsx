@@ -15,6 +15,7 @@ import { downloadCsv } from '../../utils/csv';
 import { recoveredSync } from '../../utils/sync';
 import { STALE_AFTER_MINUTES } from '../../utils/constants';
 import { clock, minutesSince, timeAgo } from '../../utils/formatters';
+import { DashboardFrame, DashboardHeading } from '../../components/dashboard/DashboardUI';
 
 export default function PatientDetailPage() {
   const { id } = useParams();
@@ -24,13 +25,13 @@ export default function PatientDetailPage() {
   const acknowledge = useAlertStore((s) => s.acknowledge);
   const [metric, setMetric] = useState('temp');
 
-  if (loading) return <Skeleton rows={6} />;
+  if (loading) return <DashboardFrame><Skeleton rows={6} /></DashboardFrame>;
   if (!patient) {
     return (
-      <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+      <DashboardFrame><div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
         Could not load this patient. Check your connection.
         <button onClick={refetch} className="ml-3 rounded-lg border border-red-600 px-3 py-1 font-semibold">Try again</button>
-      </div>
+      </div></DashboardFrame>
     );
   }
 
@@ -40,15 +41,14 @@ export default function PatientDetailPage() {
   const sync = patient.sync ?? recoveredSync(readings);
 
   return (
-    <div className="space-y-4">
+    <DashboardFrame>
       <Link to="/" className="font-semibold text-brand">← Back to triage</Link>
 
+      <DashboardHeading title={patient.patient_code} subtitle={`${patient.device_code} · ${patient.session_started_at ? `Session started ${clock(patient.session_started_at)}` : 'No active session'} · Last reading ${timeAgo(patient.last_reading_at)}`} updatedAt={patient.last_reading_at ? new Date(patient.last_reading_at) : null} onRefresh={refetch} error={error} />
+
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
-        <h1 className="text-2xl font-bold">{patient.patient_code}</h1>
         <RiskBadge category={patient.risk_category} />
-        <span className="text-sm text-slate-500">
-          {patient.device_code} · {patient.session_started_at ? `Session since ${clock(patient.session_started_at)}` : 'No session'} · Last reading {timeAgo(patient.last_reading_at)}
-        </span>
+        <span className="text-sm text-slate-400">Current status from recorded readings and threshold alerts.</span>
         <button
           onClick={() => downloadCsv(`${patient.patient_code}-readings.csv`, readings)}
           className="ml-auto min-h-[40px] rounded-lg border border-slate-300 px-4"
@@ -90,6 +90,6 @@ export default function PatientDetailPage() {
         <RiskScorePanel risk={risk} />
         <AlertTimeline alerts={alerts} onAcknowledge={acknowledge} />
       </div>
-    </div>
+    </DashboardFrame>
   );
 }

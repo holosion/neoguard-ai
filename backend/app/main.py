@@ -1,9 +1,21 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.local_services import start_local_services, stop_local_services
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    start_local_services()
+    try:
+        yield
+    finally:
+        stop_local_services()
 
 app = FastAPI(
     title=settings.app_name,
@@ -12,6 +24,7 @@ app = FastAPI(
     docs_url=None if settings.environment == "production" else "/docs",
     redoc_url=None if settings.environment == "production" else "/redoc",
     openapi_url=None if settings.environment == "production" else "/openapi.json",
+    lifespan=lifespan,
 )
 
 

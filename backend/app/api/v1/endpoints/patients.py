@@ -54,7 +54,7 @@ def list_patients(
                 order_by=(Reading.measured_at.desc(), Reading.id.desc()),
             ).label("reading_rank"),
         ).where(Reading.session_id.in_(session_ids)).subquery()
-        if session_ids else None
+        if session_ids and user.role != "admin" else None
     )
     latest_by_session = {}
     if ranked_readings is not None:
@@ -71,17 +71,20 @@ def list_patients(
         latest = None
         status_value = "unmonitored"
         if session:
-            latest = latest_by_session.get(session.id)
-            status_value = "empty" if latest is None else (
-                "stale" if latest.measured_at < now - timedelta(seconds=settings.reading_stale_after_seconds) else "fresh"
-            )
+            if user.role == "admin":
+                status_value = "empty"
+            else:
+                latest = latest_by_session.get(session.id)
+                status_value = "empty" if latest is None else (
+                    "stale" if latest.measured_at < now - timedelta(seconds=settings.reading_stale_after_seconds) else "fresh"
+                )
         result.append(
             PatientListItem(
                 patient=patient,
                 active_session=session,
-                latest_reading=latest,
+                latest_reading=None if user.role == "admin" else latest,
                 data_status=status_value,
-                risk=risk_response(db, session, latest=latest, now=now),
+                risk=None if user.role == "admin" else risk_response(db, session, latest=latest, now=now),
             )
         )
     return result
@@ -138,6 +141,8 @@ def update_patient(
 
 @router.get("/{patient_id}/risk-profile", response_model=RiskProfilePublic | None)
 def get_risk_profile(patient_id: int, db: DbSession, user: CurrentUser):
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Clinical risk profiles are available to clinical staff only")
     if db.scalar(select(Patient.id).where(Patient.id == patient_id, patient_scope(user))) is None:
         raise HTTPException(status_code=404, detail="Patient not found")
     return db.scalar(select(RiskProfile).where(RiskProfile.patient_id == patient_id))
@@ -148,7 +153,7 @@ def upsert_risk_profile(
     patient_id: int,
     payload: RiskProfileUpsert,
     db: DbSession,
-    user: User = Depends(require_roles("admin", "clinician")),
+    user: User = Depends(require_roles("clinician")),
 ):
     if db.scalar(select(Patient.id).where(Patient.id == patient_id, patient_scope(user))) is None:
         raise HTTPException(status_code=404, detail="Patient not found")
@@ -178,6 +183,8 @@ def patient_readings(
     limit: int = Query(default=500, ge=1, le=5000),
     offset: int = Query(default=0, ge=0),
 ):
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Patient readings are available to clinical staff only")
     if start is not None and start.tzinfo is None:
         raise HTTPException(status_code=422, detail="from must include a timezone")
     if end is not None and end.tzinfo is None:
@@ -228,6 +235,8 @@ def patient_readings(
 
 @router.get("/{patient_id}/risk-score")
 def patient_risk_score(patient_id: int, db: DbSession, user: CurrentUser):
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Clinical risk scores are available to clinical staff only")
     if db.scalar(select(Patient.id).where(Patient.id == patient_id, patient_scope(user))) is None:
         raise HTTPException(status_code=404, detail="Patient not found")
     session = db.scalar(select(MonitoringSession).where(MonitoringSession.patient_id == patient_id, MonitoringSession.status == "active"))

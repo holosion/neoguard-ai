@@ -19,10 +19,10 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return password_hash.verify(password, hashed_password)
 
 
-def create_access_token(*, subject: str, role: str) -> str:
+def create_access_token(*, subject: str, role: str, token_version: int = 0, password_change_only: bool = False) -> str:
     expires = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
     return jwt.encode(
-        {"sub": subject, "role": role, "exp": expires},
+        {"sub": subject, "role": role, "ver": token_version, "pwd_change_only": password_change_only, "exp": expires},
         settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
     )
@@ -49,3 +49,7 @@ def hash_login_key(value: str) -> str:
         value.strip().lower().encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+
+def generate_temporary_password() -> str:
+    return secrets.token_urlsafe(18)

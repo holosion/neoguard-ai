@@ -38,6 +38,7 @@ export default function PatientsPage() {
         <h1 className="mr-auto text-2xl font-bold">Patients</h1>
         {canManage && <button onClick={() => setModal({ type: 'register' })} className="min-h-[40px] rounded-lg bg-brand px-4 font-semibold text-white">Register patient</button>}
       </div>
+      {isAdmin && <p className="mb-4 text-sm text-slate-600">Administrator view shows registry and device assignment status. Clinical readings and risk trends are restricted to nurses and clinicians.</p>}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {chip('all', 'All')}{chip('monitored', 'Monitored')}{chip('idle', 'Not monitored')}
@@ -62,20 +63,20 @@ export default function PatientsPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
-                <tr>{['Patient', ...(isAdmin ? ['Clinic ID'] : []), 'Monitoring', 'Device', 'Risk', 'Last reading', 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
+                <tr>{['Patient', ...(isAdmin ? ['Clinic ID'] : []), 'Monitoring', 'Device', ...(!isAdmin ? ['Risk', 'Last reading'] : []), 'Actions'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {shown.map((p) => (
                   <tr key={p.id} className={`border-t border-slate-100 ${p.monitored ? '' : 'text-slate-500'}`}>
-                    <td className="px-3 py-3 font-semibold"><Link to={`/patients/${p.id}`} className="text-brand">{p.patient_code}</Link></td>
+                    <td className="px-3 py-3 font-semibold">{isAdmin ? p.patient_code : <Link to={`/patients/${p.id}`} className="text-brand">{p.patient_code}</Link>}</td>
                     {isAdmin && <td className="px-3 py-3">{p.clinic_id}</td>}
                     <td className="px-3 py-3">{p.monitored ? 'Monitored' : 'Not monitored'}</td>
                     <td className="px-3 py-3">{p.device_code}</td>
-                    <td className="px-3 py-3">{p.monitored ? <RiskBadge category={p.risk_category} /> : '—'}</td>
-                    <td className="px-3 py-3">{p.monitored ? timeAgo(p.last_reading_at) : '—'}</td>
+                    {!isAdmin && <td className="px-3 py-3">{p.monitored ? <RiskBadge category={p.risk_category} /> : '—'}</td>}
+                    {!isAdmin && <td className="px-3 py-3">{p.monitored ? timeAgo(p.last_reading_at) : '—'}</td>}
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap gap-2">
-                        <Link to={`/patients/${p.id}`} className="inline-flex min-h-[36px] items-center rounded-lg border border-slate-300 px-3">View</Link>
+                        {!isAdmin && <Link to={`/patients/${p.id}`} className="inline-flex min-h-[36px] items-center rounded-lg border border-slate-300 px-3">View</Link>}
                         {canManage && (p.monitored
                           ? <button onClick={() => setModal({ type: 'end', patient: p })} className="min-h-[36px] rounded-lg border border-red-300 px-3 text-red-700">End session</button>
                           : <button onClick={() => setModal({ type: 'start', patient: p })} className="min-h-[36px] rounded-lg bg-brand px-3 font-semibold text-white">Start session</button>)}

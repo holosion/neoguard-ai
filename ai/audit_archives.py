@@ -9,7 +9,7 @@ from zipfile import ZipFile
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def audit(root=ROOT, output=None):
+def audit(root=ROOT, output=None, write_report=True):
     output = Path(output or root / "ai" / "data")
     output.mkdir(parents=True, exist_ok=True)
     reports = []
@@ -41,9 +41,10 @@ def audit(root=ROOT, output=None):
                         "excluded_fields": [k for k in ("name", "code") if k in rows[0]],
                         "approved_for_clinical_training": False})
     (output / "manifest.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
-    report_dir = root / "ai" / "reports"
-    report_dir.mkdir(parents=True, exist_ok=True)
-    (report_dir / "archive_audit.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
+    if write_report:
+        report_dir = root / "ai" / "reports"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        (report_dir / "archive_audit.json").write_text(json.dumps(reports, indent=2), encoding="utf-8")
     return reports
 
 

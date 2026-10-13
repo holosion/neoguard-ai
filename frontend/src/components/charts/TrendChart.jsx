@@ -7,7 +7,7 @@ export const metricsFor = (t) => ({
   temp: { label: 'Temperature', unit: '°C', domain: [35, 38], bands: [{ y1: t.temp_moderate_low, y2: t.temp_low, c: '#FFF6D6' }, { y1: 35, y2: t.temp_moderate_low, c: '#FDECEA' }] },
 });
 
-const SEVERITY_COLOR = { critical: '#B3261E', high: '#B54708', medium: '#8A6100', low: '#1E6B3A' };
+const SEVERITY_COLOR = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' };
 
 export default function TrendChart({ readings, metric, alerts = [], thresholds }) {
   const m = metricsFor(thresholds)[metric];
@@ -30,11 +30,11 @@ export default function TrendChart({ readings, metric, alerts = [], thresholds }
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 10, right: 16, bottom: 0, left: 0 }}>
           {m.bands.map((b, i) => <ReferenceArea key={i} y1={b.y1} y2={b.y2} fill={b.c} ifOverflow="hidden" />)}
-          <CartesianGrid stroke="#E6EAEF" />
-          <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(t) => clock(new Date(t).toISOString())} />
-          <YAxis domain={m.domain} unit={` ${m.unit}`} width={70} />
-          <Tooltip labelFormatter={(t) => clock(new Date(t).toISOString())} formatter={(v) => [`${v} ${m.unit}`, m.label]} />
-          <Line type="monotone" dataKey={metric} stroke="#0F6B6B" strokeWidth={3} dot={false} isAnimationActive={false} />
+          <CartesianGrid stroke="#263449" strokeDasharray="3 5" />
+          <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(t) => clock(new Date(t).toISOString())} tick={{ fill: '#a8b6c9', fontSize: 11 }} axisLine={{ stroke: '#34465f' }} tickLine={false} />
+          <YAxis domain={m.domain} unit={` ${m.unit}`} width={70} tick={{ fill: '#a8b6c9', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <Tooltip contentStyle={{ background: '#101a29', border: '1px solid #34465f', borderRadius: 10, color: '#eef4fb' }} labelFormatter={(t) => clock(new Date(t).toISOString())} formatter={(v) => [`${v} ${m.unit}`, m.label]} />
+          <Line type="monotone" dataKey={metric} stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
           {markers.map((k) => (
             <ReferenceDot key={k.id} x={k.x} y={k.y} ifOverflow="visible"
               shape={({ cx, cy }) => <polygon points={`${cx},${cy - 12} ${cx - 7},${cy} ${cx + 7},${cy}`} fill={k.color} />} />

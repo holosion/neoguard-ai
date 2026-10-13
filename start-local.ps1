@@ -4,16 +4,19 @@ $pgctl = Join-Path $root '.local/postgres/pgsql/bin/pg_ctl.exe'
 $pgdata = Join-Path $root '.local/pgdata'
 $python = Join-Path $root 'backend/.venv/Scripts/python.exe'
 $vite = Join-Path $root 'Frontend/node_modules/vite/bin/vite.js'
+$databaseUrlLine = Get-Content (Join-Path $root 'backend/.env') | Where-Object { $_ -match '^DATABASE_URL=' } | Select-Object -First 1
+$databasePort = 5432
+if ($databaseUrlLine -match ':(\d+)/') { $databasePort = [int]$Matches[1] }
 if (!(Test-Path $python)) { throw 'Install the backend environment first: python -m venv backend/.venv, then backend/.venv/Scripts/pip install -r backend/requirements-dev.txt.' }
 if (!(Test-Path $vite)) { throw 'Install frontend dependencies first with npm ci in Frontend/.' }
 if (Test-Path $pgctl) {
     & $pgctl -D $pgdata status *> $null
     if ($LASTEXITCODE -ne 0) {
-    & $pgctl -D $pgdata -l "$root/.local/postgres-server.log" -o '-h 127.0.0.1 -p 55432' start
+    & $pgctl -D $pgdata -l "$root/.local/postgres-server.log" -o "-h 127.0.0.1 -p $databasePort" start
     if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL failed to start.' }
     }
-} elseif (!(Get-NetTCPConnection -LocalPort 55432 -State Listen -ErrorAction SilentlyContinue)) {
-    throw 'Local PostgreSQL is unavailable. Install/start PostgreSQL or provide the project local PostgreSQL bundle and data directory under .local/.'
+} elseif (!(Get-NetTCPConnection -LocalPort $databasePort -State Listen -ErrorAction SilentlyContinue)) {
+    throw "PostgreSQL is unavailable on port $databasePort. Start the server configured by DATABASE_URL in backend/.env."
 }
 New-Item -ItemType Directory -Path (Join-Path $root '.local') -Force | Out-Null
 if (!(Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue)) {
@@ -31,4 +34,4 @@ foreach ($url in @('http://127.0.0.1:8000/health', 'http://127.0.0.1:5173')) {
 }
 Write-Host 'Frontend: http://127.0.0.1:5173'
 Write-Host 'API docs: http://127.0.0.1:8000/docs'
-Write-Host 'PostgreSQL: 127.0.0.1:55432 / neoguard'
+Write-Host "PostgreSQL: 127.0.0.1:$databasePort"

@@ -28,6 +28,7 @@ from app.schemas.resources import (
     DeviceUpdate,
     DeviceSyncIn,
     DeviceSyncOut,
+    DeviceSessionOut,
     SyncItemResult,
     TelemetryPublic,
 )
@@ -53,6 +54,18 @@ def list_devices(
     response.headers["X-Total-Count"] = str(total)
     response.headers["X-Next-Offset"] = str(offset + len(items)) if offset + len(items) < total else ""
     return items
+
+
+@router.get("/current-session", response_model=DeviceSessionOut)
+def current_device_session(db: DbSession, device: AuthenticatedDevice):
+    """Let an authenticated device discover the session assigned by clinical staff."""
+    session = db.scalar(
+        select(MonitoringSession).where(
+            MonitoringSession.device_id == device.id,
+            MonitoringSession.status == "active",
+        )
+    )
+    return DeviceSessionOut(device_code=device.device_code, session_id=session.id if session else None)
 
 
 @router.post("", response_model=DeviceCreated, status_code=201)

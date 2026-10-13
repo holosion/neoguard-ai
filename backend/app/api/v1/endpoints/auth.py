@@ -4,20 +4,24 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import delete, func, or_, select, text
 
-from app.api.deps import CurrentUser, DbSession, require_roles
+from app.api.deps import CurrentUser, DbSession, PasswordChangeUser, require_roles
 from app.core.config import settings
-from app.core.security import create_access_token, hash_login_key, hash_password, verify_password
+from app.core.security import create_access_token, generate_temporary_password, hash_login_key, hash_password, verify_password
 from app.models import AccessRequest, AuditLog, Clinic, LoginFailure, User
+from app.services.audit import record_audit
 from app.schemas.resources import (
     AccessRequestCreate,
     AccessRequestDecision,
     AccessRequestPublic,
     ClinicPublic,
+    PasswordChange,
     Token,
     UserAdminPublic,
     UserCreate,
     UserPublic,
+    UserProvisioned,
     UserStatusChange,
+    TemporaryPasswordOut,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -57,10 +61,38 @@ def login(request: Request, db: DbSession, form: OAuth2PasswordRequestForm = Dep
         db.add(LoginFailure(identifier_hash=identifier_hash, source_hash=source_hash))
         db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username/email or password")
+    if user.must_change_password and user.password_expires_at and user.password_expires_at <= now:
+        db.add(AuditLog(user_id=user.id, action="temporary_password_expired", resource_type="user", resource_id=user.id))
+        db.commit()
+        raise HTTPException(status_code=403, detail="Temporary password expired. Ask an administrator to reset it.")
     db.execute(delete(LoginFailure).where(LoginFailure.identifier_hash == identifier_hash))
     db.add(AuditLog(user_id=user.id, action="login", resource_type="user", resource_id=user.id))
     db.commit()
-    return Token(access_token=create_access_token(subject=str(user.id), role=user.role))
+    return Token(
+        access_token=create_access_token(
+            subject=str(user.id), role=user.role, token_version=user.token_version,
+            password_change_only=user.must_change_password,
+        ),
+        role=user.role,
+        must_change_password=user.must_change_password,
+    )
+
+
+@router.post("/change-password", response_model=Token)
+def change_password(payload: PasswordChange, db: DbSession, user: PasswordChangeUser):
+    if not verify_password(payload.old_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if user.must_change_password and user.password_expires_at and user.password_expires_at <= datetime.now(UTC):
+        raise HTTPException(status_code=403, detail="Temporary password expired. Ask an administrator to reset it.")
+    if payload.old_password == payload.new_password:
+        raise HTTPException(status_code=422, detail="Choose a password different from your current password")
+    user.hashed_password = hash_password(payload.new_password)
+    user.must_change_password = False
+    user.password_expires_at = None
+    user.token_version += 1
+    db.add(AuditLog(user_id=user.id, action="password_changed", resource_type="user", resource_id=user.id))
+    db.commit()
+    return Token(access_token=create_access_token(subject=str(user.id), role=user.role, token_version=user.token_version), role=user.role)
 
 
 @router.get("/me", response_model=UserPublic)
@@ -73,7 +105,7 @@ def public_clinics(db: DbSession):
     return db.scalars(select(Clinic).where(Clinic.is_active.is_(True)).order_by(Clinic.name)).all()
 
 
-@router.post("/users", response_model=UserPublic, status_code=201)
+@router.post("/users", response_model=UserProvisioned, status_code=201)
 def create_user(payload: UserCreate, db: DbSession, admin: User = Depends(require_roles("admin"))):
     username = payload.username.strip().lower()
     email = str(payload.email).strip().lower()
@@ -86,19 +118,23 @@ def create_user(payload: UserCreate, db: DbSession, admin: User = Depends(requir
             raise HTTPException(status_code=422, detail="An active clinic is required for clinical staff")
     elif clinic_id is not None:
         raise HTTPException(status_code=422, detail="System administrators cannot be assigned to a clinic")
+    temporary_password = payload.password or generate_temporary_password()
     user = User(
         username=username,
         email=email,
         role=payload.role,
         clinic_id=clinic_id,
-        hashed_password=hash_password(payload.password),
+        hashed_password=hash_password(temporary_password),
+        must_change_password=True,
+        password_expires_at=datetime.now(UTC) + timedelta(hours=24),
     )
     db.add(user)
     db.flush()
-    db.add(AuditLog(user_id=admin.id, action="create_user", resource_type="user", resource_id=user.id))
+    db.add(AuditLog(user_id=admin.id, action="admin_created_user", resource_type="user", resource_id=user.id,
+                    details={"role": user.role, "clinic_id": user.clinic_id}))
     db.commit()
     db.refresh(user)
-    return user
+    return UserProvisioned(**UserPublic.model_validate(user).model_dump(), temporary_password=temporary_password)
 
 
 @router.post("/request-access", status_code=202, response_model=AccessRequestPublic)
@@ -143,7 +179,12 @@ def list_users(
     users = db.scalars(select(User).order_by(User.username).offset(offset).limit(limit)).all()
     response.headers["X-Total-Count"] = str(total)
     response.headers["X-Next-Offset"] = str(offset + len(users)) if offset + len(users) < total else ""
-    return [UserAdminPublic.model_validate({**UserPublic.model_validate(user).model_dump(), "status": "active" if user.is_active else "disabled"}) for user in users]
+    return [UserAdminPublic.model_validate({
+        **UserPublic.model_validate(user).model_dump(),
+        "status": "active" if user.is_active else "disabled",
+        "must_change_password": user.must_change_password,
+        "password_expires_at": user.password_expires_at,
+    }) for user in users]
 
 
 @router.get("/access-requests", response_model=list[AccessRequestPublic])
@@ -207,7 +248,35 @@ def update_user_status(
     if user.role == "admin" or user.id == admin.id:
         raise HTTPException(status_code=409, detail="System administrator accounts cannot be changed here")
     user.is_active = action == "enable"
+    user.token_version += 1
     record_audit(db, user_id=admin.id, action=f"{action}_user", resource_type="user", resource_id=user.id)
     db.commit()
     db.refresh(user)
-    return UserAdminPublic.model_validate({**UserPublic.model_validate(user).model_dump(), "status": "active" if user.is_active else "disabled"})
+    return UserAdminPublic.model_validate({
+        **UserPublic.model_validate(user).model_dump(),
+        "status": "active" if user.is_active else "disabled",
+        "must_change_password": user.must_change_password,
+        "password_expires_at": user.password_expires_at,
+    })
+
+
+@router.put("/users/{user_id}/reset-password", response_model=TemporaryPasswordOut)
+def reset_user_password(
+    user_id: int,
+    db: DbSession,
+    admin: User = Depends(require_roles("admin")),
+):
+    user = db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.role == "admin":
+        raise HTTPException(status_code=409, detail="Administrator passwords must be changed by that administrator")
+    temporary_password = generate_temporary_password()
+    expires_at = datetime.now(UTC) + timedelta(hours=24)
+    user.hashed_password = hash_password(temporary_password)
+    user.must_change_password = True
+    user.password_expires_at = expires_at
+    user.token_version += 1
+    record_audit(db, user_id=admin.id, action="admin_reset_password", resource_type="user", resource_id=user.id)
+    db.commit()
+    return TemporaryPasswordOut(user_id=user.id, temporary_password=temporary_password, password_expires_at=expires_at)

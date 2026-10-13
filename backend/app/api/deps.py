@@ -13,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSession) -> User:
+def _load_user(token: str, db: Session, *, allow_password_change: bool) -> User:
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -22,15 +22,29 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSessio
     try:
         payload = decode_access_token(token)
         user_id = int(payload.get("sub", ""))
+        token_version = int(payload.get("ver", 0))
     except (ValueError, TypeError):
         raise credentials_error
     user = db.get(User, user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or token_version != user.token_version:
         raise credentials_error
+    if user.must_change_password and not allow_password_change:
+        raise HTTPException(status_code=403, detail="Password change required before accessing this resource")
+    if payload.get("pwd_change_only") and not allow_password_change:
+        raise HTTPException(status_code=403, detail="This temporary session can only change its password")
     return user
 
 
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSession) -> User:
+    return _load_user(token, db, allow_password_change=False)
+
+
+def get_password_change_user(token: Annotated[str, Depends(oauth2_scheme)], db: DbSession) -> User:
+    return _load_user(token, db, allow_password_change=True)
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+PasswordChangeUser = Annotated[User, Depends(get_password_change_user)]
 
 
 def require_roles(*roles: str):

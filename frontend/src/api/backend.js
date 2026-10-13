@@ -166,6 +166,7 @@ export const backend = {
   requestAccess: (body) => client.post('/auth/request-access', body),
   users: async () => ok(await allPages('/auth/users')),
   userAction: (id, action) => client.patch(`/auth/users/${id}`, { action }),
+  resetPassword: (id) => client.put(`/auth/users/${id}/reset-password`),
   clinics: async () => ok(await get('/auth/clinics')),
   createClinic: (body) => client.post('/admin/clinics', body),
   thresholds: async () => ok(await get('/thresholds')),
@@ -252,7 +253,8 @@ export const backend = {
   },
   overview: async () => {
     const [ov, rows, alerts] = await Promise.all([get('/admin/overview'), deviceRows(), alertList()]);
-    const urgent = alerts.filter((a) => ['critical', 'high'].includes(a.severity));
+    const since = Date.now() - 24 * 60 * 60 * 1000;
+    const urgent = alerts.filter((a) => ['critical', 'high'].includes(a.severity) && new Date(a.created_at).getTime() >= since);
     const monitored = rows.filter((d) => d.patient_code);
     return ok({
       devices_online: ov.devices.online_recently,

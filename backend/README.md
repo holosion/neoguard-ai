@@ -23,7 +23,7 @@ Use SQLAlchemy 2 models and Alembic migrations as the schema source of truth. Ke
 
 | Table | Purpose and key relationships |
 |---|---|
-| `users` | Staff accounts and role; password hash only. |
+| `users` | Staff accounts and roles, password hash, temporary-password state, and token version; never plaintext passwords. |
 | `patients` | Pseudonymous `patient_code`, birth/gestational details needed for care; avoid names and unnecessary identifiers. |
 | `risk_profiles` | Clinician-entered factors, one current profile per patient, with who/when updated. |
 | `devices` | Unique device code, lifecycle status, firmware/hardware versions, location and last contact. |
@@ -143,7 +143,7 @@ Prioritize staff/device authentication, PostgreSQL migrations, patient/device/se
 
 ## Code scaffold and local setup
 
-The current implementation is under `backend/app`. It uses synchronous SQLAlchemy sessions behind FastAPI dependencies and PostgreSQL as the supported database. No database is created automatically at application startup; Alembic owns schema changes.
+The current implementation is under `backend/app`. It uses synchronous SQLAlchemy sessions behind FastAPI dependencies and PostgreSQL as the supported database. In development, FastAPI checks the configured database connection and starts a sole installed PostgreSQL Windows service or the bundled PostgreSQL runtime when available and needed. Alembic still owns database creation and schema changes; migrations are not applied automatically. FastAPI also starts the Vite frontend when it is not already running, so one Uvicorn command brings up the local app.
 
 From a terminal in `backend/`:
 
@@ -160,15 +160,19 @@ py -m scripts.smoke_test_live
 uvicorn app.main:app --reload
 ```
 
-Install and start PostgreSQL locally before these commands, and ensure `psql` is on your PATH. The initial Alembic revision is in `migrations/versions`; inspect it and apply it with `alembic upgrade head`. For future model changes, generate a new revision with `alembic revision --autogenerate -m "describe change"` and review it before upgrading. Set a unique `JWT_SECRET_KEY` and the matching PostgreSQL password in `.env`; do not commit `.env`.
+For first-time setup, install/start PostgreSQL (or provide the ignored bundled runtime/data directory under `.local/`), ensure `psql` is on your PATH, and install the frontend packages with `npm ci` from `Frontend/`. The initial Alembic revision is in `migrations/versions`; inspect it and apply it with `alembic upgrade head`. For future model changes, generate a new revision with `alembic revision --autogenerate -m "describe change"` and review it before upgrading. Set a unique `JWT_SECRET_KEY` and the matching PostgreSQL password in `.env`; do not commit `.env`.
 
-The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`) and has database-backed identifier/source throttling. Admins create staff accounts with `POST /api/v1/auth/users`. Admin device provisioning returns its random `device_secret` once; rotate it through `POST /api/v1/devices/{id}/rotate-secret` if lost or exposed, then send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
+After setup and migration, run `uvicorn app.main:app --reload` from `backend/`. The frontend is available at `http://127.0.0.1:5173`, API docs at `http://127.0.0.1:8000/docs`, and API requests from Vite are proxied to the backend. Stop Uvicorn with `Ctrl+C`; it also stops the Vite process it started.
+
+The interactive API description is available at `/docs`; liveness is `/health`. Staff login uses OAuth2 form fields (`username` accepts username or email, plus `password`) and has database-backed identifier/source throttling. Staff can request access, but an administrator must approve the request before sign-in. Admin-created staff accounts receive a temporary password that is displayed once, expires after 24 hours, and can only access the password-change endpoint until changed. Admins can issue a new temporary password with `PUT /api/v1/auth/users/{id}/reset-password`; password changes and resets invalidate existing access tokens. Admin device provisioning returns its random `device_secret` once; rotate it through `POST /api/v1/devices/{id}/rotate-secret` if lost or exposed, then send it as `Authorization: Bearer <device_secret>` to `/api/v1/devices/sync`.
+
+Clinical users share the staff dashboard; clinicians can create/end sessions and edit risk profiles, while nurses can monitor and acknowledge alerts. Administrators manage users, clinics, patients and devices across clinics. The administrator patient view omits readings and risk trends; the API also denies administrator access to patient readings and risk-profile/score endpoints.
 
 Sync schema validation rejects a malformed batch with HTTP 422. Valid events in an accepted request return per-event `accepted`, `duplicate`, or `rejected` results. Store each event UUID in the device's offline queue and remove it only after an accepted/duplicate acknowledgment. A transaction persists readings, generated threshold alerts, telemetry and component checks together. Experimental inference follows independently, so inference failure does not undo saved readings. Threshold alerts remain rule-based.
 
 ### Implemented routes
 
-- Staff: `POST /auth/login`, `GET /auth/me`, admin-only `POST /auth/users`.
+- Staff: `POST /auth/login`, `GET /auth/me`, `POST /auth/change-password`, admin-only `POST /auth/users` and `PUT /auth/users/{id}/reset-password`.
 - Patients: paginated list (`limit`, `offset`, `X-Total-Count`, `X-Next-Offset`), create/detail/update, risk profile get/upsert, readings history, and experimental risk-score or explicit availability responses. `last_synced_at` is the newest server receipt of any reading; `last_device_sync_at` is the newest successful sync contact.
 - Devices: list/detail, admin provisioning and credential rotation, plus device-authenticated batch sync with a configurable minimum interval.
 - Sessions: list/start/stop with database uniqueness constraints for active patient/device assignments.

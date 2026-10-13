@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAlertStore, selectUnacknowledged } from '../../store/alertStore';
+import { useAuthStore } from '../../store/authStore';
 import RiskBadge from '../../components/ui/Badge';
 import Skeleton from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
@@ -9,6 +10,7 @@ import { PARAMETER_LABELS } from '../../utils/constants';
 import { clock } from '../../utils/formatters';
 
 export default function AlertsPage() {
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin');
   const { alerts, loading, error, refresh, acknowledge } = useAlertStore();
   const unack = useAlertStore(selectUnacknowledged);
   const [filter, setFilter] = useState('all');
@@ -64,7 +66,7 @@ export default function AlertsPage() {
                 {shown.map((a) => (
                   <tr key={a.id} className={`border-t border-slate-100 ${a.acknowledged_at ? 'text-slate-500' : ''}`}>
                     <td className="px-3 py-3">{clock(a.created_at)}</td>
-                    <td className="px-3 py-3"><Link to={`/patients/${a.patient_id}`} className="font-semibold text-brand">{a.patient_code}</Link></td>
+                    <td className="px-3 py-3">{isAdmin ? <span className="font-semibold">{a.patient_code}</span> : <Link to={`/patients/${a.patient_id}`} className="font-semibold text-brand">{a.patient_code}</Link>}</td>
                     <td className="px-3 py-3">{a.message}</td>
                     <td className="px-3 py-3"><RiskBadge category={a.severity} /></td>
                     <td className="px-3 py-3">{a.acknowledged_at ? `Acknowledged by ${a.acknowledged_by}, ${clock(a.acknowledged_at)}` : 'Not acknowledged'}</td>

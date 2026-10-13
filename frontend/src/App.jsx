@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/auth/LoginPage';
+import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 import TriagePage from './pages/nurse/TriagePage';
 import PatientDetailPage from './pages/nurse/PatientDetailPage';
 import AlertsPage from './pages/nurse/AlertsPage';
@@ -19,12 +20,13 @@ import SettingsPage from './pages/admin/SettingsPage';
 
 // Redirects to /login if signed out, and blocks roles that are not allowed.
 function Guard({ roles, children }) {
-  const { isAuthenticated, user, fetchMe, logout } = useAuthStore();
+  const { isAuthenticated, mustChangePassword, user, fetchMe, logout } = useAuthStore();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (isAuthenticated && !user) fetchMe().then(() => setFailed(false), () => setFailed(true));
   }, [isAuthenticated, user, fetchMe]);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (mustChangePassword) return <Navigate to="/change-password" replace />;
   if (failed) {
     return (
       <div role="alert" className="mx-auto mt-16 max-w-sm rounded-xl border border-amber-400 bg-amber-50 p-6 text-sm text-amber-900">
@@ -48,11 +50,12 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/change-password" element={<ChangePasswordPage />} />
 
       <Route element={<Guard roles={['nurse', 'clinician', 'admin']}><Layout role="nurse" /></Guard>}>
         <Route index element={<TriagePage />} />
         <Route path="patients" element={<PatientsPage />} />
-        <Route path="patients/:id" element={<PatientDetailPage />} />
+        <Route path="patients/:id" element={<Guard roles={['nurse', 'clinician']}><PatientDetailPage /></Guard>} />
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="devices" element={<NurseDevicesPage />} />
         <Route path="profile" element={<ProfilePage />} />

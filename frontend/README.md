@@ -6,10 +6,14 @@ This is the single web frontend for the project. It serves the ward overview, pa
 
 1. Install dependencies with `npm ci`.
 2. Copy `.env.example` to `.env` if you need a non-default API URL.
-3. Start the backend from `../backend` with `uvicorn app.main:app --reload`.
-4. Start this app with `npm run dev`.
+3. From the repository root, start the whole local project:
 
-Vite serves on port 5173 and proxies `/api/v1` to `http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` to the backend URL for a separately hosted frontend and add its origin to the backend `CORS_ORIGINS`.
+   ```powershell
+   cd backend
+   .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+   ```
+
+FastAPI starts Vite on port 5173 when it is not already running and checks that PostgreSQL is reachable. The browser app is at `http://127.0.0.1:5173`; Vite proxies `/api/v1` to `http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` to the backend URL for a separately hosted frontend and add its origin to the backend `CORS_ORIGINS`.
 
 ## Application areas
 

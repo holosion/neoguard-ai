@@ -50,6 +50,9 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), default="nurse")
     clinic_id: Mapped[int | None] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    password_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
