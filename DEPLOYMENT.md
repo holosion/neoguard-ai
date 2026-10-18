@@ -12,7 +12,7 @@ Deployed on 18 October 2026 from `codex/cloud-deployment` (application commit `f
 | Neon project | `neoguard-ai` / `mute-darkness-75292999` |
 | Database | PostgreSQL 17, `neoguard`, `production` branch, AWS Ohio |
 
-The frontend uses Vercel's Vite preset, root directory `frontend`, `npm ci`, `npm run build`, and output directory `dist`. `VITE_API_BASE_URL` points to the Render backend's `/api/v1` endpoint. `frontend/vercel.json` supports direct navigation to React routes.
+The frontend uses Vercel's Vite preset, root directory `frontend`, `npm ci`, `npm run build`, and output directory `dist`. `VITE_API_BASE_URL=/api/v1` uses a same-origin Vercel rewrite to the Render backend. This avoids requiring the user's DNS resolver to resolve the Render hostname, which failed with `ERR_NAME_NOT_RESOLVED` in the browser. `frontend/vercel.json` also supports direct navigation to React routes.
 
 Render uses Python 3.12.10 on the free plan in Ohio. The build command is `pip install -r backend/requirements.txt`. The start command is:
 
