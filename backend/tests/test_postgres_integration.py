@@ -137,6 +137,13 @@ def test_sorted_replay_episodes_recovery_escalation_and_duplicate_events(integra
 
 def test_fresh_window_scores_once_and_bad_quality_hides_previous_score(integration):
     client, engine, ids, now = integration
+    # Administrators manage the system; clinical scores require clinic staff.
+    assert client.get(f'/api/v1/patients/{ids["p2"]}/risk-score').status_code == 403
+    with Session(engine) as db:
+        user = db.get(User, ids["user"])
+        user.role = "clinician"
+        user.clinic_id = ids["clinic"]
+        db.commit()
     start = now-timedelta(seconds=125)
     rows = [event(ids["current"], start+timedelta(seconds=i*5), temp=round(37-i*0.01,2)) for i in range(25)]
     sync(client, rows)
