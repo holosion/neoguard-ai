@@ -2,13 +2,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import field_validator, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "NeoGuard Backend"
-    environment: str = "development"
+    environment: str = Field(default="development", validation_alias=AliasChoices("APP_ENV", "environment"))
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+psycopg://neoguard:change-me@localhost:5432/neoguard"
     jwt_secret_key: str
