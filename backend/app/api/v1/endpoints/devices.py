@@ -40,6 +40,22 @@ router = APIRouter(prefix="/devices", tags=["devices"])
 logger = logging.getLogger(__name__)
 
 
+@router.get("/runtime")
+def device_runtime(db: DbSession, device: AuthenticatedDevice):
+    """Authenticated provisioning context; queued events retain their original session."""
+    session = db.scalar(select(MonitoringSession).where(
+        MonitoringSession.device_id == device.id, MonitoringSession.status == "active"))
+    thresholds = active_thresholds(db)
+    return {
+        "device_code": device.device_code,
+        "session_id": session.id if session else None,
+        "session_started_unix": int(session.started_at.timestamp()) if session else None,
+        "server_time_unix": int(datetime.now(UTC).timestamp()),
+        "thresholds": thresholds.values,
+        "threshold_provenance": thresholds.provenance,
+    }
+
+
 @router.get("", response_model=list[DevicePublic])
 def list_devices(
     db: DbSession,

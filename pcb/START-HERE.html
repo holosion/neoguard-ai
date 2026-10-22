@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Akena NeoGuard — LCD PCB</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f4;color:#17332e;font:16px/1.65 system-ui,sans-serif}main{max-width:1160px;margin:auto;padding:48px 28px}h1{font-size:42px;line-height:1.15;letter-spacing:-1.5px;margin:10px 0 18px}h2{font-size:26px;line-height:1.25;margin-top:40px}.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#36786b;font-weight:700}.intro{max-width:800px;color:#4b625d}.links{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}a{color:#176957;text-underline-offset:3px}.links a{background:#fff;border:1px solid #cadbd5;border-radius:8px;padding:10px 18px;text-decoration:none;font-weight:650}.links a:first-child{background:#176957;color:#fff;border-color:#176957}.panel{background:#fff;border:1px solid #d4e2dc;border-radius:14px;overflow:hidden;margin:26px 0}.panel img{display:block;width:100%;height:auto}.caption{padding:16px 24px;font-size:14px;color:#526d65}.status{padding:20px 24px;border-left:4px solid #b68b3b;background:#fff7e7;border-radius:5px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:white;padding:24px;border:1px solid #d4e2dc;border-radius:12px}.card h3{margin-top:0}.checks{color:#176957;font-weight:650}object{width:100%;min-height:680px;background:white}footer{margin:40px 0;color:#627970;font-size:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:34px}main{padding:28px 18px}}
+</style>
+<main>
+<div class="eyebrow">Akena • NeoGuard • Revision LCD-C • 22 October 2026</div>
+<h1>Your LCD carrier PCB.</h1>
+<p class="intro">The 16×2 LCD is mounted directly on this two-layer carrier board. The design keeps the agreed ESP32-S3 GPIO assignments for the LCD, oximeter, infrared temperature sensor, RTC, SD card, RGB LED and buzzer control.</p>
+<div class="links"><a href="NeoGuard-schematic.pdf">View full schematic</a><a href="NeoGuard.kicad_pro">Editable KiCad project</a><a href="Akena-LCD-PCB-project.zip">Download project</a><a href="README.md">Assembly notes</a></div>
+<p class="checks">Checks passed: electrical rules · PCB rules · schematic parity · 134 component pins · 19 firmware GPIO assignments</p>
+<div class="status"><strong>Physical fit still needs confirmation.</strong> This layout assumes an 80 × 36 mm WC1602A-style LCD. The ESP32 connects through a labelled cable header. Exact development-board sockets and breakout mounting patterns have not been inferred from unconfirmed model numbers.</div>
+<div class="panel"><img src="PCB-with-LCD.png" alt="Actual KiCad render of the Akena carrier with a mounted 16 by 2 LCD"><div class="caption">Actual KiCad render, with LCD footprint and 3D model fitted. The display appears blank because the model shows an unpowered screen.</div></div>
+<div class="grid"><div class="card"><h3>The mounted LCD</h3><p>16-pin connection, four nonplated mounting holes, 10k contrast adjustment, backlight resistor and AHCT245 buffer for the 5V display.</p><p>RS 8 · EN 9 · D4 10 · D5 11 · D6 12 · D7 13</p></div><div class="card"><h3>The rest of the system</h3><p>Shared I2C on GPIO4/5; RTC on GPIO6/7/14; SD on GPIO21/40/41/42; RGB on GPIO16/17/18; transistor buzzer control on GPIO15.</p><p><a href="Connections.csv">Numbered connections</a> · <a href="BOM.csv">Component list</a> · <a href="VALIDATION.md">Verification record</a></p></div></div>
+<h2>Actual PCB routing</h2><p>Top and bottom copper, silkscreen and the 140 × 105 mm board outline. <a href="PCB-layout.svg">Open full-size layout</a>.</p>
+<div class="panel"><object type="image/svg+xml" data="PCB-layout.svg"><a href="PCB-layout.svg">Open PCB layout</a></object></div>
+<h2>Three-sheet schematic</h2><p>System connections, the LCD/buffer circuit, and regulated power/controller cable. <a href="NeoGuard-schematic.pdf">Open the complete PDF for zooming and printing</a>.</p>
+<div class="panel"><img src="schematic-1.png" alt="System schematic"><div class="caption">1 — ESP32-S3 and peripheral signal assignments</div></div>
+<div class="panel"><img src="schematic-2.png" alt="LCD and logic buffer schematic"><div class="caption">2 — Mounted LCD, voltage buffer, contrast and backlight</div></div>
+<div class="panel"><img src="schematic-3.png" alt="Power and cable schematic"><div class="caption">3 — Power selection, controller cable and decoupling</div></div>
+<footer>Checked design prototype. Confirm the purchased modules, mechanical dimensions, pin order, supply ratings and current budget before fabrication. No assembled board or clinical performance has been validated.</footer>
+</main></html>

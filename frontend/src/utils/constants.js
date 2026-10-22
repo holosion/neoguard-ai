@@ -14,7 +14,7 @@ export const DEVICE_STATUS = {
 
 // A reading older than this is shown as stale (muted, with a banner).
 export const STALE_AFTER_MINUTES = 10;
-export const POLL_INTERVAL_MS = 30000;
+export const POLL_INTERVAL_MS = 5000;
 
 export const PARAMETER_LABELS = { hr: 'Heart rate', spo2: 'SpO₂', temp: 'Temperature', ai: 'AI trend', quality: 'Sensor quality' };
 

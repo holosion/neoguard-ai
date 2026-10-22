@@ -1,0 +1,38 @@
+﻿Reference,Quantity,Value_or_part,KiCad_footprint,Populate,Notes
+J1,1,ESP32-S3 CABLE - NOT DEVBOARD SOCKET,Connector_PinHeader_2.54mm:PinHeader_2x12_P2.54mm_Vertical,YES,Functional cable harness to GPIO labels on the actual ESP32-S3; NOT a devboard socket. Pin 1/21-24 ground. Map physical devboard header separately.
+J2,1,MAX30102 BREAKOUT,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,YES,"3.3V-compatible MAX30102 breakout; pin 5/INT deliberately unconnected. Order is carrier functional order, not guaranteed module order."
+J3,1,MLX90614 3V3 BREAKOUT,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,YES,3.3V-compatible MLX90614 breakout only; 5V variants require a revised supply/level translator.
+J4,1,DS1302 MODULE,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,YES,"Offboard DS1302 module, VCC3.3V; existing CR2032 backup; disable RTC trickle charger."
+J5,1,ST7789 240x280 TFT - 3V3,Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,YES,"ST7789 240x280, 3.3V-compatible breakout; match labels through a harness. Backlight JP4 remains open until verified."
+J6,1,SPI MICROSD MODULE,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,YES,"SPI microSD breakout, not bare card. Set JP2 for actual module VIN; all signal levels must be 3.3V-compatible."
+J7,1,EXTERNAL RGB COMMON CATHODE,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,YES,"External common-cathode RGB LED, with onboard series resistors R3-R5. Verify actual LED lead order."
+J8,1,ACTIVE BUZZER 20mA MAX,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,YES,"Two-pin low-current active buzzer, <=20mA design target; voltage selected by JP3. Verify actual current and Q1 saturation."
+J9,1,EXTERNAL REGULATED SUPPLIES,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,YES,"Already regulated EXT3V3 pin1, GND pin2, optional EXT5V pin3. No regulator/reverse polarity protection provided."
+JP1,1,3V3 SOURCE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,YES,One shunt only: 1-2 selects DEV3V3; 2-3 selects EXT3V3. Never bridge both.
+JP2,1,SD VOLTAGE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,YES,One shunt only: 1-2 selects 3.3V; 2-3 selects external5V for a verified SD module. Never bridge both.
+JP3,1,BUZZ VOLTAGE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,YES,One shunt only: 1-2 selects 3.3V; 2-3 selects external5V for a verified buzzer. Never bridge both.
+JP4,1,TFT BL - OPEN UNTIL VERIFIED,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,DNP,DNP/default open. Fit header/shunt only after confirming TFT BL is a 3.3V-compatible input with required limiting/driver.
+R1,1,4.7k OPTIONAL DNP,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,DNP,Optional SDA pull-up to V3V3; DNP until existing breakout pull-ups/effective resistance checked.
+R2,1,4.7k OPTIONAL DNP,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,DNP,Optional SCL pull-up to V3V3; DNP until existing breakout pull-ups/effective resistance checked.
+R3,1,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,YES,"330 ohm, 0.25W, red LED series resistor."
+R4,1,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,YES,"330 ohm, 0.25W, green LED series resistor."
+R5,1,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,YES,"330 ohm, 0.25W, blue LED series resistor."
+R6,1,1k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,YES,"1k ohm, 0.25W, buzzer NPN base resistor."
+R7,1,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,YES,"10k ohm, 0.25W, buzzer NPN base pull-down."
+Q1,1,PN2222A E1 B2 C3,Package_TO_SOT_THT:TO-92_Inline_Wide,YES,Selected onsemi/Fairchild PN2222A E1 B2 C3. Verify exact manufacturer/package; P2N2222A is not pin-compatible. TO-92 wide may require lead forming.
+D1,1,1N5819,Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal,YES,"1N5819 Schottky flyback; cathode/band pad1=BUZZ_VCC, anode pad2=BUZZ_SW. Match DO-41 footprint."
+C1,1,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,YES,"100nF non-polar ceramic bypass, >=10V; confirm 5mm lead pitch and body fit."
+C2,1,100uF 10V,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,YES,"100uF >=10V electrolytic; positive pad1=V3V3, negative pad2=GND; body <=6.3mm, pitch2.5mm."
+C3,1,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,YES,"100nF non-polar ceramic bypass, >=10V; confirm 5mm lead pitch and body fit."
+C4,1,100uF 10V,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,YES,"100uF >=10V electrolytic; positive pad1=SD_VCC, negative pad2=GND; body <=6.3mm, pitch2.5mm."
+OFFBOARD_ESP32,1,Existing ESP32-S3 development board,Not mounted on carrier,REQUIRED,Existing ESP32-S3 board shown as U1 logical documentation symbol. U1 has no PCB footprint and is excluded from board/component BOM. Exact physical board/header layout unconfirmed; connect using J1 labelled cable harness.
+OFFBOARD_MAX30102,1,3.3V-compatible MAX30102 breakout,Not mounted on carrier,REQUIRED,Connect by printed labels to J2; expected address0x57.
+OFFBOARD_MLX90614,1,3.3V-compatible MLX90614 breakout,Not mounted on carrier,REQUIRED,Connect by printed labels to J3; expected address0x5A.
+OFFBOARD_DS1302,1,DS1302 RTC module with suitable CR2032 backup,Not mounted on carrier,REQUIRED,Connect to J4; no added charger; disable RTC trickle charging.
+OFFBOARD_ST7789,1,3.3V-compatible ST7789 240x280 SPI TFT,Not mounted on carrier,REQUIRED,Connect by labels to J5; BL requirements unverified.
+OFFBOARD_SD,1,3.3V-logic-compatible SPI microSD breakout and FAT32 card,Not mounted on carrier,REQUIRED,VIN rating determines JP2; never apply5V to a bare card.
+OFFBOARD_RGB,1,Common-cathode RGB LED,Offboard via J7,REQUIRED,Use existing external LED; verify R/G/B/common leads.
+OFFBOARD_BUZZER,1,Rated active two-pin buzzer <=20mA target,Offboard via J8,REQUIRED,Voltage/current must match JP3 and driver capability.
+JUMPER_SHUNTS,3,2.54mm two-position jumper shunt,Fits JP1/JP2/JP3,AS_CONFIGURED,Exactly one shunt per 3-pin selector. JP4 stays open by default.
+HARNESSES,1,Mating 2.54mm female leads/connectors,User-selected cable assembly,REQUIRED,"J1 is2x12; other headers single-row. Make short labelled harnesses, mapping actual module pin orders."
+MOUNTING_HARDWARE,4,M3 insulating standoff/screw sets,Four3.2mm unplated PCB mounting holes,OPTIONAL,Choose for actual enclosure/clearance; avoid metal shorting nearby copper. Offboard module mounts not included.

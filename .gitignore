@@ -9,3 +9,4 @@ ai/reports/*.csv
 **/node_modules/
 **/dist/
 **/.env
+**/.history/

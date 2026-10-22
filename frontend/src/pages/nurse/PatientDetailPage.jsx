@@ -48,7 +48,7 @@ export default function PatientDetailPage() {
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <RiskBadge category={patient.risk_category} />
-        <span className="text-sm text-slate-400">Current status from recorded readings and threshold alerts.</span>
+        <span className="text-sm text-slate-400">Live data refreshes every 5 seconds. The device publishes after a 60-second signal check; unstable readings are withheld.</span>
         <button
           onClick={() => downloadCsv(`${patient.patient_code}-readings.csv`, readings)}
           className="ml-auto min-h-[40px] rounded-lg border border-slate-300 px-4"

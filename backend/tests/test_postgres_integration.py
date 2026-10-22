@@ -103,6 +103,36 @@ def sync(client, rows):
     return result.json()["readings"]
 
 
+def test_firmware_runtime_to_live_patient_reading_and_duplicate_replay(integration):
+    client, engine, ids, now = integration
+    # The live clinical view uses an actual clinical role, not an administrator.
+    with Session(engine) as db:
+        staff = db.get(User, ids["user"])
+        staff.role = "clinician"
+        staff.clinic_id = ids["clinic"]
+        db.commit()
+    context = client.get("/api/v1/devices/runtime")
+    assert context.status_code == 200
+    assert context.json()["session_id"] == ids["current"]
+    assert context.json()["thresholds"]["hr_high"] == 160
+    reading = event(context.json()["session_id"], now - timedelta(seconds=5))
+    assert sync(client, [reading])[0]["status"] == "accepted"
+    # Replaying the saved UUID after a disconnect acknowledges the existing row.
+    assert sync(client, [reading])[0]["status"] == "duplicate"
+    history = client.get(f"/api/v1/patients/{ids['p2']}/readings")
+    assert history.status_code == 200
+    saved = history.json()["readings"]
+    assert len(saved) == 1
+    assert saved[0]["heart_rate_bpm"] == 140
+    assert saved[0]["spo2_percent"] == 98
+    assert float(saved[0]["temperature_c"]) == 37
+    assert saved[0]["device_event_id"] == reading["event_id"]
+    patients = client.get("/api/v1/patients").json()
+    card = next(row for row in patients if row["patient"]["id"] == ids["p2"])
+    assert card["latest_reading"]["heart_rate_bpm"] == 140
+    assert card["data_status"] == "fresh"
+
+
 def test_offline_replay_keeps_original_patient_and_checks_session_bounds(integration):
     client, engine, ids, now = integration
     valid = event(ids["old"], now-timedelta(minutes=90), temp=35.9)

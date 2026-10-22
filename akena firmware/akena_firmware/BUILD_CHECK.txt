@@ -1,0 +1,27 @@
+NeoGuard LCD integration verification — 22 October 2026
+
+This record applies to the LCD revision, not the earlier TFT builds.
+
+Completed:
+- Backend device-runtime tests: 2 passed.
+- Frontend polling/refresh tests: 2 passed.
+- Frontend production build: passed; existing large-bundle warning remains.
+- Hosted frontend: HTTPS HTTP 200.
+- Hosted backend /health: HTTPS HTTP 200, status ok. Verified using the root CA embedded in root_ca.h; first health request timed out, retry succeeded.
+- Source inspection: LiquidCrystal uses GPIO8-13; no TFT/OLED display initialization remains. I2C4/5, RTC6/7/14, SD21/40/41/42, RGB16/17/18, buzzer15 preserved.
+
+ESP32-S3 complete compile and link: PASSED.
+- Target: esp32:esp32:esp32s3:CDCOnBoot=cdc; installed ESP32 core 3.3.12.
+- Flash: 1,257,445 bytes (95% of default 1,310,720-byte app partition).
+- Static RAM: 51,440 bytes (15%); 276,240 bytes remain before runtime allocations.
+- LiquidCrystal explicitly selected from the existing Arduino15 library folder. Arduino IDE users should install LiquidCrystal by Arduino through Library Manager if it is not discovered.
+- Build log: .local/lcd-build.log. Build output: .local/lcd-build.
+- The build target does not verify the actual board's flash size or PSRAM configuration.
+
+Not performed:
+- No board flashed or serial interaction with the physical device.
+- No device registered, patient session created, or cloud deployment performed.
+- No authenticated hardware-to-backend reading observed.
+- Sensor accuracy, assembled wiring, SD writes, LCD visibility and phone portal operation need bench verification.
+
+Original source/docs backed up under .local/firmware-backups/pre-lcd-20261022.

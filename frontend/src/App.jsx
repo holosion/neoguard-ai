@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './store/authStore';
+import { dashboardPreview } from './utils/preview';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/auth/LoginPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
@@ -23,8 +24,9 @@ function Guard({ roles, children }) {
   const { isAuthenticated, mustChangePassword, user, fetchMe, logout } = useAuthStore();
   const [failed, setFailed] = useState(false);
   useEffect(() => {
-    if (isAuthenticated && !user) fetchMe().then(() => setFailed(false), () => setFailed(true));
+    if (!dashboardPreview && isAuthenticated && !user) fetchMe().then(() => setFailed(false), () => setFailed(true));
   }, [isAuthenticated, user, fetchMe]);
+  if (dashboardPreview) return children;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (mustChangePassword) return <Navigate to="/change-password" replace />;
   if (failed) {
@@ -48,7 +50,7 @@ function Guard({ roles, children }) {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={dashboardPreview ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
 

@@ -1,0 +1,21 @@
+ESP32_function,Net,Carrier_connections,Notes
+GPIO4,I2C_SDA_GPIO4,J1.3; J2.3; J3.3; R1.2,Logical GPIO/function only; NOT a physical header position. 
+GPIO5,I2C_SCL_GPIO5,J1.4; J2.4; J3.4; R2.2,Logical GPIO/function only; NOT a physical header position. 
+GPIO6,RTC_CLK_GPIO6,J1.5; J4.3,Logical GPIO/function only; NOT a physical header position. 
+GPIO7,RTC_DAT_GPIO7,J1.6; J4.4,Logical GPIO/function only; NOT a physical header position. 
+GPIO14,RTC_CE_GPIO14,J1.7; J4.5,Logical GPIO/function only; NOT a physical header position. 
+GPIO16,LED_R_GPIO16,J1.14; R3.1,Logical GPIO/function only; NOT a physical header position. 
+GPIO17,LED_G_GPIO17,J1.15; R4.1,Logical GPIO/function only; NOT a physical header position. 
+GPIO18,LED_B_GPIO18,J1.16; R5.1,Logical GPIO/function only; NOT a physical header position. 
+GPIO8,TFT_RST_GPIO8,J1.8; J5.5,Logical GPIO/function only; NOT a physical header position. 
+GPIO9,TFT_DC_GPIO9,J1.9; J5.6,Logical GPIO/function only; NOT a physical header position. 
+GPIO10,TFT_CS_GPIO10,J1.10; J5.7,Logical GPIO/function only; NOT a physical header position. 
+GPIO11,TFT_MOSI_GPIO11,J1.11; J5.4,Logical GPIO/function only; NOT a physical header position. 
+GPIO12,TFT_SCK_GPIO12,J1.12; J5.3,Logical GPIO/function only; NOT a physical header position. 
+GPIO21,SD_CS_GPIO21,J1.17; J6.6,Logical GPIO/function only; NOT a physical header position. 
+GPIO40,SD_SCK_GPIO40,J1.18; J6.3,Logical GPIO/function only; NOT a physical header position. 
+GPIO41,SD_MOSI_GPIO41,J1.19; J6.4,Logical GPIO/function only; NOT a physical header position. 
+GPIO42,SD_MISO_GPIO42,J1.20; J6.5,Logical GPIO/function only; NOT a physical header position. 
+GPIO15,BUZZ_GPIO15,J1.13; R6.1,Logical GPIO/function only; NOT a physical header position. 
+3V3,DEV3V3,J1.2; JP1.1,Logical GPIO/function only; NOT a physical header position. Controller 3V3 output feeds JP1 source option; no bypass to selected V3V3.
+GND,GND,J1.1; J1.21; J1.22; J1.23; J1.24; J2.2; J3.2; J4.2; J5.1; J6.2; J7.4; J9.2; R7.2; Q1.1; C1.2; C2.2; C3.2; C4.2,Logical GPIO/function only; NOT a physical header position. 

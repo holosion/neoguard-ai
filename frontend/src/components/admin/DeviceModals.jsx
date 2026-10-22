@@ -48,7 +48,7 @@ export function DeviceFormModal({ device, onClose, onDone }) {
   if (secret) {
     return (
       <Modal title="Device registered" onClose={onDone}>
-        <p className="text-sm text-slate-700">Copy this secret into the device firmware now. It is shown only once. If you lose it, rotate the secret for this device.</p>
+        <p className="text-sm text-slate-700">Save this secret now; it is shown only once. Connect your phone to the NeoGuard setup Wi-Fi, open 192.168.4.1, and enter it with this device code. Then activate the device and assign its monitoring session here. If you lose the secret, rotate it for this device.</p>
         <code className="mt-3 block break-all rounded-lg bg-slate-100 p-3 text-sm">{secret}</code>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={() => navigator.clipboard?.writeText(secret)} className={secondary}>Copy secret</button>

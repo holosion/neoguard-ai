@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { dashboardPreview } from '../../utils/preview';
 import { useAlertStore, selectUnacknowledged } from '../../store/alertStore';
 
 const NURSE_NAV = [
@@ -46,9 +47,11 @@ export default function Sidebar({ role, open, onClose }) {
         ))}
       </nav>
       <div className="mt-auto border-t border-slate-700 pt-3 text-sm">
+        {dashboardPreview ? <NavLink to={role === 'admin' ? '/' : '/admin'} onClick={onClose} className="block rounded-lg border border-slate-600 px-3 py-2 text-white">{role === 'admin' ? 'View ward dashboard' : 'View admin dashboard'}</NavLink> : <>
         <div className="text-white">{user?.username ?? user?.name ?? 'Signed in'}</div>
         <div className="text-slate-400">{role === 'admin' ? 'Administrator' : role === 'clinician' ? 'Clinical officer' : 'Nurse'}</div>
         <button onClick={logout} className="mt-2 w-full rounded-lg border border-slate-600 py-2 hover:bg-slate-800">Sign out</button>
+        </>}
       </div>
     </aside>
   );
