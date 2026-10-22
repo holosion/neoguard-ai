@@ -6,12 +6,6 @@ export const RISK_CATEGORIES = {
   no_data: { label: 'No data', bg: 'bg-slate-100', text: 'text-slate-600', rank: 4 },
 };
 
-export const VITAL_THRESHOLDS = {
-  hr: { low: 100, high: 160 },
-  spo2: { low: 90 },
-  temp: { low: 36.5, moderate_low: 36.0, severe_low: 32.0 },
-};
-
 export const DEVICE_STATUS = {
   online: { label: 'Online' },
   stale: { label: 'Stale' },
@@ -20,7 +14,7 @@ export const DEVICE_STATUS = {
 
 // A reading older than this is shown as stale (muted, with a banner).
 export const STALE_AFTER_MINUTES = 10;
-export const POLL_INTERVAL_MS = 30000;
+export const POLL_INTERVAL_MS = 5000;
 
 export const PARAMETER_LABELS = { hr: 'Heart rate', spo2: 'SpO₂', temp: 'Temperature', ai: 'AI trend', quality: 'Sensor quality' };
 

@@ -1,21 +1,22 @@
-import { USE_MOCK } from './client';
-import { mockAdminApi } from './mockAdmin';
 import { backend } from './backend';
 
-const api = USE_MOCK ? mockAdminApi : backend;
-
-// Real backend routes used: GET /admin/overview, GET /admin/device-health, GET/POST /devices, GET/PATCH /devices/{id},
-// POST /sessions, GET /patients, POST /auth/users. Approvals need GET /auth/users and PATCH /auth/users/{id} (not built yet).
 export const adminApi = {
-  overview: () => api.overview(),
-  getDevices: () => api.devices(),
-  getDevice: (id) => api.device(id),
-  registerDevice: (body) => api.registerDevice(body),
-  updateDevice: (id, body) => api.updateDevice(id, body),
-  decommissionDevice: (id) => api.decommission(id),
-  getUnassignedPatients: () => api.unassignedPatients(),
-  assignDevice: (id, body) => api.assign(id, body),
-  getUsers: () => api.users(),
-  userAction: (id, action) => api.userAction(id, action),
-  createUser: (body) => api.createUser(body),
+  overview: () => backend.overview(),
+  getDevices: () => backend.devices(),
+  getClinicalDevices: () => backend.devicesBasic(),
+  getDevice: (id) => backend.device(id),
+  registerDevice: (body) => backend.registerDevice(body),
+  updateDevice: (id, body) => backend.updateDevice(id, body),
+  decommissionDevice: (id) => backend.decommission(id),
+  getUnassignedPatients: () => backend.unassignedPatients(),
+  assignDevice: (id, body) => backend.assign(id, body),
+  getUsers: () => backend.users(),
+  userAction: (id, active) => backend.userAction(id, active),
+  createUser: (body) => backend.createUser(body),
+  resetPassword: (id) => backend.resetPassword(id),
+  getAccessRequests: () => backend.accessRequests(),
+  decideAccessRequest: (id, body) => backend.decideAccessRequest(id, body),
+  getClinics: () => backend.clinics(),
+  createClinic: (body) => backend.createClinic(body),
+  getThresholds: () => backend.thresholds(),
 };

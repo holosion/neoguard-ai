@@ -8,6 +8,10 @@ class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class StrictInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
 class Message(BaseModel):
     message: str
 

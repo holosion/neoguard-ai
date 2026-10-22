@@ -33,6 +33,8 @@ def active_thresholds(db: Session) -> ThresholdSet:
             "unit": "°C" if parameter.startswith("temp_") else ("%" if parameter == "spo2_low" else "bpm"),
             "version": "code-default",
             "source": "Project provisional default; clinical review required",
+            "description": "Provisional server-side alert threshold; clinical review required.",
+            "effective_from": None,
         }
         for parameter, value in DEFAULT_THRESHOLDS.items()
     }
@@ -44,6 +46,8 @@ def active_thresholds(db: Session) -> ThresholdSet:
             "unit": row.unit,
             "version": row.version,
             "source": row.source,
+            "description": row.description,
+            "effective_from": row.effective_from.isoformat() if row.effective_from else None,
         }
     return ThresholdSet(values=result, provenance=provenance)
 

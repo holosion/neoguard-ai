@@ -1,0 +1,1247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>C:\Users\AKENA\Desktop\neonatal\schematic\NeoGuard.kicad_sch</source>
+    <date>2026-10-21T07:25:38</date>
+    <tool>Eeschema 10.0.4</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>NeoGuard - ESP32-S3 System Connections</title>
+        <company>NeoGuard research prototype</company>
+        <rev>B</rev>
+        <date>2026-10-21</date>
+        <source>NeoGuard.kicad_sch</source>
+        <comment number="1" value="GPIO names are logical signals; verify actual module headers and voltages"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+    <sheet number="2" name="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/">
+      <title_block>
+        <title>NeoGuard - Power and Carrier Harness</title>
+        <company>NeoGuard research prototype</company>
+        <rev>B</rev>
+        <date>2026-10-21</date>
+        <source>NeoGuard-power.kicad_sch</source>
+        <comment number="1" value="GPIO names are logical signals; verify actual module headers and voltages"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="D1">
+      <value>1N5819</value>
+      <footprint>Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="D_Schottky" description="Schottky diode"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9c6d9896-17c1-58b3-ae38-f4ad1c63e3b5</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>MAX30102 BREAKOUT</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="MAX30102_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5a937abc-e820-53d7-b076-c6b70ee22940</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J3">
+      <value>MLX90614 3V3 BREAKOUT</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="MLX90614_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>86f06351-7bd6-50b2-9b8c-cef8b13d532d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J4">
+      <value>DS1302 MODULE</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="DS1302_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>280c507a-fcbc-5e9e-b6e0-06dffc5602eb</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J5">
+      <value>ST7789 240x280 TFT - 3V3</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="ST7789_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>09232654-161b-5ddf-8590-78be8bd765cc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="5"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="8"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J6">
+      <value>SPI MICROSD MODULE</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="MicroSD_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cd803649-99ae-53bc-abf2-20853e77c02c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="6"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J7">
+      <value>EXTERNAL RGB COMMON CATHODE</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="RGB_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>cd5a5218-8894-58ea-8e6a-7b695a02322d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J8">
+      <value>ACTIVE BUZZER 20mA MAX</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Buzzer_Interface" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f6190fb1-5a57-52f1-ba71-412b8070cf97</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="Q1">
+      <value>PN2222A E1 B2 C3</value>
+      <footprint>Package_TO_SOT_THT:TO-92_Inline_Wide</footprint>
+      <fields>
+        <field name="Footprint">Package_TO_SOT_THT:TO-92_Inline_Wide</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="PN2222A" description="1A Ic, 40V Vce, NPN Transistor, General Purpose Transistor, TO-92"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="NPN Transistor"/>
+      <property name="ki_fp_filters" value="TO?92*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b573f151-68f7-5761-81bd-98fbdc25321a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R3">
+      <value>330</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4944666c-5ff4-5da2-958a-9b802754de3e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R4">
+      <value>330</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>74f165e5-6102-5fe3-817c-f3106f35b8ca</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R5">
+      <value>330</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2a756033-70d3-54d3-b81a-d768afdaafb8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R6">
+      <value>1k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>efec119e-341c-5766-93fe-5c8010840f90</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R7">
+      <value>10k</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3c229c7e-42b1-5609-959e-1279937889a9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U1">
+      <value>ESP32-S3 DEVELOPMENT BOARD</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="ESP32_S3_Logical" description=""/>
+      <property name="Sheetname" value="NeoGuard"/>
+      <property name="Sheetfile" value="NeoGuard.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>00a94e3a-926f-5ded-8916-5b0665a79447</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="4"/>
+            <pin num="5"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="14"/>
+            <pin num="16"/>
+            <pin num="17"/>
+            <pin num="18"/>
+            <pin num="3V3"/>
+            <pin num="GND"/>
+            <pin num="8"/>
+            <pin num="9"/>
+            <pin num="10"/>
+            <pin num="11"/>
+            <pin num="12"/>
+            <pin num="21"/>
+            <pin num="40"/>
+            <pin num="41"/>
+            <pin num="42"/>
+            <pin num="15"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C1">
+      <value>100nF</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</footprint>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>dbf11843-44e2-536c-afb9-90ee6ea758ab</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C2">
+      <value>100uF 10V</value>
+      <footprint>Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</footprint>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="C_Polarized" description="Polarized capacitor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>1ad53d28-a6ff-5191-936d-9ca76120c8ab</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C3">
+      <value>100nF</value>
+      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</footprint>
+      <fields>
+        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="C" description="Unpolarized capacitor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>b8b8c787-f00e-5e0a-a41a-07029c63caa0</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="C4">
+      <value>100uF 10V</value>
+      <footprint>Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</footprint>
+      <fields>
+        <field name="Footprint">Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="C_Polarized" description="Polarized capacitor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="CP_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>16dc553b-de2a-5a79-9e28-f4f3562c3b6d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J1">
+      <value>ESP32-S3 CABLE - NOT DEVBOARD SOCKET</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_2x12_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_2x12_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_02x12_Odd_Even" description="Generic connector, double row, 02x12, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_2x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>0aa59c0d-1eec-50dd-a7ed-e56516ddeb1a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="3"/>
+            <pin num="5"/>
+            <pin num="7"/>
+            <pin num="9"/>
+            <pin num="11"/>
+            <pin num="13"/>
+            <pin num="15"/>
+            <pin num="17"/>
+            <pin num="19"/>
+            <pin num="21"/>
+            <pin num="23"/>
+            <pin num="2"/>
+            <pin num="4"/>
+            <pin num="6"/>
+            <pin num="8"/>
+            <pin num="10"/>
+            <pin num="12"/>
+            <pin num="14"/>
+            <pin num="16"/>
+            <pin num="18"/>
+            <pin num="20"/>
+            <pin num="22"/>
+            <pin num="24"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J9">
+      <value>EXTERNAL REGULATED SUPPLIES</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x03" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>dcf0b6a0-cfb3-5358-9731-f7bdceb8b8aa</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JP1">
+      <value>3V3 SOURCE - ONE SHUNT</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x03" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>30156801-9cdb-5386-9fa6-9012a4be11fc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JP2">
+      <value>SD VOLTAGE - ONE SHUNT</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x03" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>82537649-5d7e-5e89-8e1f-439256228c96</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JP3">
+      <value>BUZZ VOLTAGE - ONE SHUNT</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x03" description="Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>e8e449c1-f2d9-50e3-8c48-ab03fb6f1619</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JP4">
+      <value>TFT BL - OPEN UNTIL VERIFIED</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>c1a4225c-9bd6-5bf2-980b-13a9b1babb4d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R1">
+      <value>4.7k OPTIONAL DNP</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>2aaf8581-a6c4-52e2-9dee-60b854dcdfc4</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R2">
+      <value>4.7k OPTIONAL DNP</value>
+      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
+      <fields>
+        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="R" description="Resistor"/>
+      <property name="Sheetname" value="Power and carrier harness"/>
+      <property name="Sheetfile" value="NeoGuard-power.kicad_sch"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/Power and carrier harness/" tstamps="/8e81ce27-a7d2-5e44-a880-53b313385f69/"/>
+      <tstamps>1d36134e-babe-5847-866c-51e62b54192a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="NeoGuard" part="Buzzer_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Buzzer_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="POSITIVE" type="passive"/>
+        <pin num="2" name="NEGATIVE" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="C">
+      <description>Unpolarized capacitor</description>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Unpolarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="C_Polarized">
+      <description>Polarized capacitor</description>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C_Polarized</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Polarized capacitor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="Conn_01x02">
+      <description>Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x02</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="Conn_01x03">
+      <description>Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x03</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="Conn_02x12_Odd_Even">
+      <description>Generic connector, double row, 02x12, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <footprints>
+        <fp>Connector*:*_2x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_02x12_Odd_Even</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic connector, double row, 02x12, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+        <pin num="6" name="Pin_6" type="passive"/>
+        <pin num="7" name="Pin_7" type="passive"/>
+        <pin num="8" name="Pin_8" type="passive"/>
+        <pin num="9" name="Pin_9" type="passive"/>
+        <pin num="10" name="Pin_10" type="passive"/>
+        <pin num="11" name="Pin_11" type="passive"/>
+        <pin num="12" name="Pin_12" type="passive"/>
+        <pin num="13" name="Pin_13" type="passive"/>
+        <pin num="14" name="Pin_14" type="passive"/>
+        <pin num="15" name="Pin_15" type="passive"/>
+        <pin num="16" name="Pin_16" type="passive"/>
+        <pin num="17" name="Pin_17" type="passive"/>
+        <pin num="18" name="Pin_18" type="passive"/>
+        <pin num="19" name="Pin_19" type="passive"/>
+        <pin num="20" name="Pin_20" type="passive"/>
+        <pin num="21" name="Pin_21" type="passive"/>
+        <pin num="22" name="Pin_22" type="passive"/>
+        <pin num="23" name="Pin_23" type="passive"/>
+        <pin num="24" name="Pin_24" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="DS1302_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">DS1302_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="CLK" type="passive"/>
+        <pin num="4" name="DAT" type="passive"/>
+        <pin num="5" name="CE_/_RST" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="D_Schottky">
+      <description>Schottky diode</description>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Schottky diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="ESP32_S3_Logical">
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ESP32-S3 DEVELOPMENT BOARD</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="3V3" name="3V3_OUT" type="passive"/>
+        <pin num="4" name="GPIO4_/_SDA" type="bidirectional"/>
+        <pin num="5" name="GPIO5_/_SCL" type="bidirectional"/>
+        <pin num="6" name="GPIO6_/_CLK" type="output"/>
+        <pin num="7" name="GPIO7_/_DAT" type="bidirectional"/>
+        <pin num="8" name="GPIO8_/_RST" type="output"/>
+        <pin num="9" name="GPIO9_/_DC" type="output"/>
+        <pin num="10" name="GPIO10_/_CS" type="output"/>
+        <pin num="11" name="GPIO11_/_MOSI" type="output"/>
+        <pin num="12" name="GPIO12_/_SCK" type="output"/>
+        <pin num="14" name="GPIO14_/_CE" type="output"/>
+        <pin num="15" name="GPIO15_/_BUZZ" type="output"/>
+        <pin num="16" name="GPIO16_/_RED" type="output"/>
+        <pin num="17" name="GPIO17_/_GREEN" type="output"/>
+        <pin num="18" name="GPIO18_/_BLUE" type="output"/>
+        <pin num="21" name="GPIO21_/_CS" type="output"/>
+        <pin num="40" name="GPIO40_/_SCK" type="output"/>
+        <pin num="41" name="GPIO41_/_MOSI" type="output"/>
+        <pin num="42" name="GPIO42_/_MISO" type="input"/>
+        <pin num="GND" name="GND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="MAX30102_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">MAX30102_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="SDA" type="passive"/>
+        <pin num="4" name="SCL" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="MLX90614_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">MLX90614_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="SDA" type="passive"/>
+        <pin num="4" name="SCL" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="MicroSD_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">MicroSD_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="passive"/>
+        <pin num="2" name="GND" type="passive"/>
+        <pin num="3" name="SCK" type="passive"/>
+        <pin num="4" name="MOSI" type="passive"/>
+        <pin num="5" name="MISO" type="passive"/>
+        <pin num="6" name="CS" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="PN2222A">
+      <description>1A Ic, 40V Vce, NPN Transistor, General Purpose Transistor, TO-92</description>
+      <docs>https://www.onsemi.com/pub/Collateral/PN2222-D.PDF</docs>
+      <footprints>
+        <fp>TO?92*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">PN2222A</field>
+        <field name="Footprint">Package_TO_SOT_THT:TO-92_Inline</field>
+        <field name="Datasheet">https://www.onsemi.com/pub/Collateral/PN2222-D.PDF</field>
+        <field name="Description">1A Ic, 40V Vce, NPN Transistor, General Purpose Transistor, TO-92</field>
+        <field name="Sim.Device">NPN</field>
+        <field name="Sim.Pins">1=E 2=B 3=C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="E" type="passive"/>
+        <pin num="2" name="B" type="input"/>
+        <pin num="3" name="C" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="R">
+      <description>Resistor</description>
+      <footprints>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="" type="passive"/>
+        <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="RGB_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">RGB_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="RED_A" type="passive"/>
+        <pin num="2" name="GREEN_A" type="passive"/>
+        <pin num="3" name="BLUE_A" type="passive"/>
+        <pin num="4" name="COMMON_K" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="NeoGuard" part="ST7789_Interface">
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">ST7789_Interface</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="passive"/>
+        <pin num="2" name="VCC" type="passive"/>
+        <pin num="3" name="SCK" type="passive"/>
+        <pin num="4" name="MOSI" type="passive"/>
+        <pin num="5" name="RST" type="passive"/>
+        <pin num="6" name="DC" type="passive"/>
+        <pin num="7" name="CS" type="passive"/>
+        <pin num="8" name="BL_/_BLK" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="NeoGuard">
+      <uri>${KIPRJMOD}/NeoGuard.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="BUZZ_BASE" class="Default">
+      <node ref="Q1" pin="2" pinfunction="B_2" pintype="input"/>
+      <node ref="R6" pin="2" pintype="passive"/>
+      <node ref="R7" pin="1" pintype="passive"/>
+    </net>
+    <net code="2" name="BUZZ_GPIO15" class="Default">
+      <node ref="J1" pin="13" pinfunction="Pin_13_13" pintype="passive"/>
+      <node ref="R6" pin="1" pintype="passive"/>
+      <node ref="U1" pin="15" pinfunction="GPIO15_/_BUZZ_15" pintype="output"/>
+    </net>
+    <net code="3" name="BUZZ_SW" class="Default">
+      <node ref="D1" pin="2" pinfunction="A_2" pintype="passive"/>
+      <node ref="J8" pin="2" pinfunction="NEGATIVE_2" pintype="passive"/>
+      <node ref="Q1" pin="3" pinfunction="C_3" pintype="passive"/>
+    </net>
+    <net code="4" name="BUZZ_VCC" class="Default">
+      <node ref="D1" pin="1" pinfunction="K_1" pintype="passive"/>
+      <node ref="J8" pin="1" pinfunction="POSITIVE_1" pintype="passive"/>
+      <node ref="JP3" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+    </net>
+    <net code="5" name="DEV3V3" class="Default">
+      <node ref="J1" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="JP1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="U1" pin="3V3" pinfunction="3V3_OUT_3V3" pintype="passive"/>
+    </net>
+    <net code="6" name="EXT3V3" class="Default">
+      <node ref="J9" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="JP1" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+    </net>
+    <net code="7" name="EXT5V" class="Default">
+      <node ref="J9" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+      <node ref="JP2" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+      <node ref="JP3" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+    </net>
+    <net code="8" name="GND" class="Default">
+      <node ref="C1" pin="2" pintype="passive"/>
+      <node ref="C2" pin="2" pintype="passive"/>
+      <node ref="C3" pin="2" pintype="passive"/>
+      <node ref="C4" pin="2" pintype="passive"/>
+      <node ref="J1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="J1" pin="21" pinfunction="Pin_21_21" pintype="passive"/>
+      <node ref="J1" pin="22" pinfunction="Pin_22_22" pintype="passive"/>
+      <node ref="J1" pin="23" pinfunction="Pin_23_23" pintype="passive"/>
+      <node ref="J1" pin="24" pinfunction="Pin_24_24" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="GND_2" pintype="passive"/>
+      <node ref="J3" pin="2" pinfunction="GND_2" pintype="passive"/>
+      <node ref="J4" pin="2" pinfunction="GND_2" pintype="passive"/>
+      <node ref="J5" pin="1" pinfunction="GND_1" pintype="passive"/>
+      <node ref="J6" pin="2" pinfunction="GND_2" pintype="passive"/>
+      <node ref="J7" pin="4" pinfunction="COMMON_K_4" pintype="passive"/>
+      <node ref="J9" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="Q1" pin="1" pinfunction="E_1" pintype="passive"/>
+      <node ref="R7" pin="2" pintype="passive"/>
+      <node ref="U1" pin="GND" pinfunction="GND_GND" pintype="passive"/>
+    </net>
+    <net code="9" name="I2C_SCL_GPIO5" class="Default">
+      <node ref="J1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="SCL_4" pintype="passive"/>
+      <node ref="J3" pin="4" pinfunction="SCL_4" pintype="passive"/>
+      <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="GPIO5_/_SCL_5" pintype="bidirectional"/>
+    </net>
+    <net code="10" name="I2C_SDA_GPIO4" class="Default">
+      <node ref="J1" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="SDA_3" pintype="passive"/>
+      <node ref="J3" pin="3" pinfunction="SDA_3" pintype="passive"/>
+      <node ref="R1" pin="2" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="GPIO4_/_SDA_4" pintype="bidirectional"/>
+    </net>
+    <net code="11" name="LED_B_A" class="Default">
+      <node ref="J7" pin="3" pinfunction="BLUE_A_3" pintype="passive"/>
+      <node ref="R5" pin="2" pintype="passive"/>
+    </net>
+    <net code="12" name="LED_B_GPIO18" class="Default">
+      <node ref="J1" pin="16" pinfunction="Pin_16_16" pintype="passive"/>
+      <node ref="R5" pin="1" pintype="passive"/>
+      <node ref="U1" pin="18" pinfunction="GPIO18_/_BLUE_18" pintype="output"/>
+    </net>
+    <net code="13" name="LED_G_A" class="Default">
+      <node ref="J7" pin="2" pinfunction="GREEN_A_2" pintype="passive"/>
+      <node ref="R4" pin="2" pintype="passive"/>
+    </net>
+    <net code="14" name="LED_G_GPIO17" class="Default">
+      <node ref="J1" pin="15" pinfunction="Pin_15_15" pintype="passive"/>
+      <node ref="R4" pin="1" pintype="passive"/>
+      <node ref="U1" pin="17" pinfunction="GPIO17_/_GREEN_17" pintype="output"/>
+    </net>
+    <net code="15" name="LED_R_A" class="Default">
+      <node ref="J7" pin="1" pinfunction="RED_A_1" pintype="passive"/>
+      <node ref="R3" pin="2" pintype="passive"/>
+    </net>
+    <net code="16" name="LED_R_GPIO16" class="Default">
+      <node ref="J1" pin="14" pinfunction="Pin_14_14" pintype="passive"/>
+      <node ref="R3" pin="1" pintype="passive"/>
+      <node ref="U1" pin="16" pinfunction="GPIO16_/_RED_16" pintype="output"/>
+    </net>
+    <net code="17" name="RTC_CE_GPIO14" class="Default">
+      <node ref="J1" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
+      <node ref="J4" pin="5" pinfunction="CE_/_RST_5" pintype="passive"/>
+      <node ref="U1" pin="14" pinfunction="GPIO14_/_CE_14" pintype="output"/>
+    </net>
+    <net code="18" name="RTC_CLK_GPIO6" class="Default">
+      <node ref="J1" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
+      <node ref="J4" pin="3" pinfunction="CLK_3" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="GPIO6_/_CLK_6" pintype="output"/>
+    </net>
+    <net code="19" name="RTC_DAT_GPIO7" class="Default">
+      <node ref="J1" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
+      <node ref="J4" pin="4" pinfunction="DAT_4" pintype="passive"/>
+      <node ref="U1" pin="7" pinfunction="GPIO7_/_DAT_7" pintype="bidirectional"/>
+    </net>
+    <net code="20" name="SD_CS_GPIO21" class="Default">
+      <node ref="J1" pin="17" pinfunction="Pin_17_17" pintype="passive"/>
+      <node ref="J6" pin="6" pinfunction="CS_6" pintype="passive"/>
+      <node ref="U1" pin="21" pinfunction="GPIO21_/_CS_21" pintype="output"/>
+    </net>
+    <net code="21" name="SD_MISO_GPIO42" class="Default">
+      <node ref="J1" pin="20" pinfunction="Pin_20_20" pintype="passive"/>
+      <node ref="J6" pin="5" pinfunction="MISO_5" pintype="passive"/>
+      <node ref="U1" pin="42" pinfunction="GPIO42_/_MISO_42" pintype="input"/>
+    </net>
+    <net code="22" name="SD_MOSI_GPIO41" class="Default">
+      <node ref="J1" pin="19" pinfunction="Pin_19_19" pintype="passive"/>
+      <node ref="J6" pin="4" pinfunction="MOSI_4" pintype="passive"/>
+      <node ref="U1" pin="41" pinfunction="GPIO41_/_MOSI_41" pintype="output"/>
+    </net>
+    <net code="23" name="SD_SCK_GPIO40" class="Default">
+      <node ref="J1" pin="18" pinfunction="Pin_18_18" pintype="passive"/>
+      <node ref="J6" pin="3" pinfunction="SCK_3" pintype="passive"/>
+      <node ref="U1" pin="40" pinfunction="GPIO40_/_SCK_40" pintype="output"/>
+    </net>
+    <net code="24" name="SD_VCC" class="Default">
+      <node ref="C3" pin="1" pintype="passive"/>
+      <node ref="C4" pin="1" pintype="passive"/>
+      <node ref="J6" pin="1" pinfunction="VCC_1" pintype="passive"/>
+      <node ref="JP2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+    </net>
+    <net code="25" name="TFT_BL" class="Default">
+      <node ref="J5" pin="8" pinfunction="BL_/_BLK_8" pintype="passive"/>
+      <node ref="JP4" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+    </net>
+    <net code="26" name="TFT_CS_GPIO10" class="Default">
+      <node ref="J1" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
+      <node ref="J5" pin="7" pinfunction="CS_7" pintype="passive"/>
+      <node ref="U1" pin="10" pinfunction="GPIO10_/_CS_10" pintype="output"/>
+    </net>
+    <net code="27" name="TFT_DC_GPIO9" class="Default">
+      <node ref="J1" pin="9" pinfunction="Pin_9_9" pintype="passive"/>
+      <node ref="J5" pin="6" pinfunction="DC_6" pintype="passive"/>
+      <node ref="U1" pin="9" pinfunction="GPIO9_/_DC_9" pintype="output"/>
+    </net>
+    <net code="28" name="TFT_MOSI_GPIO11" class="Default">
+      <node ref="J1" pin="11" pinfunction="Pin_11_11" pintype="passive"/>
+      <node ref="J5" pin="4" pinfunction="MOSI_4" pintype="passive"/>
+      <node ref="U1" pin="11" pinfunction="GPIO11_/_MOSI_11" pintype="output"/>
+    </net>
+    <net code="29" name="TFT_RST_GPIO8" class="Default">
+      <node ref="J1" pin="8" pinfunction="Pin_8_8" pintype="passive"/>
+      <node ref="J5" pin="5" pinfunction="RST_5" pintype="passive"/>
+      <node ref="U1" pin="8" pinfunction="GPIO8_/_RST_8" pintype="output"/>
+    </net>
+    <net code="30" name="TFT_SCK_GPIO12" class="Default">
+      <node ref="J1" pin="12" pinfunction="Pin_12_12" pintype="passive"/>
+      <node ref="J5" pin="3" pinfunction="SCK_3" pintype="passive"/>
+      <node ref="U1" pin="12" pinfunction="GPIO12_/_SCK_12" pintype="output"/>
+    </net>
+    <net code="31" name="V3V3" class="Default">
+      <node ref="C1" pin="1" pintype="passive"/>
+      <node ref="C2" pin="1" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="VCC_1" pintype="passive"/>
+      <node ref="J3" pin="1" pinfunction="VCC_1" pintype="passive"/>
+      <node ref="J4" pin="1" pinfunction="VCC_1" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="VCC_2" pintype="passive"/>
+      <node ref="JP1" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="JP2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="JP3" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="JP4" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="R1" pin="1" pintype="passive"/>
+      <node ref="R2" pin="1" pintype="passive"/>
+    </net>
+    <net code="32" name="unconnected-(J2-Pin_5-Pad5)" class="Default">
+      <node ref="J2" pin="5" pinfunction="Pin_5_5" pintype="passive+no_connect"/>
+    </net>
+  </nets>
+</export>

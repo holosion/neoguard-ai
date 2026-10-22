@@ -1,0 +1,384 @@
+{
+  "project": "NeoGuard",
+  "revision": "LCD-C",
+  "date": "2026-10-22",
+  "design_type": "LCD module carrier; controller on functional cable header; mechanical fit unconfirmed",
+  "components": [
+    {
+      "ref": "J1",
+      "value": "ESP32-S3 CABLE - NOT DEVBOARD SOCKET",
+      "symbol": "Connector_Generic:Conn_02x12_Odd_Even",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_2x12_P2.54mm_Vertical",
+      "pins": {
+        "1": "GND",
+        "2": "DEV3V3",
+        "3": "I2C_SDA_GPIO4",
+        "4": "I2C_SCL_GPIO5",
+        "5": "RTC_CLK_GPIO6",
+        "6": "RTC_DAT_GPIO7",
+        "7": "RTC_CE_GPIO14",
+        "8": "LCD_RS_GPIO8",
+        "9": "LCD_EN_GPIO9",
+        "10": "LCD_D4_GPIO10",
+        "11": "LCD_D5_GPIO11",
+        "12": "LCD_D6_GPIO12",
+        "13": "BUZZ_GPIO15",
+        "14": "LED_R_GPIO16",
+        "15": "LED_G_GPIO17",
+        "16": "LED_B_GPIO18",
+        "17": "SD_CS_GPIO21",
+        "18": "SD_SCK_GPIO40",
+        "19": "SD_MOSI_GPIO41",
+        "20": "SD_MISO_GPIO42",
+        "21": "GND",
+        "22": "LCD_D7_GPIO13",
+        "23": "GND",
+        "24": "GND"
+      }
+    },
+    {
+      "ref": "J2",
+      "value": "MAX30102 BREAKOUT",
+      "symbol": "Connector_Generic:Conn_01x05",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "GND",
+        "3": "I2C_SDA_GPIO4",
+        "4": "I2C_SCL_GPIO5",
+        "5": null
+      }
+    },
+    {
+      "ref": "J3",
+      "value": "MLX90614 3V3 BREAKOUT",
+      "symbol": "Connector_Generic:Conn_01x04",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "GND",
+        "3": "I2C_SDA_GPIO4",
+        "4": "I2C_SCL_GPIO5"
+      }
+    },
+    {
+      "ref": "J4",
+      "value": "DS1302 MODULE",
+      "symbol": "Connector_Generic:Conn_01x05",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "GND",
+        "3": "RTC_CLK_GPIO6",
+        "4": "RTC_DAT_GPIO7",
+        "5": "RTC_CE_GPIO14"
+      }
+    },
+    {
+      "ref": "J5",
+      "value": "WC1602A LCD 16x2 - VERIFY ACTUAL MODULE",
+      "symbol": "Display_Character:WC1602A",
+      "footprint": "Akena_LCD:LCD1602_80x36_Mounting",
+      "pins": {
+        "1": "GND",
+        "2": "EXT5V",
+        "3": "LCD_CONTRAST",
+        "4": "LCD_RS_5V",
+        "5": "GND",
+        "6": "LCD_EN_5V",
+        "7": null,
+        "8": null,
+        "9": null,
+        "10": null,
+        "11": "LCD_D4_5V",
+        "12": "LCD_D5_5V",
+        "13": "LCD_D6_5V",
+        "14": "LCD_D7_5V",
+        "15": "LCD_LED_A",
+        "16": "GND"
+      }
+    },
+    {
+      "ref": "J6",
+      "value": "SPI MICROSD MODULE",
+      "symbol": "Connector_Generic:Conn_01x06",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
+      "pins": {
+        "1": "SD_VCC",
+        "2": "GND",
+        "3": "SD_SCK_GPIO40",
+        "4": "SD_MOSI_GPIO41",
+        "5": "SD_MISO_GPIO42",
+        "6": "SD_CS_GPIO21"
+      }
+    },
+    {
+      "ref": "J7",
+      "value": "EXTERNAL RGB COMMON CATHODE",
+      "symbol": "Connector_Generic:Conn_01x04",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical",
+      "pins": {
+        "1": "LED_R_A",
+        "2": "LED_G_A",
+        "3": "LED_B_A",
+        "4": "GND"
+      }
+    },
+    {
+      "ref": "J8",
+      "value": "ACTIVE BUZZER 20mA MAX",
+      "symbol": "Connector_Generic:Conn_01x02",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+      "pins": {
+        "1": "BUZZ_VCC",
+        "2": "BUZZ_SW"
+      }
+    },
+    {
+      "ref": "J9",
+      "value": "EXTERNAL REGULATED SUPPLIES",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "pins": {
+        "1": "EXT3V3",
+        "2": "GND",
+        "3": "EXT5V"
+      }
+    },
+    {
+      "ref": "JP1",
+      "value": "3V3 SOURCE - ONE SHUNT",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "pins": {
+        "1": "DEV3V3",
+        "2": "V3V3",
+        "3": "EXT3V3"
+      }
+    },
+    {
+      "ref": "JP2",
+      "value": "SD VOLTAGE - ONE SHUNT",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "SD_VCC",
+        "3": "EXT5V"
+      }
+    },
+    {
+      "ref": "JP3",
+      "value": "BUZZ VOLTAGE - ONE SHUNT",
+      "symbol": "Connector_Generic:Conn_01x03",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "BUZZ_VCC",
+        "3": "EXT5V"
+      }
+    },
+    {
+      "ref": "R1",
+      "value": "4.7k OPTIONAL DNP",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "V3V3",
+        "2": "I2C_SDA_GPIO4"
+      },
+      "dnp": true
+    },
+    {
+      "ref": "R2",
+      "value": "4.7k OPTIONAL DNP",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "V3V3",
+        "2": "I2C_SCL_GPIO5"
+      },
+      "dnp": true
+    },
+    {
+      "ref": "R3",
+      "value": "330",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "LED_R_GPIO16",
+        "2": "LED_R_A"
+      }
+    },
+    {
+      "ref": "R4",
+      "value": "330",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "LED_G_GPIO17",
+        "2": "LED_G_A"
+      }
+    },
+    {
+      "ref": "R5",
+      "value": "330",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "LED_B_GPIO18",
+        "2": "LED_B_A"
+      }
+    },
+    {
+      "ref": "R6",
+      "value": "1k",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "BUZZ_GPIO15",
+        "2": "BUZZ_BASE"
+      }
+    },
+    {
+      "ref": "R7",
+      "value": "10k",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "BUZZ_BASE",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "Q1",
+      "value": "PN2222A E1 B2 C3",
+      "symbol": "Transistor_BJT:PN2222A",
+      "footprint": "Package_TO_SOT_THT:TO-92_Inline_Wide",
+      "pins": {
+        "1": "GND",
+        "2": "BUZZ_BASE",
+        "3": "BUZZ_SW"
+      }
+    },
+    {
+      "ref": "D1",
+      "value": "1N5819",
+      "symbol": "Device:D_Schottky",
+      "footprint": "Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal",
+      "pins": {
+        "1": "BUZZ_VCC",
+        "2": "BUZZ_SW"
+      }
+    },
+    {
+      "ref": "C1",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "pins": {
+        "1": "V3V3",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "C2",
+      "value": "100uF 10V",
+      "symbol": "Device:C_Polarized",
+      "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
+      "pins": {
+        "1": "V3V3",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "C3",
+      "value": "100nF",
+      "symbol": "Device:C",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "pins": {
+        "1": "SD_VCC",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "C4",
+      "value": "100uF 10V",
+      "symbol": "Device:C_Polarized",
+      "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
+      "pins": {
+        "1": "SD_VCC",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "U2",
+      "value": "SN74AHCT245N - NOT 74HC245",
+      "symbol": "74xx:74HC245",
+      "footprint": "Package_DIP:DIP-20_W7.62mm",
+      "pins": {
+        "1": "EXT5V",
+        "2": "LCD_RS_GPIO8",
+        "3": "LCD_EN_GPIO9",
+        "4": "LCD_D4_GPIO10",
+        "5": "LCD_D5_GPIO11",
+        "6": "LCD_D6_GPIO12",
+        "7": "LCD_D7_GPIO13",
+        "8": "GND",
+        "9": "GND",
+        "10": "GND",
+        "11": null,
+        "12": null,
+        "13": "LCD_D7_5V",
+        "14": "LCD_D6_5V",
+        "15": "LCD_D5_5V",
+        "16": "LCD_D4_5V",
+        "17": "LCD_EN_5V",
+        "18": "LCD_RS_5V",
+        "19": "GND",
+        "20": "EXT5V"
+      }
+    },
+    {
+      "ref": "RV1",
+      "value": "10k LCD CONTRAST",
+      "symbol": "Device:R_Potentiometer",
+      "footprint": "Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical",
+      "pins": {
+        "1": "EXT5V",
+        "2": "LCD_CONTRAST",
+        "3": "GND"
+      }
+    },
+    {
+      "ref": "R8",
+      "value": "220 LCD BACKLIGHT",
+      "symbol": "Device:R",
+      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+      "pins": {
+        "1": "EXT5V",
+        "2": "LCD_LED_A"
+      }
+    },
+    {
+      "ref": "C5",
+      "value": "100nF U2 BYPASS",
+      "symbol": "Device:C",
+      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
+      "pins": {
+        "1": "EXT5V",
+        "2": "GND"
+      }
+    },
+    {
+      "ref": "C6",
+      "value": "10uF 10V LCD",
+      "symbol": "Device:C_Polarized",
+      "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
+      "pins": {
+        "1": "EXT5V",
+        "2": "GND"
+      }
+    }
+  ]
+}

@@ -32,6 +32,15 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+class Clinic(Base):
+    __tablename__ = "clinics"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True)
+    code: Mapped[str] = mapped_column(String(40), unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -39,15 +48,23 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(120), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default="nurse")
+    clinic_id: Mapped[int | None] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    password_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (CheckConstraint("role IN ('admin', 'nurse', 'clinician')", name="ck_users_role"),)
+    __table_args__ = (
+        CheckConstraint("role IN ('admin', 'nurse', 'clinician')", name="ck_users_role"),
+        CheckConstraint("role = 'admin' OR clinic_id IS NOT NULL", name="ck_staff_user_clinic"),
+    )
 
 
 class Patient(Base):
     __tablename__ = "patients"
     id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
     patient_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     sex: Mapped[str | None] = mapped_column(String(1))
     birth_date: Mapped[date | None] = mapped_column(Date)
@@ -55,6 +72,8 @@ class Patient(Base):
     birth_weight_kg: Mapped[float | None] = mapped_column(Numeric(4, 2))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=utc_now)
+
+    __table_args__ = (UniqueConstraint("clinic_id", "id", name="uq_patient_clinic_id"),)
 
 
 class RiskProfile(Base):
@@ -76,6 +95,7 @@ class RiskProfile(Base):
 class Device(Base):
     __tablename__ = "devices"
     id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
     device_code: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     name: Mapped[str | None] = mapped_column(String(80))
     status: Mapped[str] = mapped_column(String(20), default="inactive", index=True)
@@ -87,7 +107,10 @@ class Device(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=utc_now)
 
-    __table_args__ = (CheckConstraint("status IN ('inactive', 'active', 'maintenance', 'retired')", name="ck_devices_status"),)
+    __table_args__ = (
+        CheckConstraint("status IN ('inactive', 'active', 'maintenance', 'retired')", name="ck_devices_status"),
+        UniqueConstraint("clinic_id", "id", name="uq_device_clinic_id"),
+    )
 
 
 class DeviceCredential(Base):
@@ -109,12 +132,16 @@ class DeviceComponent(Base):
     is_critical: Mapped[bool] = mapped_column(Boolean, default=True)
     installed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (UniqueConstraint("device_id", "component_type", name="uq_device_component_type"),)
+    __table_args__ = (
+        UniqueConstraint("device_id", "component_type", name="uq_device_component_type"),
+        UniqueConstraint("device_id", "id", name="uq_device_component_device_id"),
+    )
 
 
 class MonitoringSession(Base):
     __tablename__ = "monitoring_sessions"
     id: Mapped[int] = mapped_column(primary_key=True)
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id", ondelete="RESTRICT"), index=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="RESTRICT"), index=True)
     started_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
@@ -132,6 +159,8 @@ class MonitoringSession(Base):
         Index("uq_active_session_patient", "patient_id", unique=True, postgresql_where=text("status = 'active'")),
         UniqueConstraint("patient_id", "id", name="uq_session_patient_id"),
         UniqueConstraint("device_id", "id", name="uq_session_device_id"),
+        ForeignKeyConstraint(["clinic_id", "patient_id"], ["patients.clinic_id", "patients.id"], name="fk_session_patient_clinic", ondelete="RESTRICT"),
+        ForeignKeyConstraint(["clinic_id", "device_id"], ["devices.clinic_id", "devices.id"], name="fk_session_device_clinic", ondelete="RESTRICT"),
     )
 
 
@@ -229,6 +258,27 @@ class LoginFailure(Base):
     identifier_hash: Mapped[str] = mapped_column(String(64), index=True)
     source_hash: Mapped[str] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class AccessRequest(Base):
+    __tablename__ = "access_requests"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), index=True)
+    email: Mapped[str] = mapped_column(String(120), index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(20))
+    clinic_id: Mapped[int] = mapped_column(ForeignKey("clinics.id", ondelete="RESTRICT"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        CheckConstraint("role IN ('nurse', 'clinician')", name="ck_access_request_role"),
+        CheckConstraint("status IN ('pending', 'approved', 'rejected')", name="ck_access_request_status"),
+        Index("uq_pending_access_username", func.lower(username), unique=True, postgresql_where=text("status = 'pending'")),
+        Index("uq_pending_access_email", func.lower(email), unique=True, postgresql_where=text("status = 'pending'")),
+    )
 
 
 class DatasetImportRow(Base):
@@ -405,12 +455,17 @@ class ComponentHealthLog(Base):
     __tablename__ = "component_health_logs"
     id: Mapped[int] = mapped_column(primary_key=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"), index=True)
-    component_id: Mapped[int] = mapped_column(ForeignKey("device_components.id", ondelete="CASCADE"), index=True)
+    component_id: Mapped[int] = mapped_column(Integer, index=True)
     checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     status: Mapped[str] = mapped_column(String(30))
     error_code: Mapped[str | None] = mapped_column(String(50))
     details: Mapped[dict | None] = mapped_column(JSON)
+
+    __table_args__ = (
+        ForeignKeyConstraint(["device_id", "component_id"], ["device_components.device_id", "device_components.id"],
+                             name="fk_component_log_device_component", ondelete="CASCADE"),
+    )
 
 
 class Threshold(Base):
@@ -429,6 +484,7 @@ class Threshold(Base):
     __table_args__ = (
         UniqueConstraint("parameter", "version", name="uq_threshold_parameter_version"),
         Index("uq_active_threshold_parameter", "parameter", unique=True, postgresql_where=text("is_active = true")),
+        CheckConstraint("value >= 0", name="ck_threshold_nonnegative"),
     )
 
 

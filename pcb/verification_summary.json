@@ -1,0 +1,28 @@
+{
+  "revision": "LCD-C",
+  "KiCad": "10.0.4",
+  "components": 30,
+  "electrical_pins_checked": 134,
+  "intentional_no_connects": 7,
+  "firmware_gpio_assignments_checked": 19,
+  "board_dimensions_mm": [
+    140,
+    105
+  ],
+  "copper_layers": 2,
+  "lcd": {
+    "footprint": "LCD1602_80x36_Mounting",
+    "module_dimensions_assumed_mm": [
+      80,
+      36
+    ],
+    "hole_centres_assumed_mm": [
+      75,
+      31
+    ],
+    "npth_holes": 4,
+    "drill_mm": 2.7,
+    "actual_module_fit_confirmed": false
+  },
+  "issues": []
+}

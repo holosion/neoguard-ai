@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Modal from '../ui/Modal';
 import { useFetch } from '../../hooks/useFetch';
 import { adminApi } from '../../api/admin';
-import { USE_MOCK } from '../../api/client';
 
 const detail = (e, fallback) => e?.response?.data?.detail ?? fallback;
 
@@ -17,21 +16,28 @@ const schema = z.object({
   device_code: z.string().regex(/^[A-Za-z0-9_-]{3,30}$/, 'Use 3 to 30 letters, numbers, dashes or underscores, for example DEV-001'),
   name: z.string().min(1, 'Enter a name'),
   location: z.string().min(1, 'Enter a location'),
+  clinic_id: z.string().optional(),
+  status: z.enum(['inactive', 'active', 'maintenance']).optional(),
 });
 
 // Register a new device, or edit one when `device` is given.
 export function DeviceFormModal({ device, onClose, onDone }) {
   const [error, setError] = useState(null);
+  const { data: clinics } = useFetch(() => adminApi.getClinics());
   const [secret, setSecret] = useState(null);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema), defaultValues: device });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: { device_code: device?.device_code ?? '', name: device?.name ?? '', location: device?.location ?? '', status: device?.status ?? 'inactive', clinic_id: '' },
+  });
   const submit = async (values) => {
     setError(null);
     try {
       if (device) {
-        await adminApi.updateDevice(device.id, { name: values.name, location: values.location });
+        await adminApi.updateDevice(device.id, { name: values.name, location: values.location, status: values.status });
         onDone();
       } else {
-        const res = await adminApi.registerDevice(values);
+        if (!values.clinic_id) { setError('Choose a clinic.'); return; }
+        const res = await adminApi.registerDevice({ ...values, clinic_id: Number(values.clinic_id) });
         if (res.data?.device_secret) setSecret(res.data.device_secret);
         else onDone();
       }
@@ -42,7 +48,7 @@ export function DeviceFormModal({ device, onClose, onDone }) {
   if (secret) {
     return (
       <Modal title="Device registered" onClose={onDone}>
-        <p className="text-sm text-slate-700">Copy this secret into the device firmware now. It is shown only once. If you lose it, rotate the secret for this device.</p>
+        <p className="text-sm text-slate-700">Save this secret now; it is shown only once. Connect your phone to the NeoGuard setup Wi-Fi, open 192.168.4.1, and enter it with this device code. Then activate the device and assign its monitoring session here. If you lose the secret, rotate it for this device.</p>
         <code className="mt-3 block break-all rounded-lg bg-slate-100 p-3 text-sm">{secret}</code>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={() => navigator.clipboard?.writeText(secret)} className={secondary}>Copy secret</button>
@@ -65,6 +71,10 @@ export function DeviceFormModal({ device, onClose, onDone }) {
         <label className="mt-3 block text-sm">Location
           <input className={field} {...register('location')} />
         </label>
+        {device && <label className="mt-3 block text-sm">Status<select className={field} {...register('status')}><option value="inactive">Inactive</option><option value="active">Active</option><option value="maintenance">Maintenance</option></select></label>}
+        {!device && <label className="mt-3 block text-sm">Clinic
+          <select className={field} {...register('clinic_id')}><option value="">Choose a clinic</option>{clinics?.map((clinic) => <option key={clinic.id} value={clinic.id}>{clinic.name}</option>)}</select>
+        </label>}
         {errors.location && <p className="mt-1 text-sm text-red-700">{errors.location.message}</p>}
         {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
@@ -76,12 +86,11 @@ export function DeviceFormModal({ device, onClose, onDone }) {
   );
 }
 
-// Starts a session for a patient on this device. "From first unassigned reading" back-dates the session
-// so readings the device already recorded are attached to the patient, not lost.
+// Starts a session for a patient on this device at the server's current time.
 export function AssignDeviceModal({ device, onClose, onDone }) {
   const { data: patients, loading } = useFetch(() => adminApi.getUnassignedPatients());
+  const availablePatients = (patients ?? []).filter((patient) => patient.clinic_id === device.clinic_id);
   const [patientId, setPatientId] = useState('');
-  const [startedFrom, setStartedFrom] = useState(USE_MOCK && device.sending_without_patient ? 'first_unassigned' : 'now');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -89,7 +98,7 @@ export function AssignDeviceModal({ device, onClose, onDone }) {
     setBusy(true);
     setError(null);
     try {
-      await adminApi.assignDevice(device.id, { patient_id: Number(patientId), started_from: startedFrom });
+      await adminApi.assignDevice(device.id, { patient_id: Number(patientId) });
       onDone();
     } catch (e) {
       setError(detail(e, 'Could not start the session. Try again.'));
@@ -99,29 +108,22 @@ export function AssignDeviceModal({ device, onClose, onDone }) {
 
   return (
     <Modal title={`Assign ${device.device_code} to a patient`} onClose={onClose}>
-      {loading ? <p className="text-slate-500">Loading patients…</p> : !patients?.length ? (
+      {loading ? <p className="text-slate-500">Loading patients…</p> : !availablePatients.length ? (
         <p className="text-slate-600">No patients are waiting for a device. Register the patient first, then assign the device.</p>
       ) : (
         <>
           <label className="block text-sm">Patient
             <select className={field} value={patientId} onChange={(e) => setPatientId(e.target.value)}>
               <option value="">Choose a patient</option>
-              {patients.map((p) => <option key={p.id} value={p.id}>{p.patient_code}</option>)}
+              {availablePatients.map((p) => <option key={p.id} value={p.id}>{p.patient_code}</option>)}
             </select>
           </label>
-          {USE_MOCK && <><label className="mt-3 block text-sm">Session start
-            <select className={field} value={startedFrom} onChange={(e) => setStartedFrom(e.target.value)}>
-              <option value="now">Now</option>
-              <option value="first_unassigned">From the first reading sent without a patient</option>
-            </select>
-          </label>
-          <p className="mt-1 text-xs text-slate-500">Choose the second option if monitoring started before the session did. Readings already recorded are added to the patient.</p></>}
         </>
       )}
       {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       <div className="mt-5 flex justify-end gap-2">
         <button onClick={onClose} className={secondary}>Cancel</button>
-        {patients?.length > 0 && <button onClick={save} disabled={!patientId || busy} className={primary}>{busy ? 'Saving…' : 'Start session'}</button>}
+        {availablePatients.length > 0 && <button onClick={save} disabled={!patientId || busy} className={primary}>{busy ? 'Saving…' : 'Start session'}</button>}
       </div>
     </Modal>
   );

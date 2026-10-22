@@ -52,7 +52,7 @@ export default function DeviceDetailPage() {
               <tr>{['Component', 'Status', 'Detail', 'Interface'].map((h) => <th scope="col" key={h} className="px-3 py-2 font-medium">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {d.components.map((c) => (
+              {d.components.length === 0 ? <tr><td colSpan="4" className="px-3 py-6 text-center text-slate-500">No components are registered for this device.</td></tr> : d.components.map((c) => (
                 <tr key={c.name} className={`border-t border-slate-100 ${c.critical && c.status === 'fail' ? 'bg-red-50' : ''}`}>
                   <td className="px-3 py-3 font-semibold">{c.name}{c.critical && c.status === 'fail' && <span className="ml-2 text-xs font-semibold text-red-800">Critical failure</span>}</td>
                   <td className="px-3 py-3"><HealthBadge status={c.status} /></td>

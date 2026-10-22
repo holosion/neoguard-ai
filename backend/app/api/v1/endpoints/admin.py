@@ -1,19 +1,67 @@
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentUser, DbSession, require_roles
 from app.core.config import settings
-from app.models import Alert, ComponentHealthLog, Device, DeviceComponent, DeviceTelemetry, MonitoringSession, Reading
+from app.models import Alert, Clinic, ComponentHealthLog, Device, DeviceComponent, DeviceTelemetry, MonitoringSession, Reading
+from app.schemas.resources import ClinicCreate, ClinicPublic
+from app.services.audit import record_audit
+from app.services.alerts import active_thresholds
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_roles("admin"))])
+
+
+@router.get("/clinics", response_model=list[ClinicPublic])
+def list_clinics(db: DbSession, user: CurrentUser, active: bool | None = True):
+    query = select(Clinic).order_by(Clinic.name)
+    if active is not None:
+        query = query.where(Clinic.is_active.is_(active))
+    return db.scalars(query).all()
+
+
+@router.post("/clinics", response_model=ClinicPublic, status_code=201)
+def create_clinic(payload: ClinicCreate, db: DbSession, user: CurrentUser):
+    if db.scalar(select(Clinic.id).where((Clinic.code == payload.code) | (Clinic.name == payload.name))):
+        raise HTTPException(status_code=409, detail="A clinic with this name or code already exists")
+    clinic = Clinic(name=payload.name, code=payload.code)
+    db.add(clinic)
+    db.flush()
+    record_audit(db, user_id=user.id, action="create_clinic", resource_type="clinic", resource_id=clinic.id)
+    db.commit()
+    db.refresh(clinic)
+    return clinic
+
+
+@router.get("/thresholds")
+def get_thresholds(db: DbSession, user: CurrentUser):
+    configured = active_thresholds(db)
+    return [
+        {
+            "parameter": name,
+            "value": item["value"],
+            "unit": item["unit"],
+            "source": item["source"],
+            "version": item.get("version", item.get("threshold_id", "code-default")),
+            "effective_from": item.get("effective_from"),
+        }
+        for name, item in configured.provenance.items()
+    ]
 
 
 @router.get("/overview")
 def overview(db: DbSession, user: CurrentUser):
     now = datetime.now(UTC)
     stale_before = now - timedelta(seconds=settings.reading_stale_after_seconds)
+    active_sync_times = db.scalars(
+        select(Device.last_sync_received_at)
+        .join(MonitoringSession, MonitoringSession.device_id == Device.id)
+        .where(MonitoringSession.status == "active")
+    ).all()
+    sync_lag_seconds = max(
+        (now - synced_at).total_seconds() for synced_at in active_sync_times if synced_at is not None
+    ) if any(synced_at is not None for synced_at in active_sync_times) else 0
     return {
         "devices": {
             "total": db.scalar(select(func.count(Device.id))) or 0,
@@ -29,14 +77,24 @@ def overview(db: DbSession, user: CurrentUser):
             select(func.count(Alert.id)).where(Alert.acknowledged_at.is_(None))
         ) or 0,
         "latest_reading_at": db.scalar(select(func.max(Reading.measured_at))),
+        "sync_lag_seconds": max(0, int(sync_lag_seconds)),
         "generated_at": now,
     }
 
 
 @router.get("/device-health")
-def device_health(db: DbSession, user: CurrentUser):
+def device_health(
+    db: DbSession,
+    user: CurrentUser,
+    response: Response,
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+):
     now = datetime.now(UTC)
-    devices = db.scalars(select(Device).order_by(Device.device_code)).all()
+    total = db.scalar(select(func.count(Device.id))) or 0
+    devices = db.scalars(select(Device).order_by(Device.device_code).offset(offset).limit(limit)).all()
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Next-Offset"] = str(offset + len(devices)) if offset + len(devices) < total else ""
     device_ids = [device.id for device in devices]
     telemetry_ranked = select(
         DeviceTelemetry,
@@ -84,6 +142,7 @@ def device_health(db: DbSession, user: CurrentUser):
         components_by_device.setdefault(component.device_id, []).append({
             "component_id": component.id,
             "component_type": component.component_type,
+            "pin_or_address": component.pin_or_address,
             "is_critical": component.is_critical,
             "status": check.status if check else "not_checked",
             "checked_at": check.checked_at if check else None,

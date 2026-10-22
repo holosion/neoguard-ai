@@ -1,0 +1,26 @@
+{
+  "routed_non_ground_connections": 50,
+  "ground_strategy": "Filled F.Cu/B.Cu zones with stitching vias",
+  "failed": [],
+  "routing_seconds": 107.19723510742188,
+  "ground_stitching_vias_added": 75,
+  "filled_copper_area_mm2": {
+    "GND TOP - THERMAL": 12214.11348295872,
+    "GND BOTTOM - THERMAL": 13408.497531635378
+  },
+  "island_removal": "always",
+  "zone_clearance_mm": 0.25,
+  "thermal_gap_mm": 0.3,
+  "thermal_spoke_mm": 0.4,
+  "revision": "B",
+  "board_size_mm": [
+    140,
+    105
+  ],
+  "copper_layers": 2,
+  "signal_width_mm": 0.3,
+  "power_width_mm": 0.6,
+  "via_diameter_mm": 0.8,
+  "via_drill_mm": 0.4,
+  "footprint_uuids_preserved": true
+}

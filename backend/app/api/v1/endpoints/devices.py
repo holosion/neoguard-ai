@@ -2,8 +2,8 @@ from datetime import UTC, datetime, timedelta
 from math import ceil
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import AuthenticatedDevice, CurrentUser, DbSession, require_roles
@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.security import hash_device_secret, issue_device_secret
 from app.models import (
     ComponentHealthLog,
+    Clinic,
     Device,
     DeviceComponent,
     DeviceCredential,
@@ -27,7 +28,9 @@ from app.schemas.resources import (
     DeviceUpdate,
     DeviceSyncIn,
     DeviceSyncOut,
+    DeviceSessionOut,
     SyncItemResult,
+    TelemetryPublic,
 )
 from app.services.alerts import active_thresholds, create_threshold_alerts
 from app.services.audit import record_audit
@@ -37,9 +40,48 @@ router = APIRouter(prefix="/devices", tags=["devices"])
 logger = logging.getLogger(__name__)
 
 
+@router.get("/runtime")
+def device_runtime(db: DbSession, device: AuthenticatedDevice):
+    """Authenticated provisioning context; queued events retain their original session."""
+    session = db.scalar(select(MonitoringSession).where(
+        MonitoringSession.device_id == device.id, MonitoringSession.status == "active"))
+    thresholds = active_thresholds(db)
+    return {
+        "device_code": device.device_code,
+        "session_id": session.id if session else None,
+        "session_started_unix": int(session.started_at.timestamp()) if session else None,
+        "server_time_unix": int(datetime.now(UTC).timestamp()),
+        "thresholds": thresholds.values,
+        "threshold_provenance": thresholds.provenance,
+    }
+
+
 @router.get("", response_model=list[DevicePublic])
-def list_devices(db: DbSession, user: CurrentUser):
-    return db.scalars(select(Device).order_by(Device.device_code)).all()
+def list_devices(
+    db: DbSession,
+    user: CurrentUser,
+    response: Response,
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+):
+    scope = True if user.role == "admin" else Device.clinic_id == user.clinic_id
+    total = db.scalar(select(func.count(Device.id)).where(scope)) or 0
+    items = db.scalars(select(Device).where(scope).order_by(Device.device_code).offset(offset).limit(limit)).all()
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Next-Offset"] = str(offset + len(items)) if offset + len(items) < total else ""
+    return items
+
+
+@router.get("/current-session", response_model=DeviceSessionOut)
+def current_device_session(db: DbSession, device: AuthenticatedDevice):
+    """Let an authenticated device discover the session assigned by clinical staff."""
+    session = db.scalar(
+        select(MonitoringSession).where(
+            MonitoringSession.device_id == device.id,
+            MonitoringSession.status == "active",
+        )
+    )
+    return DeviceSessionOut(device_code=device.device_code, session_id=session.id if session else None)
 
 
 @router.post("", response_model=DeviceCreated, status_code=201)
@@ -50,7 +92,11 @@ def create_device(
 ):
     if db.scalar(select(Device).where(Device.device_code == payload.device_code)):
         raise HTTPException(status_code=409, detail="Device code already exists")
+    clinic = db.get(Clinic, payload.clinic_id) if payload.clinic_id is not None else None
+    if clinic is None or not clinic.is_active:
+        raise HTTPException(status_code=422, detail="clinic_id for an active clinic is required")
     device = Device(
+        clinic_id=clinic.id,
         device_code=payload.device_code,
         name=payload.name,
         status=payload.status,
@@ -71,7 +117,8 @@ def create_device(
 
 @router.get("/{device_id}", response_model=DevicePublic)
 def get_device(device_id: int, db: DbSession, user: CurrentUser):
-    device = db.get(Device, device_id)
+    scope = True if user.role == "admin" else Device.clinic_id == user.clinic_id
+    device = db.scalar(select(Device).where(Device.id == device_id, scope))
     if device is None:
         raise HTTPException(status_code=404, detail="Device not found")
     return device
@@ -88,18 +135,23 @@ def update_device(
     if device is None:
         raise HTTPException(status_code=404, detail="Device not found")
     updates = payload.model_dump(exclude_unset=True)
-    if updates.get("status") not in (None, "active", device.status):
+    if updates.get("status") == "retired":
         active_session = db.scalar(
-            select(MonitoringSession.id).where(
+            select(MonitoringSession).where(
                 MonitoringSession.device_id == device.id,
                 MonitoringSession.status == "active",
-            )
+            ).with_for_update()
         )
         if active_session is not None:
-            raise HTTPException(
-                status_code=409,
-                detail="Stop the device's active monitoring session before changing its status.",
-            )
+            active_session.status = "stopped"
+            active_session.ended_at = datetime.now(UTC)
+            record_audit(db, user_id=user.id, action="stop_session_device_retired", resource_type="session", resource_id=active_session.id)
+    elif updates.get("status") not in (None, "active", device.status):
+        active_session_id = db.scalar(
+            select(MonitoringSession.id).where(MonitoringSession.device_id == device.id, MonitoringSession.status == "active")
+        )
+        if active_session_id is not None:
+            raise HTTPException(status_code=409, detail="Stop the device's active monitoring session before changing its status.")
     for key, value in updates.items():
         setattr(device, key, value)
     record_audit(db, user_id=user.id, action="update_device", resource_type="device", resource_id=device.id)
@@ -224,9 +276,8 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
             )
         )
         if component is None:
-            component = DeviceComponent(device_id=device.id, component_type=check.component_type)
-            db.add(component)
-            db.flush()
+            db.rollback()
+            raise HTTPException(status_code=422, detail=f"Unregistered component: {check.component_type}")
         db.add(
             ComponentHealthLog(
                 device_id=device.id,
@@ -253,6 +304,36 @@ def sync_device(payload: DeviceSyncIn, db: DbSession, device: AuthenticatedDevic
             db.rollback()
             logger.exception("Prototype scoring failed after readings were safely committed")
     return DeviceSyncOut(device_code=device.device_code, received_at=now, readings=results)
+
+
+@router.get("/{device_id}/telemetry", response_model=list[TelemetryPublic])
+def device_telemetry(
+    device_id: int,
+    db: DbSession,
+    user: CurrentUser,
+    response: Response,
+    start: datetime | None = Query(default=None, alias="from"),
+    end: datetime | None = Query(default=None, alias="to"),
+    limit: int = Query(default=500, ge=1, le=2000),
+    offset: int = Query(default=0, ge=0),
+):
+    scope = True if user.role == "admin" else Device.clinic_id == user.clinic_id
+    if db.scalar(select(Device.id).where(Device.id == device_id, scope)) is None:
+        raise HTTPException(status_code=404, detail="Device not found")
+    if (start is not None and start.tzinfo is None) or (end is not None and end.tzinfo is None):
+        raise HTTPException(status_code=422, detail="from and to must include a timezone")
+    if start is not None and end is not None and start > end:
+        raise HTTPException(status_code=422, detail="from must be earlier than or equal to to")
+    query = select(DeviceTelemetry).where(DeviceTelemetry.device_id == device_id)
+    if start is not None:
+        query = query.where(DeviceTelemetry.reported_at >= start)
+    if end is not None:
+        query = query.where(DeviceTelemetry.reported_at <= end)
+    total = db.scalar(select(func.count()).select_from(query.order_by(None).subquery())) or 0
+    items = db.scalars(query.order_by(DeviceTelemetry.reported_at.desc(), DeviceTelemetry.id.desc()).offset(offset).limit(limit)).all()
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Next-Offset"] = str(offset + len(items)) if offset + len(items) < total else ""
+    return list(reversed(items))
 
 
 def validate_reading_session(item, session, device_id, now):

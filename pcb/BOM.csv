@@ -1,0 +1,31 @@
+Reference,Value,Footprint,Fit
+J1,ESP32-S3 CABLE - NOT DEVBOARD SOCKET,Connector_PinHeader_2.54mm:PinHeader_2x12_P2.54mm_Vertical,FIT
+J2,MAX30102 BREAKOUT,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,FIT
+J3,MLX90614 3V3 BREAKOUT,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,FIT
+J4,DS1302 MODULE,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,FIT
+J5,WC1602A LCD 16x2 - VERIFY ACTUAL MODULE,Akena_LCD:LCD1602_80x36_Mounting,FIT
+J6,SPI MICROSD MODULE,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,FIT
+J7,EXTERNAL RGB COMMON CATHODE,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,FIT
+J8,ACTIVE BUZZER 20mA MAX,Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical,FIT
+J9,EXTERNAL REGULATED SUPPLIES,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,FIT
+JP1,3V3 SOURCE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,FIT
+JP2,SD VOLTAGE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,FIT
+JP3,BUZZ VOLTAGE - ONE SHUNT,Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical,FIT
+R1,4.7k OPTIONAL DNP,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,DNP
+R2,4.7k OPTIONAL DNP,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,DNP
+R3,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+R4,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+R5,330,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+R6,1k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+R7,10k,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+Q1,PN2222A E1 B2 C3,Package_TO_SOT_THT:TO-92_Inline_Wide,FIT
+D1,1N5819,Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal,FIT
+C1,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,FIT
+C2,100uF 10V,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,FIT
+C3,100nF,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,FIT
+C4,100uF 10V,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,FIT
+U2,SN74AHCT245N - NOT 74HC245,Package_DIP:DIP-20_W7.62mm,FIT
+RV1,10k LCD CONTRAST,Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical,FIT
+R8,220 LCD BACKLIGHT,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,FIT
+C5,100nF U2 BYPASS,Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm,FIT
+C6,10uF 10V LCD,Capacitor_THT:CP_Radial_D6.3mm_P2.50mm,FIT

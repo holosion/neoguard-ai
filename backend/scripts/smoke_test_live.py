@@ -1,6 +1,6 @@
 """Exercise the live PostgreSQL-backed API using disposable records, then remove them."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 from uuid import uuid4
@@ -15,6 +15,7 @@ from app.main import app
 from app.models import (
     Alert,
     AuditLog,
+    Clinic,
     ComponentHealthLog,
     Device,
     DeviceComponent,
@@ -36,7 +37,10 @@ def run_smoke_flow() -> None:
 
     with SessionLocal() as db:
         db.execute(delete(LoginFailure).where(LoginFailure.source_hash == test_source_hash))
+        clinic_id = db.scalar(select(Clinic.id).where(Clinic.is_active.is_(True)).order_by(Clinic.id).limit(1))
         db.commit()
+    if clinic_id is None:
+        raise RuntimeError("Create an active clinic before running the live smoke flow")
 
     try:
         if not settings.bootstrap_admin_password:
@@ -63,7 +67,7 @@ def run_smoke_flow() -> None:
             patient_response = client.post(
                 "/api/v1/patients",
                 headers=staff_headers,
-                json={"patient_code": f"SMK-{suffix}", "sex": "U"},
+                json={"patient_code": f"SMK-{suffix}", "sex": "U", "clinic_id": clinic_id},
             )
             assert patient_response.status_code == 201, patient_response.text
             patient_id = patient_response.json()["id"]
@@ -73,6 +77,7 @@ def run_smoke_flow() -> None:
                 headers=staff_headers,
                 json={
                     "device_code": f"SMK-{suffix}",
+                    "clinic_id": clinic_id,
                     "status": "active",
                     "components": [
                         {"component_type": "RTC"},
@@ -88,6 +93,9 @@ def run_smoke_flow() -> None:
             rotated_secret = client.post(f"/api/v1/devices/{device_id}/rotate-secret", headers=staff_headers)
             assert rotated_secret.status_code == 200, rotated_secret.text
             device_secret = rotated_secret.json()["device_secret"]
+            device_headers = {"Authorization": f"Bearer {device_secret}"}
+            no_session = client.get("/api/v1/devices/current-session", headers=device_headers)
+            assert no_session.status_code == 200 and no_session.json()["session_id"] is None, no_session.text
             assert client.post(
                 "/api/v1/devices/sync",
                 headers=old_device_headers,
@@ -101,9 +109,39 @@ def run_smoke_flow() -> None:
             )
             assert session_response.status_code == 201, session_response.text
             session_id = session_response.json()["id"]
+            assigned_session = client.get("/api/v1/devices/current-session", headers=device_headers)
+            assert assigned_session.status_code == 200, assigned_session.text
+            assert assigned_session.json() == {"device_code": f"SMK-{suffix}", "session_id": session_id}, assigned_session.text
+
+            nurse_password = f"Nurse-{uuid4().hex}-Aa1!"
+            nurse_new_password = f"Changed-{uuid4().hex}-Bb2!"
+            nurse_payload = {
+                "username": f"smoke2_{suffix.lower()}",
+                "email": f"smoke2-{suffix.lower()}@example.com",
+                "password": nurse_password,
+                "role": "nurse",
+                "clinic_id": clinic_id,
+            }
+            nurse_response = client.post("/api/v1/auth/users", headers=staff_headers, json=nurse_payload)
+            assert nurse_response.status_code == 201, nurse_response.text
+            nurse2_id = nurse_response.json()["id"]
+            nurse_login = client.post(
+                "/api/v1/auth/login",
+                data={"username": nurse_payload["username"], "password": nurse_password},
+            )
+            assert nurse_login.status_code == 200 and nurse_login.json()["must_change_password"] is True, nurse_login.text
+            temporary_headers = {"Authorization": f"Bearer {nurse_login.json()['access_token']}"}
+            password_change = client.post(
+                "/api/v1/auth/change-password",
+                headers=temporary_headers,
+                json={"old_password": nurse_password, "new_password": nurse_new_password},
+            )
+            assert password_change.status_code == 200, password_change.text
+            nurse_headers = {"Authorization": f"Bearer {password_change.json()['access_token']}"}
 
             event_id = str(uuid4())
-            measured_at = datetime.now(UTC).isoformat()
+            measured_at_dt = datetime.now(UTC) + timedelta(seconds=2)
+            measured_at = measured_at_dt.isoformat()
             sync_payload = {
                 "device_code": f"SMK-{suffix}",
                 "firmware_version": "smoke-test",
@@ -111,10 +149,28 @@ def run_smoke_flow() -> None:
                     {
                         "event_id": event_id,
                         "session_id": session_id,
-                        "measured_at": measured_at,
+                        "measured_at": (measured_at_dt - timedelta(seconds=2)).isoformat(),
                         "heart_rate_bpm": 98,
                         "spo2_percent": 88,
                         "temperature_c": 35.9,
+                        "quality": "ok",
+                    },
+                    {
+                        "event_id": str(uuid4()),
+                        "session_id": session_id,
+                        "measured_at": (measured_at_dt - timedelta(seconds=1)).isoformat(),
+                        "heart_rate_bpm": 110,
+                        "spo2_percent": 94,
+                        "temperature_c": 36.2,
+                        "quality": "ok",
+                    },
+                    {
+                        "event_id": str(uuid4()),
+                        "session_id": session_id,
+                        "measured_at": measured_at,
+                        "heart_rate_bpm": 140,
+                        "spo2_percent": 96,
+                        "temperature_c": 36.7,
                         "quality": "ok",
                     },
                     {
@@ -138,11 +194,10 @@ def run_smoke_flow() -> None:
                     {"component_type": "LCD", "checked_at": measured_at, "status": "ok"},
                 ],
             }
-            device_headers = {"Authorization": f"Bearer {device_secret}"}
             first_sync = client.post("/api/v1/devices/sync", headers=device_headers, json=sync_payload)
             assert first_sync.status_code == 200, first_sync.text
             assert first_sync.json()["readings"][0]["status"] == "accepted", first_sync.text
-            poor_reading_id = first_sync.json()["readings"][1]["reading_id"]
+            poor_reading_id = first_sync.json()["readings"][-1]["reading_id"]
 
             alerts_response = client.get("/api/v1/alerts", headers=staff_headers, params={"patient_id": patient_id})
             assert alerts_response.status_code == 200, alerts_response.text
@@ -191,11 +246,25 @@ def run_smoke_flow() -> None:
             assert retry_sync.status_code == 200, retry_sync.text
             assert retry_sync.json()["readings"][0]["status"] == "duplicate", retry_sync.text
 
-            history = client.get(f"/api/v1/patients/{patient_id}/readings", headers=staff_headers)
+            history = client.get(f"/api/v1/patients/{patient_id}/readings", headers=nurse_headers)
             assert history.status_code == 200, history.text
-            assert history.json()["data_status"] == "fresh", history.text
-            assert len(history.json()["readings"]) == 2, history.text
-            assert history.json()["last_device_sync_at"] is not None, history.text
+            history_data = history.json()
+            assert history_data["data_status"] == "fresh", history.text
+            assert len(history_data["readings"]) == 4, history.text
+            persisted = {str(reading["device_event_id"]): reading for reading in history_data["readings"]}
+            assert len(persisted) == 4, history.text
+            chart_eligible = [
+                reading for reading in history_data["readings"]
+                if reading["quality"] == "ok" and reading["heart_rate_bpm"] is not None
+            ]
+            assert len(chart_eligible) >= 3, history.text
+            for sent in sync_payload["readings"]:
+                stored = persisted[sent["event_id"]]
+                assert stored["heart_rate_bpm"] == sent["heart_rate_bpm"], stored
+                assert stored["spo2_percent"] == sent["spo2_percent"], stored
+                assert stored["temperature_c"] == sent["temperature_c"], stored
+                assert stored["quality"] == sent["quality"], stored
+            assert history_data["last_device_sync_at"] is not None, history.text
 
             patient_page = client.get("/api/v1/patients", headers=staff_headers, params={"limit": 1, "offset": 0})
             assert patient_page.status_code == 200 and patient_page.headers.get("X-Total-Count") is not None
@@ -206,20 +275,6 @@ def run_smoke_flow() -> None:
             rtc = next(item for item in smoke_health["components"] if item["component_type"] == "RTC")
             assert rtc["status"] == "ok" and rtc["checked_at"] is not None, smoke_health
 
-            nurse_password = f"Nurse-{uuid4().hex}-Aa1!"
-            # Create a second nurse with a retained local variable for permission checks.
-            nurse_payload = {
-                "username": f"smoke2_{suffix.lower()}",
-                "email": f"smoke2-{suffix.lower()}@example.com",
-                "password": nurse_password,
-                "role": "nurse",
-            }
-            nurse2_response = client.post("/api/v1/auth/users", headers=staff_headers, json=nurse_payload)
-            assert nurse2_response.status_code == 201, nurse2_response.text
-            nurse2_id = nurse2_response.json()["id"]
-            nurse2_login = client.post("/api/v1/auth/login", data={"username": nurse_payload["username"], "password": nurse_password})
-            assert nurse2_login.status_code == 200, nurse2_login.text
-            nurse_headers = {"Authorization": f"Bearer {nurse2_login.json()['access_token']}"}
             assert client.get("/api/v1/admin/overview", headers=nurse_headers).status_code == 403
 
             alerts = client.get(
@@ -270,7 +325,7 @@ def run_smoke_flow() -> None:
                     current_device.status == "maintenance" and active_session is None
                 )
 
-        print("API smoke flow passed: login throttling/access control, quality-aware alerts, component health, session/status race, pagination, sync retry/rate limit, and device clock validation.")
+        print("API smoke flow passed: sensor sync and exact reading round-trip, login throttling/access control, quality-aware alerts, component health, session/status race, pagination, sync retry/rate limit, and device clock validation.")
     finally:
         with SessionLocal() as db:
             if alert_ids:

@@ -1,0 +1,8 @@
+{
+  "wifi_ssid": "YOUR_2_4_GHZ_WIFI_NAME",
+  "wifi_password": "YOUR_WIFI_PASSWORD",
+  "api_base_url": "https://neoguard-api-wwth.onrender.com/api/v1",
+  "device_code": "YOUR_REGISTERED_DEVICE_CODE",
+  "device_secret": "YOUR_DEVICE_SECRET_NOT_YOUR_LOGIN_PASSWORD",
+  "session_id": 0
+}

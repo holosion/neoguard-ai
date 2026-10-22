@@ -1,3 +1,4 @@
+import { RefreshGate } from '../utils/refreshGate';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { patientsApi } from '../api/patients';
 import { POLL_INTERVAL_MS } from '../utils/constants';
@@ -7,23 +8,25 @@ export function usePatientDetail(id, range = '30m', intervalMs = POLL_INTERVAL_M
   const [state, setState] = useState({ patient: null, readings: [], risk: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const seq = useRef(0);
+  const gate = useRef(new RefreshGate());
 
   const refetch = useCallback(async () => {
-    const n = ++seq.current; // ignore answers for a patient we have already left
+    const token = gate.current.start();
+    if (!token) return;
     try {
       const [p, r, k] = await Promise.all([
         patientsApi.getById(id),
         patientsApi.getReadings(id, { range }),
         patientsApi.getRiskScore(id).catch(() => ({ data: null })), // the experimental score must never hide the vitals
       ]);
-      if (n !== seq.current) return;
+      if (!gate.current.isCurrent(token)) return;
       setState({ patient: p.data, readings: r.data, risk: k.data });
       setError(null);
     } catch (e) {
-      if (n === seq.current) setError(e);
+      if (gate.current.isCurrent(token)) setError(e);
     } finally {
-      if (n === seq.current) setLoading(false);
+      if (gate.current.isCurrent(token)) setLoading(false);
+      gate.current.finish(token);
     }
   }, [id, range]);
 
@@ -31,7 +34,7 @@ export function usePatientDetail(id, range = '30m', intervalMs = POLL_INTERVAL_M
     setLoading(true);
     refetch();
     const t = setInterval(refetch, intervalMs);
-    return () => clearInterval(t);
+    return () => { clearInterval(t); gate.current.invalidate(); };
   }, [refetch, intervalMs]);
 
   return { ...state, loading, error, refetch };

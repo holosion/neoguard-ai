@@ -1,0 +1,47 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-10-22T20:27:24",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.4",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/769181f3-d007-5029-b11b-c55a316d92e7",
+            "violations": []
+        },
+        {
+            "path": "/LCD on carrier/",
+            "uuid_path": "/769181f3-d007-5029-b11b-c55a316d92e7/4d4ee843-c730-55ae-8b3c-f88922eca36a",
+            "violations": []
+        },
+        {
+            "path": "/Power and controller cable/",
+            "uuid_path": "/769181f3-d007-5029-b11b-c55a316d92e7/8e81ce27-a7d2-5e44-a880-53b313385f69",
+            "violations": []
+        }
+    ],
+    "source": "NeoGuard.kicad_sch"
+}
