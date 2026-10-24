@@ -1,0 +1,18 @@
+24 October 2026
+
+Separate offline diagnostic sketch generated for ESP32-S3 and the earlier ST7789
+240x280 SPI display. GPIO assignments checked against the recorded screen-only
+test and current sensor/RTC/SD/RGB/buzzer assignments.
+
+No Wi-Fi or backend code is included. MAX30102 reports raw IR/red, not HR/SpO2.
+Existing main firmware files have not been changed.
+
+ESP32-S3 compile started with installed Arduino CLI/core:
+  esp32:esp32:esp32s3:CDCOnBoot=cdc
+Build completed successfully (confirmed 24 October 2026).
+Sketch: 393866 bytes (30% of 1310720 bytes).
+Global variables: 24296 bytes (7% of 327680 bytes).
+Log: ../../.local/offline-component-build.log
+Output: ../../.local/offline-component-build/
+
+No board upload or physical component test was performed.

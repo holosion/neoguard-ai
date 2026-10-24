@@ -1,0 +1,28 @@
+24 October 2026 -- full ESP32-S3 compile and link PASSED
+
+Target: esp32:esp32:esp32s3:CDCOnBoot=cdc
+Compiler: installed Arduino CLI / ESP32 board package.
+Latest revision uses 345966 bytes (26% of 1310720 bytes).
+Global variables use 24912 bytes (7% of 327680 bytes).
+
+Build log: ../../.local/display-sensor-build.log
+Output: ../../.local/display-sensor-build/
+
+GPIOs match the recorded ST7789 screen test and existing MLX90614/MAX30102/buzzer.
+Libraries resolve and the source compiles/links for ESP32-S3.
+Sampling frequency is 100 Hz with four-sample averaging, matching the included
+Maxim algorithm's 25 Hz expectation. Acquisition runs separately from display drawing.
+No Wi-Fi, backend, SD or RTC integration is included in this focused diagnostic.
+
+Uploaded to the attached ESP32-S3 on COM7; esptool verified the written flash hash.
+Added startup/S-command I2C scan and a two-second temperature freshness limit;
+this revision was compiled, uploaded and exercised on the connected board.
+Both 0x57 and 0x5A responded. Live temperatures and red/IR readings were captured.
+Finger detection, calculated HR/SpO2 and clearing estimates on removal were observed.
+User confirmed visible colour bars/text and audible command beeps. User reported
+no interaction beeps; automatic beep audibility remains unconfirmed.
+
+Hardware checks were PARTIAL PASS: HR estimates were unstable (42 to 187 bpm),
+and no warm-target event fired because observed target-minus-ambient stayed below
+the 1.5 C threshold. No calibration or accuracy validation was performed.
+See HARDWARE_TEST.md and ../../.local/display-sensor-*-test.log for evidence.

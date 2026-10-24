@@ -1,78 +1,209 @@
-# Akena NeoGuard full LCD integration
+# NeoGuard full ST7789 monitor with Wi-Fi
 
-Updated 22 October 2026. Experimental bench prototype; readings and alarms are not validated for clinical use. MLX90614 measures surface/object temperature, not core temperature. This revision replaces the ST7789 display with the original 16x2 parallel LCD and preserves the other established pins. No simulated readings are generated.
+Rebuilt 24 October 2026 for the tested ESP32-S3 and **ST7789 240x280 SPI screen**,
+previously called OLED in the project. The LCD firmware is backed up under
+`.local/firmware-backups/pre-integrated-st7789-20261024/`. This is a bench prototype;
+software stability qualification is not clinical calibration or validation.
+
+The default is now **NEOGUARD_ENABLE_NETWORK=1**, following the successful offline
+dashboard, measurement-removal and alarm checks. Sensors, DS1302 clock, RGB/buzzer,
+display and SD logging operate alongside Wi-Fi and secure backend syncing.
+Existing saved network/device settings and pending uploads are reused. Set the
+option to 0 and rebuild to return to the isolated offline build.
 
 ## Wiring
 
-Disconnect power before wiring. All module grounds join ESP32-S3 GND. Use GPIO labels, not header position numbers.
+Use GPIO labels, not physical header positions. Disconnect power before rewiring
+or removing the SD card. All module grounds connect together.
 
-| Component | Connections |
-| --- | --- |
-| LCD 16x2 | RS pin4 -> GPIO8; EN pin6 -> GPIO9; D4 pin11 -> GPIO10; D5 pin12 -> GPIO11; D6 pin13 -> GPIO12; D7 pin14 -> GPIO13 |
-| LCD power/control | VSS pin1 -> GND; VDD pin2 -> rated 5V supply; RW pin5 -> GND; VO pin3 -> 10k potentiometer middle; pot outer legs -> 5V and GND; pins7-10 unused |
-| LCD backlight | A pin15 -> 5V through 220 ohms; K pin16 -> GND; confirm actual module specification |
-| MAX30102 | SDA -> GPIO4; SCL -> GPIO5; INT unused; supply at verified module voltage |
-| MLX90614 | SDA -> GPIO4; SCL -> GPIO5; supply at verified module voltage |
-| DS1302 | CLK -> GPIO6; DAT -> GPIO7; RST/CE -> GPIO14; VCC -> 3V3; GND -> GND |
-| microSD | CS -> GPIO21; SCK -> GPIO40; MOSI/DI -> GPIO41; MISO/DO -> GPIO42; supply at verified module voltage |
-| RGB common cathode | R -> GPIO16; G -> GPIO17; B -> GPIO18, each through its own 220–330 ohm resistor; common -> GND |
-| Two-pin buzzer control | GPIO15, active-high default; rated supply and NPN driver recommended as previously described |
+| Part | Connection |
+|---|---|
+| ST7789 RST / DC / CS | GPIO8 / GPIO9 / GPIO10 |
+| ST7789 MOSI (SDA) / SCK (SCL) | GPIO11 / GPIO12 |
+| ST7789 VCC / GND | Verified 3.3V-compatible breakout supply / common GND |
+| MAX30102 SDA / SCL | GPIO4 / GPIO5; INT unused |
+| MLX90614 SDA / SCL | GPIO4 / GPIO5 |
+| Sensor VCC / GND | Verified 3.3V-compatible breakout supply / common GND |
+| DS1302 CLK / DAT / CE | GPIO6 / GPIO7 / GPIO14; VCC=3.3V, GND common |
+| microSD CS / SCK / MOSI / MISO | GPIO21 / GPIO40 / GPIO41 / GPIO42 |
+| microSD VCC | Actual breakout's rated supply; ESP32-compatible signals |
+| RGB R / G / B | GPIO16 / GPIO17 / GPIO18, each through 330 ohms |
+| RGB common cathode | GND; RGB_COMMON_ANODE=false |
+| Buzzer control | GPIO15 through the verified active-high driver |
 
-For common-anode RGB, set `RGB_COMMON_ANODE = true` and common -> 3V3. For a passive piezo buzzer, set `ACTIVE_BUZZER = false`. Direct GPIO buzzer drive is only suitable when its electrical specifications permit it; working audibly does not establish safe current draw. Confirm transistor pinout if fitting a driver.
+Disconnect the parallel LCD because its GPIOs overlap the ST7789. GPIO13 is unused.
+Screen SDA/SCL labels describe SPI; they do not connect to sensor I2C SDA4/SCL5.
+Use the verified screen breakout's backlight requirements; no backlight GPIO is
+configured. Never pull I2C to 5V.
 
-ESP32 signals are 3.3V. Keep sensor SDA/SCL pull-ups at 3.3V. A 5V LCD must accept 3.3V logic or use a suitable 3.3V-to-5V buffer on its six control/data lines. RW remains grounded. Disconnect the old screen completely because its GPIO8-12 now belong to the LCD. Do not connect an external positive supply rail to the USB-powered board's power outputs.
+The established buzzer driver uses GPIO15 through 1k to PN2222A base, 10k base to
+GND, emitter to GND, collector to buzzer minus, buzzer plus to its rated supply,
+and diode striped end to buzzer plus/other end to collector. Verify transistor
+pinout; the carrier assumes a buzzer load at most 20mA. Carrier SD JP2 pins1-2
+selects 3.3V; pins2-3 selects 5V; fit one shunt using the actual breakout rating.
 
-## Build and upload
+## Upload
 
-1. Open `akena_firmware.ino` with every sibling header present.
-2. Select **ESP32S3 Dev Module**, the actual board's flash/PSRAM settings and its serial port. Enable **USB CDC On Boot** for native USB Serial Monitor. Do not guess flash size/PSRAM from the board menu name.
-3. Install libraries: **LiquidCrystal by Arduino**, **SparkFun MAX3010x Pulse and Proximity Sensor Library**, **Adafruit MLX90614 Library**, **Rtc by Makuna**, **ArduinoJson 7**, and **WiFiManager by tzapu 2.0.17**. Wire, SPI, SD, WiFi and Preferences come with ESP32. This sketch no longer requires a TFT/OLED graphics library.
-4. Upload, then open Serial Monitor at **115200 baud**, newline enabled. Press reset if necessary. The startup marker is `NEOGUARD FULL FIRMWARE LCD`.
-5. Adjust the contrast potentiometer until the LCD text is visible. Initialization success cannot confirm physical LCD operation because RW is grounded.
+Open `akena_firmware.ino` with every sibling header present. Select ESP32S3 Dev
+Module, actual flash/PSRAM settings and correct port. Enable USB CDC On Boot for
+native USB serial. Install the following libraries and their dependencies:
 
-## Phone Wi-Fi setup
+- Adafruit GFX Library
+- Adafruit ST7735 and ST7789 Library
+- Adafruit MLX90614 Library
+- SparkFun MAX3010x Pulse and Proximity Sensor Library
+- Rtc by Makuna
 
-1. On first boot, or when saved Wi-Fi is unavailable, the device advertises **NeoGuard-XXXX**. LCD pages rotate every four seconds through the network name, unique saved AP password, **192.168.4.1**, and instructions. Serial Monitor also prints these details.
-2. Connect the phone to that network. Choose to stay connected if warned there is no internet.
-3. Open **http://192.168.4.1** if the sign-in page does not open automatically. Select **Configure WiFi** and choose your **2.4 GHz** router network. Enter its password.
-4. Enter the registered dashboard **device code** and **device secret** in the same form. This secret is not your dashboard login password. Keep the default API URL `https://neoguard-api-wwth.onrender.com/api/v1` when using the existing hosted frontend/backend. A different backend requires its own device registration and matching HTTPS trust configuration.
-5. Save and allow the device to restart. It remembers the Wi-Fi and device settings. The phone can then return to its normal network.
-6. To reopen configuration later, send **WIFI SETUP** followed by a newline in Serial Monitor. A different device code needs its own secret; a blank secret only preserves the existing secret for the same code.
+Wire, SPI, SD, WiFi and HTTPS support come with ESP32. The network build also needs
+ArduinoJson 7 and WiFiManager by tzapu 2.0.17. LiquidCrystal is not required.
 
-Wi-Fi provisioning uses WiFiManager: https://github.com/tzapu/WiFiManager . LCD driver: https://docs.arduino.cc/libraries/liquidcrystal/ . Acquisition runs in its own task while phone setup and network requests run separately.
+Upload and open Serial Monitor at **115200 baud**, newline enabled. Startup says
+`NEOGUARD FULL FIRMWARE ST7789 - network=1`. This screen has no readback or touch input.
 
-## Get real readings onto the frontend
+## Wi-Fi and backend setup
 
-1. Open the matching dashboard: **https://neoguard-ai-lovat.vercel.app** for the default cloud API.
-2. An administrator must register and activate the device in the intended clinic. Save the issued device code and one-time device secret, and enter them in the phone setup form. Do not reuse credentials issued by a different local backend.
-3. Using the appropriate clinical account, create/select the intended patient and start an active monitoring session assigned to that device. Existing patient/clinic data should only be used for its intended session; use an authorized bench/test record for bench readings.
-4. The ESP32 discovers its active session automatically about every ten seconds. It uses authenticated HTTPS, network time and the existing runtime endpoint, with compatibility fallback for the earlier cloud API.
-5. For a bench check, hold an adult finger still on the MAX30102 and aim the MLX90614 steadily at the intended test surface. Allow at least 60 seconds. All three channels must meet the existing validity and stability gates before combined readings qualify. Waiting alone does not guarantee a result.
-6. Qualified measurements are queued every five seconds and sent in acknowledged batches. Watch Serial Monitor for **SYNC: batch acknowledged** or **SYNC: RAM batch acknowledged**. On the nurse/clinician patient-detail page, choose a time range containing the current measurements and watch the readings refresh. The administrator registry is not the patient vitals view.
-7. Send **STATUS** to inspect Wi-Fi, IP, portal activity, credential presence, session ID, RTC, SD, sensor state, measurement readiness and upload status. It does not print device secrets. `configured=1` only means credentials are present, not that the server accepted them.
+Saved Wi-Fi settings reconnect automatically. If setup is needed, the screen shows
+a password-protected `NeoGuard-XXXX` network and its setup password. Join that
+network from a phone, then open `http://192.168.4.1`. Choose a 2.4 GHz Wi-Fi network
+and enter its password. Wi-Fi can be used with both device fields blank; the
+dashboard remains available after reconnect. For backend syncing, configure the
+dashboard's device code and corresponding device secret; blank secret keeps the
+saved secret for the same device code. The
+default HTTPS API is `https://neoguard-api-wwth.onrender.com/api/v1`.
 
-Common blockers:
+Send `WIFI SETUP` to reopen configuration. The setup page replaces the dashboard
+while active; sensor acquisition, local CSV recording and alarms continue. Saved
+device-setting changes restart the board after the current SD operation closes.
+Wi-Fi passwords and device secrets are never embedded in the sketch.
 
-- `session=0` / `NO ACTIVE SESSION`: check registration, activation, device secret, clinic and assigned monitoring session on the same backend.
-- `DEVICE AUTH ERROR` or HTTP 401/403: verify the correct device secret and active registration.
-- `ready=0`: inspect finger contact, raw sensor validity and the signal countdown. Measurements are not fabricated or sent as valid simply to fill the graph.
-- `RTC=0`: allow network/session time sync, or send `TIME YYYY-MM-DD HH:MM:SS` using Nairobi local time. `TIME?` reads the clock; `sync_rtc.ps1` can set it from this computer. The CR2032 trickle charger remains disabled.
-- Negative HTTP codes / TLS failure: check Wi-Fi, internet access, clock and the embedded certificate in `root_ca.h`. TLS verification is not disabled.
-- `SD=0`: check FAT32 formatting, module-rated supply, shared ground and the four SD signal wires. Up to 12 events can remain temporarily in RAM; they do not survive power loss.
-- Missing frontend readings despite acknowledged uploads: verify the same patient session, backend, date range and clinician account. Local frontend preview must be disabled (`VITE_DASHBOARD_PREVIEW=false`).
+If DHCP leaves the DNS server unset (`0.0.0.0`), the network worker retains any
+secondary resolver or falls back to 1.1.1.1 and 8.8.8.8. A supplied primary DNS
+server is preserved. This keeps DHCP addressing and HTTPS certificate/hostname
+verification enabled. Failed requests print bounded DNS/TCP diagnostics without
+credentials. Networks that block public DNS must supply a working local resolver.
+Backend replies are decoded through HTTPClient's streaming reader, including
+chunked responses without Content-Length, with a 20000-byte response limit.
 
-## LCD, storage and alarms
+An internet connection, valid device credential and active dashboard session are
+required to deliver sensor readings. The network worker checks the server context,
+reports connectivity with heartbeats, and uploads available sensor values from the
+SD queue. Unqualified live estimates carry `quality=poor`; only measurements that
+pass the full stability checks carry `quality=ok`. Missing parameters are omitted,
+and values outside the API bounds are never clamped. Only a complete server
+acknowledgement advances the queue cursor. Loss of
+Wi-Fi leaves local monitoring and SD logging running. No artificial readings are
+generated to test delivery. If SD fails, the upload fallback holds only 12 readings
+in RAM; check STATUS for dropped readings.
 
-The LCD rotates measurement/countdown, date/time, Wi-Fi/IP and SD/upload pages. Alarm and sensor-fault messages take priority. During phone setup it rotates the AP instructions and sensor status.
+## Display and measurement rules
 
-The original signal check requires at least 45 valid one-second observations in a minute, with at least 12 in the latest 15 seconds and limited recent variation. Qualified medians update every five seconds. Removal, stale sampling or instability clears readiness. This checks repeatability, not clinical accuracy.
+The dashboard shows clock, averaged HR, live SpO2, surface temperature, acquisition
+status, saved-row count and connectivity. MLX90614 measures surface temperature.
+HR uses the arithmetic mean of valid, distinct algorithm estimates from the last
+10 seconds, published every three seconds. At least five estimates spanning four
+seconds are needed before the first average; the sensor also needs its initial
+four-second acquisition window. The screen labels this `HEART RATE / 10s AVG`.
+Finger removal, invalid signal or an estimate older than two seconds clears the
+displayed average. A long signal gap resets its history. No zero-filled missing
+samples, frozen values or clamping are used. SpO2 remains independent. Moving the
+temperature target does not hide a valid pulse estimate.
 
-Existing project limits remain HR below 100 or above 160 bpm, surface temperature below 36.5 C and SpO2 below 90%, unless the authenticated server supplies configured limits. Three consecutive valid breaches trigger the red LED and pulsed buzzer; missing sensors also signal faults. An adult bench pulse may trigger the neonatal prototype's low-HR alarm. Blue indicates acquisition, not health.
+This average smooths the display only. Raw readings still drive alarms, the full
+qualification check, the existing CSV fields and backend uploads. A calmer
+display does not make an unstable signal qualified or eligible for AI scoring.
 
-The FAT32 card records `/neoguard_v2.csv`, including raw values and validity flags. `/pending.ndjson` retains upload events with their original session/time and immutable IDs; `/sync.cursor` advances only for acknowledged events. Retries reuse event IDs. Existing CSV files are preserved; the firmware does not format the card. Rejected/corrupt queue data is retained for inspection. Power down before removing the card.
+The separate qualified measurement indicator still requires:
 
-## Data for machine learning
+- Continuous finger contact for at least 60 seconds.
+- At least 45 valid observations in the latest minute.
+- At least 12 valid observations in the latest 15 seconds.
+- Recent HR spread at most 12 bpm, oxygen spread at most 3 percentage points,
+  and temperature spread at most 0.4 C.
 
-This firmware collects real bench sensor observations; it does not train a model or label outcomes. Preserve raw values, timestamps, validity, session identity, sensor placement and independently established labels when preparing a dataset. Repeated samples from one short bench session are not evidence of a clinically useful model. Do not train on invalid measurements or treat surface temperature as core temperature.
+Qualified medians update every five seconds. Removal, stale/invalid samples or
+excess variation clears readiness. Until qualification passes, the screen labels
+the numbers as estimates and the backend marks their quality as poor. A stable
+estimate still needs independent accuracy validation. The diagnostic showed
+erratic raw HR; these checks remain in place. Raw values remain in STATUS/CSV.
+Waiting alone does not guarantee readiness.
 
-See `BUILD_CHECK.txt` for the current software verification. Preparing or compiling firmware does not flash the board, register a device, assign a session or prove that hardware readings have reached the hosted frontend.
+MAX sampling runs separately at an effective 25 Hz during display and SD operations.
+Contact uses 50000 IR on / 40000 off thresholds, confirmation and saturation
+rejection. STATUS exposes sample counts/resets to check acquisition continuity.
+Temperature reads check the MLX90614 packet error code and sensor error bit;
+failed frames produce an unavailable value and increment the STATUS error counter.
+The packet format and reference test vector follow the
+[Melexis datasheet](https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf).
+
+## RGB and buzzer
+
+- Blue: averaging, missing/invalid readings or awaiting limit confirmation, without
+  a confirmed alarm or fault.
+- Green: average available, all three displayed readings fresh and valid, and each
+  within the configured limits, with no confirmed alarm or sensor fault. The
+  screen says `IN RANGE / ESTIMATE` until full
+  qualification passes. Green describes configured ranges, not a diagnosis or AI
+  eligibility; raw qualification and upload quality remain separate.
+- Red: sensor fault or confirmed threshold alarm.
+- Buzzer: startup cue, BEEP command, pulsed threshold alarm or sensor-fault cue.
+
+The requested surface-temperature alarm is strictly below **32 C**; 32 C itself
+does not count as low. Backend clinical temperature defaults do not overwrite
+this surface setting. HR below 100/above 160 bpm and SpO2 below 90% remain the
+prototype defaults, so adult bench HR can still activate the alarm. Each parameter
+has independent three-breach/three-recovery confirmation. Invalid values do not
+silently clear an existing alarm. Removing the finger resets threshold alarms.
+
+The hosted `BENCH-` patient view distinguishes live estimates from qualified
+readings and uses the 32 C surface limit. Other patient views retain their clinical
+display rules. The current device is registered as `NG-E1E078` with a clearly
+labelled bench session; device secrets stay in private configuration.
+
+## SD logging and commands
+
+The existing `/neoguard_v2.csv` opens in append mode after a header check. No card
+formatting occurs. One row per reporting interval contains boot ID, time and RTC
+validity, qualified values/flags, raw red/IR, raw estimates, surface observation,
+readiness/countdown and alarm flags. Qualified fields stay empty until ready.
+
+| Command | Action |
+|---|---|
+| STATUS | Hardware/network state, raw values, saved rows, sample counters, heap, HTTP outcomes |
+| LOGCHECK | Reopen CSV and compare the latest saved row byte-for-byte |
+| SD RETRY | Reinitialize the SD SPI bus and retry the existing CSV mount/check |
+| SD QUIET | Diagnostic: pause acquisition, release I2C, test SD, restore sensors |
+| BEEP | Request a 300ms beep; alarm output takes priority |
+| TIME? | Read DS1302 Nairobi local date/time |
+| TIME YYYY-MM-DD HH:MM:SS | Set Nairobi local time and verify readback |
+| WIFI SETUP | Open the password-protected phone configuration portal |
+
+`sync_rtc.ps1 -Port COM7` sets RTC from this computer's Nairobi clock. The CR2032
+trickle charger stays disabled. Readback and advancing time are checks; battery
+retention needs a separate power-loss test. Correct missing-sensor wiring/power
+with power off and reset. SD mounts retry every ten seconds with finger removed.
+
+## Validation
+
+BUILD_CHECK.txt and HARDWARE_TEST.md record the actual current results. The small
+diagnostic sketches in `firmware/` remain available for component isolation.
+Network support is in `offline_sync.h`/`network_setup.h` behind `connectivity.h`.
+STATUS reports Wi-Fi/IP, device configuration/session and the most recent runtime,
+heartbeat and sync HTTP outcomes. Zero means no attempt yet; -100 means request
+prerequisites were unavailable. See the hardware report for checks actually run.
+
+## How the AI fits
+
+The ESP32 calculates the display average and operates RGB/buzzer threshold alarms
+locally, including when Wi-Fi is unavailable. The backend's experimental model
+uses qualified temperature, oxygen and HR history after successful uploads. It
+extracts latest value, mean, direction of change and variability for each signal
+from up to two minutes of history. It requires at least 12 valid observations per
+signal spanning at least a minute, with gaps no longer than 15 seconds and a valid
+latest reading. Poor-quality display estimates are excluded.
+
+When enabled and enough qualified data exists, its output appears in the web
+app's Experimental risk score panel. The saved model is trained on simulated data
+and targets simulated low-temperature/low-oxygen events now or within 120 seconds.
+It is not clinically validated and does not control the ESP32's RGB/buzzer. The
+local 32 C surface limit is separate from the model's clinical threshold contract.
+See [the AI guide](../../ai/README.md) for model details and availability states.

@@ -1,5 +1,8 @@
-# Akena integrated LCD firmware — 22 October 2026
+# Current NeoGuard ST7789 firmware
 
-Open `akena_firmware/akena_firmware.ino` in Arduino IDE. This is the full integration sketch, now using the 16x2 parallel LCD instead of ST7789. Keep all sibling headers with it. The `display_check` and `hello_akena` folders are historical ST7789 tests, not this firmware.
+Open **akena_firmware/akena_firmware.ino** in Arduino IDE. The full monitor now uses
+the tested ST7789 240x280 SPI screen with sensors, RTC, RGB, buzzer and SD logging.
+Wi-Fi and queued HTTPS backend syncing are enabled after offline integration checks.
 
-See `akena_firmware/README.md` for wiring, upload, phone Wi-Fi setup and getting real readings onto the frontend. Original files are backed up under `.local/firmware-backups/pre-lcd-20261022` at the project root.
+See [wiring, upload and validation instructions](akena_firmware/README.md). Keep all
+sibling headers with the sketch. The separate component tests are in `../firmware/`.

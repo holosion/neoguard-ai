@@ -4,8 +4,9 @@
 #include <cstdint>
 
 // Signal repeatability checks for the bench prototype, not clinical validation.
+constexpr float SURFACE_TEMP_LOW_C = 32.0f; // User-requested surface-temperature bench limit.
 struct AlarmLimits {
-  float hrLow = 100, hrHigh = 160, tempLow = 36.5f, spo2Low = 90;
+  float hrLow = 100, hrHigh = 160, tempLow = SURFACE_TEMP_LOW_C, spo2Low = 90;
 };
 struct Measurement {
   bool ready = false;
@@ -53,27 +54,26 @@ class StableMeasurement {
 };
 
 class ThresholdAlarm {
-  unsigned streak[4]{}, recovery = 0;
+  unsigned streak[4]{}, recovery[4]{};
   unsigned active = 0;
  public:
-  void reset() { for (auto &v : streak) v = 0; active = recovery = 0; }
+  void reset() { for (auto &v : streak) v = 0; for (auto &v : recovery) v = 0; active = 0; }
   unsigned flags() const { return active; }
   void observe(bool contact, bool hrValid, float hr, bool oxygenValid, float oxygen,
                bool tempValid, float temperature, const AlarmLimits &limits) {
     if (!contact) { reset(); return; }
     const bool breach[] = {hrValid && hr < limits.hrLow, hrValid && hr > limits.hrHigh,
       tempValid && temperature < limits.tempLow, oxygenValid && oxygen < limits.spo2Low};
-    unsigned confirmed = 0;
+    const bool valid[] = {hrValid, hrValid, tempValid, oxygenValid};
     for (unsigned i = 0; i < 4; ++i) {
+      if (!valid[i]) {streak[i] = recovery[i] = 0; continue;}
       streak[i] = breach[i] ? std::min(3U, streak[i] + 1) : 0;
-      if (streak[i] >= 3) confirmed |= 1U << i;
-    }
-    if (confirmed) { active = confirmed; recovery = 0; }
-    else if (active) {
-      // Invalid estimates cannot be used as evidence that a threshold recovered.
-      if (hrValid && oxygenValid && tempValid && !breach[0] && !breach[1] && !breach[2] && !breach[3]) {
-        if (++recovery >= 3) active = recovery = 0;
-      } else recovery = 0;
+      if (breach[i]) {
+        recovery[i] = 0;
+        if (streak[i] >= 3) active |= 1U << i;
+      } else if (active & (1U << i)) {
+        if (++recovery[i] >= 3) {active &= ~(1U << i); recovery[i] = 0;}
+      } else recovery[i] = 0;
     }
   }
 };

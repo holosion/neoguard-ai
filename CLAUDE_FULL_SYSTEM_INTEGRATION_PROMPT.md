@@ -27,16 +27,13 @@ akena firmware/akena_firmware/
   offline_sync.h
   network_setup.h
   runtime_compat.h
-  display_icons.h
   root_ca.h
   README.md
   BUILD_CHECK.txt
   sync_rtc.ps1
 ```
 
-The display reference is `akena firmware/display_check/display_check.ino` with its README. It is valuable because the project records that its text and increasing counter were visible on the actual screen.
-
-Older `system_test/`, `firmware/neoguard_system/` and `firmware/sketch_oct12a/` are historical references. They use different integration approaches, and some older versions use a parallel LCD. Do not mix their pin assignments, manual-session configuration, or obsolete setup requirements into the current firmware. The root README also contains older statements that hardware-to-API integration is absent; the latest `akena firmware` source already attempts that integration.
+Current hardware confirmed on 23 October 2026: 16-pin 16x2 parallel LCD, driven by LiquidCrystal on GPIO8-13. Use the current firmware README for wiring. Historical TFT/OLED sketch folders have been deleted. Do not recreate or use their display setup. `system_test/` is a separate diagnostic sketch. The root README now describes Wi-Fi synchronization in the current firmware.
 
 Backend source files that define compatibility include:
 
