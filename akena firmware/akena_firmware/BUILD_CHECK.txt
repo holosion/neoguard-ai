@@ -1,27 +1,141 @@
-NeoGuard LCD integration verification — 22 October 2026
+24 October 2026 -- CURRENT HEART-RATE AVERAGING / LED RANGE BUILD
 
-This record applies to the LCD revision, not the earlier TFT builds.
+Firmware akena-st7789-6, network enabled.
+Compile/link PASS: 1274277 / 1310720 program bytes, 52136 static RAM bytes.
+36443 application bytes remain. Target esp32:esp32:esp32s3:CDCOnBoot=cdc.
+COM7 upload PASS; flash hashes verified; original credentials/wiring retained.
+Binary SHA256 F7B77672128243B36E557AFD546454480B1C17BE2B227E7F70B44D4A2F1E6ECC.
 
-Completed:
-- Backend device-runtime tests: 2 passed.
-- Frontend polling/refresh tests: 2 passed.
-- Frontend production build: passed; existing large-bundle warning remains.
-- Hosted frontend: HTTPS HTTP 200.
-- Hosted backend /health: HTTPS HTTP 200, status ok. Verified using the root CA embedded in root_ca.h; first health request timed out, retry succeeded.
-- Source inspection: LiquidCrystal uses GPIO8-13; no TFT/OLED display initialization remains. I2C4/5, RTC6/7/14, SD21/40/41/42, RGB16/17/18, buzzer15 preserved.
+Display HR: rolling 10-second mean, updated every three seconds, at least five
+distinct valid estimates spanning four seconds. Removal/stale/invalid data clears
+availability. Raw alarms, CSV, qualification and backend uploads are unchanged.
+Green requires a ready average and fresh valid displayed values inside all limits,
+without confirmed alarms or faults. IN RANGE / ESTIMATE remains on screen until
+full qualification. Blue is acquiring/unavailable; confirmed alarms or faults are
+red. This LED change does not promote upload quality or AI eligibility.
 
-ESP32-S3 complete compile and link: PASSED.
-- Target: esp32:esp32:esp32s3:CDCOnBoot=cdc; installed ESP32 core 3.3.12.
-- Flash: 1,257,445 bytes (95% of default 1,310,720-byte app partition).
-- Static RAM: 51,440 bytes (15%); 276,240 bytes remain before runtime allocations.
-- LiquidCrystal explicitly selected from the existing Arduino15 library folder. Arduino IDE users should install LiquidCrystal by Arduino through Library Manager if it is not discovered.
-- Build log: .local/lcd-build.log. Build output: .local/lcd-build.
-- The build target does not verify the actual board's flash size or PSRAM configuration.
+Rolling-average/indicator tests PASS. Existing measurement/alarm and live-vitals
+regressions PASS. User confirmed smoother HR and clearing on removal. Blue at a
+displayed 125 was caused by full qualification remaining false, with raw HR
+100--136 and a detected continuous-contact stretch below 60 seconds. The current
+revision separates displayed-range colour from AI qualification.
+New boot 94033BC8: Wi-Fi/session 1, RTC=SD=MAX=MLX=1, runtime/heartbeat HTTP 200,
+TLS_error=0, no-contact HR unavailable and LED blue. Hosted firmware version 6.
+Physical green retest PASS: user confirmed green and IN RANGE / ESTIMATE.
+Capture corroborated green at averaged HR 119, oxygen 100%, surface >34 C,
+alarms=0 and qualified=0. Removal cleared the average and returned LED blue.
+Final runtime/heartbeat/sync HTTP 200; SD cursor advanced 10955 to 12040.
+LOGCHECK PASS at row 230; sampler resets, MLX packet errors and queue damage zero.
+Serial reader closed; board left running. Analysis: .local/neoguard-led-range-analysis.json.
+Evidence: .local/neoguard-led-range-build.log, .local/neoguard-led-range-upload.log,
+.local/neoguard-led-range-live.log, .local/neoguard-led-range-backend.json.
+See HARDWARE_TEST.md for current and historical validation details.
 
-Not performed:
-- No board flashed or serial interaction with the physical device.
-- No device registered, patient session created, or cloud deployment performed.
-- No authenticated hardware-to-backend reading observed.
-- Sensor accuracy, assembled wiring, SD writes, LCD visibility and phone portal operation need bench verification.
+--------------------------------------------------------------------------
+PRECEDING BACKEND INTEGRATION BUILD
+24 October 2026 -- backend integration build
 
-Original source/docs backed up under .local/firmware-backups/pre-lcd-20261022.
+COMPILE/LINK: PASS
+Target esp32:esp32:esp32s3:CDCOnBoot=cdc, ESP32 core 3.3.12.
+Program 1272745 / 1310720 bytes (97%); 37975 bytes remain.
+Static RAM 52016 / 327680 bytes. Network enabled; firmware identifier:
+akena-st7789-4.
+
+UPLOAD: PASS, COM7, ESP32-S3 MAC 24:58:7c:e1:e0:78; flash hashes verified.
+Binary SHA256 DA95FD050C9EB37E3634D3F106D985BFCA5B34501D8FCC595E081D11574D39A4.
+
+AUTHENTICATED BACKEND DELIVERY: PASS
+Registered NG-E1E078 in CASE clinic 2 with bench record BENCH-E1E078, session 1.
+Fixed unset DNS and skipped chunked HTTP response bodies; HTTPS checks retained.
+Final boot 4D5545F6: configured=1, session=1, RTC=SD=MAX=MLX=1, portal=0.
+runtime_http=200, heartbeat_http=200, sync_http=200, TLS_error=0.
+Eight reading batches acknowledged during capture; durable SD cursor advanced to
+2400, then 4051 at the final reader-closed recheck.
+Hosted database latest reading 2026-10-24 22:15:25 +03:00; device online.
+Hosted frontend's own API proxy returned the same stored-reading timestamp.
+LOGCHECK PASS at saved rows 202 and 298, with serial reader closed between checks.
+Final captured sampler_resets=0, temperature_packet_errors=0, queue_damaged=0.
+
+DISPLAY/ALARM: user confirmed HR/SpO2 appear and clear on removal; no temperature
+low alarm at 32 C or above. Local surface low limit is strictly below 32 C.
+Live estimates are independent of the separate full stability qualification.
+Unqualified packets carry poor quality; no values were invented or clamped.
+
+FRONTEND: production deployment READY, dpl_8CX7ad6cUvk5YoWGZeZvvQUH94ti.
+https://neoguard-ai-lovat.vercel.app; public bundle and API proxy verified.
+User completed the final physical test and confirmed all three values appeared
+in the hosted CASE nurse view for BENCH-E1E078. Display tests (3) and build PASS.
+
+REMAINING: captured pulse estimates remain unstable and full qualification did
+not pass. Accurate HR/SpO2, long-term SD reliability and RTC battery retention
+are not established. HR limits remain 100--160; adult bench HR can still alarm.
+Clinical backend temperature defaults remain separate from the 32 C bench limit.
+
+Evidence: .local/neoguard-backend-response-build.log,
+.local/neoguard-backend-response-upload.log, .local/neoguard-backend-final-live.log,
+.local/neoguard-backend-delivery-verified.json, .local/neoguard-final-frontend-api.json.
+See HARDWARE_TEST.md for current results and retained historical tests.
+
+--------------------------------------------------------------------------
+HISTORICAL BUILD: Wi-Fi-only result before backend provisioning
+24 October 2026 -- full ST7789 monitor with Wi-Fi
+
+LATEST SOURCE COMPILE/LINK: PASS
+Target: esp32:esp32:esp32s3:CDCOnBoot=cdc; ESP32 core 3.3.12.
+Program: 1269481 bytes (96% of 1310720 bytes; 41239 bytes remaining).
+Static RAM: 51992 bytes (15% of 327680 bytes).
+NEOGUARD_ENABLE_NETWORK=1. ArduinoJson 7 and WiFiManager 2.0.17 installed.
+
+UPLOAD: PASS
+Uploaded final source, including nonblocking USB output, Wi-Fi diagnostics,
+setup-screen redraw correction and independent Wi-Fi-only operation, to COM7.
+ESP32-S3 MAC: 24:58:7c:e1:e0:78. Flash hashes verified; restarted on COM7.
+
+FINAL HARDWARE RESULT: WIFI AND LOCAL MONITORING CHECKS PASS
+- Saved Wi-Fi settings reconnected automatically after final upload/reset.
+- IP 192.168.137.232; RSSI approximately -35 to -37 dBm.
+- Initial and final STATUS: portal=0, network_build=1, RTC=1, SD=1, MAX=1, MLX=1.
+- WIFI SETUP opened the portal while keeping the station connected.
+- Local setup page and exit route both returned HTTP 200.
+- Setup was closed; board left in dashboard mode, Wi-Fi connected, serial closed.
+- SD readback passed before/after closing the serial reader for 25 seconds.
+- Same boot: 39 CSV-row increments over 39.020 seconds spanning the closed-reader
+  interval and status/readback commands, 0.999 rows/sec. Headless check PASS.
+- Final direct LOGCHECK PASS at saved row 110; subsequent rows continued.
+- Final snapshots: sampler_resets=0 and temperature_packet_errors=0.
+- RTC advancing correctly in Nairobi time; final check 2026-10-24 21:02:56.
+
+BACKEND REGISTRATION STILL NEEDED
+Device configured=0, session=0. No device code/secret is saved. Runtime, heartbeat
+and sync HTTP counters remain zero; authenticated ESP32/backend delivery was not
+attempted or verified. Wi-Fi works independently of backend registration.
+The backend public /health returned HTTP 200 from this computer; this does not
+establish ESP32 TLS or authenticated delivery.
+
+FAULTS FOUND / HANDLED
+Initial SD mounts failed, including a quiet-bus retry. The card recovered after
+further retries and the user's reported physical check; exact cause not isolated.
+Final firmware mounted it and passed repeated write/readback checks.
+Initial RTC year 2090 was corrected with verified serial time setting; retention
+through a complete power loss remains untested.
+Repeated setup-page full redraws reduced reports to 0.765/sec even with working SD.
+Drawing setup details once and updating only the status band restored 0.999/sec.
+
+PRIOR OFFLINE CHECKS
+User confirmed the dashboard/UI, qualified HR/SpO2 appearing after steady contact,
+clearing on removal, and red RGB plus pulsing buzzer during a threshold alarm.
+Measurement/alarm and MLX-packet host regressions passed before networking was
+re-enabled; those algorithms were not changed by this Wi-Fi addition.
+Medical accuracy, long-term reliability and backend delivery are not established.
+
+Evidence (relative to repository root):
+.local/neoguard-wifi-build.log
+.local/neoguard-wifi-upload.log
+.local/neoguard-wifi-final-validation.log
+.local/neoguard-wifi-dashboard-final.log
+.local/neoguard-wifi-portal-http.json
+.local/neoguard-wifi-headless-recheck.log (earlier failed redraw-rate test)
+.local/neoguard-wifi-hardware.log (initial failed SD/rate test)
+.local/neoguard-wifi-storage.log (SD isolation and RTC correction)
+
+See HARDWARE_TEST.md for the complete evidence and remaining backend setup.

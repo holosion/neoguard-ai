@@ -7,6 +7,9 @@ export function vitalStatus(metric, v, T) {
   }
   if (metric === 'spo2' && v < T.spo2.low) return { ok: false, text: `Low, below ${T.spo2.low}%` };
   if (metric === 'temp') {
+    if (T.temp.surface) return v < T.temp.low
+      ? { ok: false, text: `Low surface temperature, below ${T.temp.low} °C` }
+      : { ok: true, text: 'Above the bench low-temperature limit' };
     if (v < T.temp.severe_low) return { ok: false, text: 'Severely low' };
     if (v < T.temp.moderate_low) return { ok: false, text: 'Low, moderate hypothermia range' };
     if (v < T.temp.low) return { ok: false, text: `Low, below ${T.temp.low} °C` };

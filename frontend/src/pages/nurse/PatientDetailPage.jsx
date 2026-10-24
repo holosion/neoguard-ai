@@ -36,6 +36,7 @@ export default function PatientDetailPage() {
   }
 
   const limits = Object.fromEntries((thresholdRows ?? []).map((row) => [row.parameter, row.value]));
+  const bench = patient.patient_code.startsWith('BENCH-');
   const thresholdReady = ['hr_low', 'hr_high', 'spo2_low', 'temp_low', 'temp_moderate_low', 'temp_severe_low'].every((key) => limits[key] !== undefined);
   const stale = patient.data_status ? patient.data_status === 'stale' : minutesSince(patient.last_reading_at) > STALE_AFTER_MINUTES;
   const sync = patient.sync ?? recoveredSync(readings);
@@ -48,7 +49,7 @@ export default function PatientDetailPage() {
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <RiskBadge category={patient.risk_category} />
-        <span className="text-sm text-slate-400">Live data refreshes every 5 seconds. The device publishes after a 60-second signal check; unstable readings are withheld.</span>
+        <span className="text-sm text-slate-400">{bench ? 'Bench test: live estimates refresh every 5 seconds. The 60-second signal check is shown separately; this is not a patient measurement.' : 'Live data refreshes every 5 seconds. The device publishes after a 60-second signal check; unstable readings are withheld.'}</span>
         <button
           onClick={() => downloadCsv(`${patient.patient_code}-readings.csv`, readings)}
           className="ml-auto min-h-[40px] rounded-lg border border-slate-300 px-4"
@@ -69,21 +70,21 @@ export default function PatientDetailPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        {thresholdReady ? ['hr', 'spo2', 'temp'].map((m) => <VitalsCard key={m} metric={m} readings={readings} stale={stale} thresholds={{ hr: { low: limits.hr_low, high: limits.hr_high }, spo2: { low: limits.spo2_low }, temp: { low: limits.temp_low, moderate_low: limits.temp_moderate_low, severe_low: limits.temp_severe_low } }} />) : <p className="col-span-3 py-4 text-center text-sm text-slate-500">Loading server threshold configuration…</p>}
+        {thresholdReady ? ['hr', 'spo2', 'temp'].map((m) => <VitalsCard key={m} metric={m} readings={readings} stale={stale} bench={bench} thresholds={{ hr: { low: limits.hr_low, high: limits.hr_high }, spo2: { low: limits.spo2_low }, temp: { low: bench ? 32 : limits.temp_low, moderate_low: limits.temp_moderate_low, severe_low: limits.temp_severe_low, surface: bench } }} />) : <p className="col-span-3 py-4 text-center text-sm text-slate-500">Loading server threshold configuration…</p>}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <h2 className="mr-auto font-semibold">Trend, last 30 min</h2>
-          {Object.entries(thresholdReady ? metricsFor(limits) : {}).map(([k, v]) => (
+          {Object.entries(thresholdReady ? metricsFor(limits, bench) : {}).map(([k, v]) => (
             <button key={k} onClick={() => setMetric(k)} aria-pressed={metric === k}
               className={`min-h-[36px] rounded-full border px-4 text-sm ${metric === k ? 'border-brand bg-brand text-white' : 'border-slate-300 bg-white'}`}>
               {v.label}
             </button>
           ))}
         </div>
-        {thresholdReady ? <TrendChart readings={readings} metric={metric} alerts={alerts} thresholds={limits} /> : <p className="py-10 text-center text-slate-500">Loading server threshold configuration…</p>}
-        {thresholdReady && <p className="mt-2 text-xs text-slate-500">Shaded bands show server configured out-of-range values. Triangles mark alerts.</p>}
+        {thresholdReady ? <TrendChart readings={readings} metric={metric} alerts={alerts} thresholds={limits} bench={bench} /> : <p className="py-10 text-center text-slate-500">Loading server threshold configuration…</p>}
+        {thresholdReady && <p className="mt-2 text-xs text-slate-500">{bench ? 'Dashed amber lines are live bench estimates. The surface low-temperature limit is 32°C; clinical threshold settings are unchanged.' : 'Shaded bands show server configured out-of-range values. Triangles mark alerts.'}</p>}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -30,6 +30,9 @@ uint32_t sessionStartedUnix = 0;
 uint32_t assignedSession = 0, uploadCursor = 0, lastUploadAttempt = 0;
 bool syncConfigured = false, uploadBusy = false, queueDamaged = false;
 const char *syncState = "SYNC SETUP NEEDED";
+// Numeric worker diagnostics; never include Wi-Fi passwords or device secrets.
+volatile int lastRuntimeHTTP = 0, lastHeartbeatHTTP = 0, lastSyncHTTP = 0;
+volatile int lastTLSError = 0;
 constexpr char QUEUE_PATH[] = "/pending.ndjson";
 constexpr char CURSOR_PATH[] = "/sync.cursor";
 
@@ -76,7 +79,7 @@ void beginOfflineSync() {
   sessionStartedUnix = settings.getUInt("started", 0);
   alarmLimits.hrLow = settings.getFloat("hr_low", 100);
   alarmLimits.hrHigh = settings.getFloat("hr_high", 160);
-  alarmLimits.tempLow = settings.getFloat("temp_low", 36.5f);
+  alarmLimits.tempLow = SURFACE_TEMP_LOW_C;
   alarmLimits.spo2Low = settings.getFloat("spo2_low", 90);
   if (settings.getString("context_code", "") != deviceCode) {
     assignedSession = sessionStartedUnix = 0; alarmLimits = AlarmLimits{};
@@ -116,14 +119,14 @@ void retainInRAM(const String &line) {
 void queueOfflineReading() {
   if (!syncConfigured || !assignedSession || !rtcOK) return;
   Measurement result = measurement.get(millis());
-  if (!result.ready) return;
+  LiveVitals live=selectLiveVitals(millis(),lastSample,finger,hrValid,heartRate,spo2Valid,spo2,goodTemp,objectC,result);
   uint32_t measuredUnix = rtc.GetDateTime().TotalSeconds() + 946684800UL - 10800UL;
   if (measuredUnix < sessionStartedUnix) return;
   // Preserve all bench values in CSV. Only send API-compatible values; never clamp.
-  int stableHR = lroundf(result.hr), stableO2 = lroundf(result.oxygen);
-  bool sendHR = stableHR >= 40 && stableHR <= 220;
-  bool sendO2 = stableO2 >= 50 && stableO2 <= 100;
-  bool sendTemp = result.temperature >= 30 && result.temperature <= 42;
+  int stableHR = lroundf(live.heart), stableO2 = lroundf(live.oxygen);
+  bool sendHR = live.heartAvailable;
+  bool sendO2 = live.oxygenAvailable;
+  bool sendTemp = live.temperatureAvailable;
   if (!sendHR && !sendO2 && !sendTemp) return;
   JsonDocument item;
   uint8_t id[16]; esp_fill_random(id, sizeof(id));
@@ -136,8 +139,8 @@ void queueOfflineReading() {
   item["measured_at"] = measured;
   if (sendHR) item["heart_rate_bpm"] = stableHR;
   if (sendO2) item["spo2_percent"] = stableO2;
-  if (sendTemp) item["temperature_c"] = serialized(String(result.temperature, 2));
-  item["quality"] = sendHR && sendO2 && sendTemp ? "ok" : "poor";
+  if (sendTemp) item["temperature_c"] = serialized(String(live.temperature, 2));
+  item["quality"] = live.qualified ? "ok" : "poor";
   String line;
   if (item.overflowed() || serializeJson(item, line) != measureJson(item)) {
     syncState = "SYNC MEMORY ERROR";
@@ -164,7 +167,9 @@ void serviceOfflineSync() {
   }
   loadQueueCursor();
   applyRuntimeContext();
-  if (WiFi.status() != WL_CONNECTED && !wifiPortalActive()) syncState = "WIFI OFFLINE / SD";
+  if (wifiPortalActive()) syncState = "WIFI SETUP ACTIVE";
+  else if (WiFi.status() != WL_CONNECTED) syncState = "WIFI OFFLINE / SD";
+  else if (deviceCode.length() < 3 || !deviceSecret.length()) syncState = "DEVICE SETUP NEEDED";
   UploadJob *result = nullptr;
   if (xQueueReceive(uploadResults, &result, 0) == pdTRUE) {
     uploadBusy = false;
@@ -204,7 +209,7 @@ void serviceOfflineSync() {
   if (!ramSize && uploadCursor >= pending.size()) { pending.close(); return; }
   if (!ramSize && !pending.seek(uploadCursor)) { pending.close(); syncState = "SYNC FILE CHECK"; return; }
   JsonDocument batch;
-  batch["device_code"] = deviceCode; batch["firmware_version"] = "akena-live-2";
+  batch["device_code"] = deviceCode; batch["firmware_version"] = "akena-st7789-6";
   JsonArray readings = batch["readings"].to<JsonArray>();
   // Replay up to 20 stored events per attempt while recording a new event every 5s.
   unsigned ramBatch = ramSize;

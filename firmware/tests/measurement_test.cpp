@@ -53,11 +53,18 @@ int main() {
   assert(alarm.flags() == 2); // Invalid estimates do not prove recovery.
   for (unsigned i = 0; i < 3; ++i) alarm.observe(true, true, 140, true, 98, true, 37, limits);
   assert(alarm.flags() == 0);
-  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, true, 90, true, 85, true, 36, limits);
+  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, true, 90, true, 85, true, 31, limits);
   assert(alarm.flags() == (1 | 4 | 8));
   alarm.observe(false, false, 0, false, 0, false, 0, limits);
   assert(alarm.flags() == 0);
-  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, true, 160, true, 90, true, 36.5f, limits);
+  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, true, 160, true, 90, true, 32.0f, limits);
   assert(alarm.flags() == 0); // Equal-to-threshold values match backend comparisons.
+  assert(limits.tempLow == 32.0f);
+  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, false, 0, false, 0, true, 31.9f, limits);
+  assert(alarm.flags() == 4);
+  for (unsigned i = 0; i < 5; ++i) alarm.observe(true, false, 0, false, 0, false, 33, limits);
+  assert(alarm.flags() == 4); // An invalid temperature cannot clear its alarm.
+  for (unsigned i = 0; i < 3; ++i) alarm.observe(true, false, 0, false, 0, true, 32.0f, limits);
+  assert(alarm.flags() == 0); // Temperature recovers independently of pulse validity.
   std::cout << "Measurement and threshold alarm behavior: PASS\n";
 }

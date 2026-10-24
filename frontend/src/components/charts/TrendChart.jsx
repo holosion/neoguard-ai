@@ -1,18 +1,22 @@
 import { CartesianGrid, Line, LineChart, ReferenceArea, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { clock } from '../../utils/formatters';
 
-export const metricsFor = (t) => ({
-  hr: { label: 'Heart rate', unit: 'bpm', domain: [80, 180], bands: [{ y1: 80, y2: t.hr_low, c: '#FEF0E0' }, { y1: t.hr_high, y2: 180, c: '#FEF0E0' }] },
-  spo2: { label: 'SpO₂', unit: '%', domain: [80, 100], bands: [{ y1: 80, y2: t.spo2_low, c: '#FDECEA' }] },
-  temp: { label: 'Temperature', unit: '°C', domain: [35, 38], bands: [{ y1: t.temp_moderate_low, y2: t.temp_low, c: '#FFF6D6' }, { y1: 35, y2: t.temp_moderate_low, c: '#FDECEA' }] },
+export const metricsFor = (t, bench = false) => ({
+  hr: { label: 'Heart rate', unit: 'bpm', domain: bench ? [40, 220] : [80, 180], bands: [{ y1: bench ? 40 : 80, y2: t.hr_low, c: '#FEF0E0' }, { y1: t.hr_high, y2: bench ? 220 : 180, c: '#FEF0E0' }] },
+  spo2: { label: 'SpO₂', unit: '%', domain: bench ? [50, 100] : [80, 100], bands: [{ y1: bench ? 50 : 80, y2: t.spo2_low, c: '#FDECEA' }] },
+  temp: bench
+    ? { label: 'Surface temperature', unit: '°C', domain: [30, 42], bands: [{ y1: 30, y2: 32, c: '#FDECEA' }] }
+    : { label: 'Temperature', unit: '°C', domain: [35, 38], bands: [{ y1: t.temp_moderate_low, y2: t.temp_low, c: '#FFF6D6' }, { y1: 35, y2: t.temp_moderate_low, c: '#FDECEA' }] },
 });
 
 const SEVERITY_COLOR = { critical: '#ef4444', high: '#f97316', medium: '#eab308', low: '#22c55e' };
 
-export default function TrendChart({ readings, metric, alerts = [], thresholds }) {
-  const m = metricsFor(thresholds)[metric];
-  const data = readings.filter((r) => r.quality === 'ok' && r[metric] != null).map((r) => ({ t: new Date(r.recorded_at).getTime(), hr: r.hr, spo2: r.spo2, temp: r.temp }));
-  if (data.length < 3) return <p className="py-10 text-center text-slate-500">Not enough valid readings to show a trend ({data.length} of 3 required).</p>;
+export default function TrendChart({ readings, metric, alerts = [], thresholds, bench = false }) {
+  const m = metricsFor(thresholds, bench)[metric];
+  const data = readings.filter((r) => (r.quality === 'ok' || (bench && r.quality === 'poor')) && r[metric] != null)
+    .map((r) => ({ t: new Date(r.recorded_at).getTime(), hr: r.hr, spo2: r.spo2, temp: r.temp,
+      stable: r.quality === 'ok' ? r[metric] : null, estimate: r.quality === 'poor' ? r[metric] : null }));
+  if (data.length < 3) return <p className="py-10 text-center text-slate-500">Not enough readings to show a trend ({data.length} of 3 required).</p>;
 
   // Place each alert on the nearest reading for this metric (AI trend alerts show on every chart).
   const markers = alerts
@@ -33,8 +37,9 @@ export default function TrendChart({ readings, metric, alerts = [], thresholds }
           <CartesianGrid stroke="#263449" strokeDasharray="3 5" />
           <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} tickFormatter={(t) => clock(new Date(t).toISOString())} tick={{ fill: '#a8b6c9', fontSize: 11 }} axisLine={{ stroke: '#34465f' }} tickLine={false} />
           <YAxis domain={m.domain} unit={` ${m.unit}`} width={70} tick={{ fill: '#a8b6c9', fontSize: 11 }} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ background: '#101a29', border: '1px solid #34465f', borderRadius: 10, color: '#eef4fb' }} labelFormatter={(t) => clock(new Date(t).toISOString())} formatter={(v) => [`${v} ${m.unit}`, m.label]} />
-          <Line type="monotone" dataKey={metric} stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
+          <Tooltip contentStyle={{ background: '#101a29', border: '1px solid #34465f', borderRadius: 10, color: '#eef4fb' }} labelFormatter={(t) => clock(new Date(t).toISOString())} formatter={(v, name) => [`${v} ${m.unit}`, name === 'estimate' ? `${m.label} estimate` : m.label]} />
+          <Line type="monotone" dataKey={bench ? 'stable' : metric} stroke="#60a5fa" strokeWidth={3} dot={false} isAnimationActive={false} />
+          {bench && <Line type="monotone" dataKey="estimate" stroke="#f59e0b" strokeDasharray="5 4" strokeWidth={2} dot={false} isAnimationActive={false} />}
           {markers.map((k) => (
             <ReferenceDot key={k.id} x={k.x} y={k.y} ifOverflow="visible"
               shape={({ cx, cy }) => <polygon points={`${cx},${cy - 12} ${cx - 7},${cy} ${cx + 7},${cy}`} fill={k.color} />} />

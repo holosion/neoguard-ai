@@ -35,7 +35,16 @@ The patient risk-score endpoint reports availability explicitly, including `prot
 
 The PostgreSQL tests cover original-session ownership, alert episodes, persisted inference, inference failure isolation, cross-device constraints and separate archive imports. Set `NEOGUARD_TEST_DATABASE_URL` to a dedicated test database before running pytest. Each test creates and removes its own schema. Without this setting, six database tests are skipped.
 
-ESP32 firmware and hardware integration remain deferred until hardware assembly, as agreed.
+The ESP32-S3 hardware integration is now connected to the hosted backend and web
+app, with actual bench readings confirmed on 24 October 2026. Its OLED-style
+ST7789 display uses a 10-second HR average refreshed every three seconds; that
+display smoothing does not change the raw upload data, signal qualification or
+model inputs. Unqualified estimates are stored as poor quality and excluded from
+inference. A stable-looking display alone cannot unlock the Experimental risk
+score panel or establish that its measurements are accurate.
+The range-indicator revision also allows a green LED for valid displayed values
+inside the configured bench limits while still labelling them as estimates.
+Green does not upgrade their stored quality or make them eligible for AI scoring.
 
 ## Checkpoint: 12 October 2026
 

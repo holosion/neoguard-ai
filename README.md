@@ -2,7 +2,7 @@
 
 NeoGuard is an offline-aware neonatal monitoring prototype for organizing clinical staff, patients, monitoring devices, vital-sign readings, alerts, and historical trends. It combines a React dashboard, a FastAPI service, and PostgreSQL. A separate experimental AI package trains a research-only warning model.
 
-> **Project status:** This is a development and research prototype, not a clinically validated medical device or a production-ready care system. The AI model is trained on simulated data and is not clinically validated. Thresholds are provisional and require qualified clinical review before any care use. Standalone ESP32-S3 bench firmware now supports sensor estimates, an icon-based display, a DS1302 clock, and optional SD logging; hardware-to-API synchronization is not implemented.
+> **Project status:** This is a development and research prototype, not a clinically validated medical device or a production-ready care system. The AI model is trained on simulated data and is not clinically validated. Thresholds are provisional and require qualified clinical review before any care use. Current ESP32-S3 firmware uses the tested ST7789 screen, sensors, DS1302 clock, RGB/buzzer and SD logging. Wi-Fi provisioning and queued HTTPS synchronization are enabled after offline integration checks. See the firmware's current validation report for the actual hardware checks and limits.
 
 ## What the project does
 
@@ -38,11 +38,8 @@ NeoGuard/
 │   ├── artifacts/               # Saved model artifact used by the API
 │   ├── reports/                  # Training and archive audit reports
 │   └── tests/                    # AI feature/model tests
-└── firmware/
-    ├── neoguard_system/         # Integrated ESP32-S3 bench sketch, icons, RTC helper, SD logging
-    ├── sensors_step1/           # MAX30102 + MLX90614 serial bench test
-    ├── display_message/         # ST7789 display test sketch
-    └── lcd_test/                # Parallel LCD test sketch
+├── akena firmware/akena_firmware/ # Current ESP32-S3 ST7789 firmware and setup guide
+└── firmware/tests/              # Host-side measurement checks
 ```
 
 ## System architecture and data flow
@@ -62,7 +59,7 @@ The frontend calls the backend through `/api/v1`. In local development, Vite pro
 
 The reading's `measured_at` timestamp is distinct from the server's `received_at` timestamp. This preserves when a measurement was taken even if a device uploads it later. A reading is associated with the monitoring session it originally belonged to, including when an offline device uploads after that session has ended. Device event IDs prevent duplicate readings on retry.
 
-There is no frontend mock-data mode. A newly configured database can therefore show empty states until staff create records and a device or an authorized integration sends real readings. The standalone [hardware bench firmware](firmware/neoguard_system/README.md) reads sensors, renders an icon dashboard, and logs locally to SD. It does not upload data to the API or implement an offline upload queue.
+There is no frontend mock-data mode. A newly configured database can therefore show empty states until staff create records and a device or an authorized integration sends real readings. The current [device firmware](akena%20firmware/akena_firmware/README.md) reads sensors, drives the ST7789 screen and logs to SD. The network-enabled build reconnects to saved Wi-Fi settings and queues available readings after device/session provisioning. Live estimates carry poor quality until the full stability checks pass; the hosted bench view labels them accordingly.
 
 ## Technology
 
@@ -231,7 +228,7 @@ The live smoke script exercises the configured API and PostgreSQL flow, includin
 
 ## Current limits and next integration boundary
 
-- `firmware/neoguard_system/` provides standalone sensor-reading and SD-logging bench firmware. An offline upload queue and hardware-to-API integration are not included yet.
+- `akena firmware/akena_firmware/` is the current ST7789 firmware. Its default build combines local monitoring with Wi-Fi setup and queued backend synchronization; an offline build option remains available. See its README and validation report.
 - The database and API can store device-submitted vitals and serve historical trends, but an actual monitoring device or another trusted producer must send those readings.
 - The AI model uses simulated data and has no clinical validation. Archive data is staged for review and is not clinical ground truth.
 - This repository is not a replacement for clinical judgment, a validated alarm system, or a regulated medical device.

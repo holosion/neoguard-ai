@@ -1,0 +1,23 @@
+24 October 2026 -- compile, upload and basic hardware checks PASSED
+
+Target: esp32:esp32:esp32s3:CDCOnBoot=cdc
+Sketch: 391730 bytes (29% of 1310720 bytes).
+Static RAM: 24240 bytes (7% of 327680 bytes).
+
+Uploaded to attached ESP32-S3 on COM7; written flash hash verified by esptool.
+The SD card mounted at 1 MHz and reported SDHC/SDXC, 59638 MiB raw capacity.
+Four test attempts reported PASS. Three repeated command tests have full
+write/read/append/compare/delete results in the serial capture; startup PASS
+is confirmed by the firmware status before those retries.
+
+One repeated SD test ran while all RGB channels were on (WHITE), one with
+RGB OFF, and one with BLUE held during the cyclic test. User confirmed RED,
+GREEN, BLUE, WHITE and OFF match the external LED and display labels.
+
+No formatting performed. Tests use an unused temporary filename and delete
+only their own successful test file. Existing files were not opened for writing.
+
+Build: ../../.local/rgb-sd-build.log
+Upload: ../../.local/rgb-sd-upload.log
+Serial evidence: ../../.local/rgb-sd-hardware-test.log
+See HARDWARE_TEST.md for scope and limits.
