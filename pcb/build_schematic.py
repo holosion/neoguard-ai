@@ -64,18 +64,18 @@ def custom_module(name,width,top,bottom,pins,side='right'):
     LIBS[name]=parse(s)
 
 
-# Fixed-direction symbol for the hardwired A->B buffer; no bidirectional outputs on A.
-buffer=LIBS.pop('74HC245')
-rename(buffer,'74HC245','SN74AHCT245_AtoB');buffer[1]='SN74AHCT245_AtoB'
-for sub in children(buffer,'symbol'):
- for pin in children(sub,'pin'):
-  number=int(child(pin,'number')[1])
-  if 2 <= number <= 9: pin[1]=Atom('input')
-  elif 11 <= number <= 18: pin[1]=Atom('output')
-LIBS['SN74AHCT245_AtoB']=buffer
-CM['U2']['symbol']='NeoGuard:SN74AHCT245_AtoB'
-U1NET = {'4':'I2C_SDA_GPIO4','5':'I2C_SCL_GPIO5','6':'RTC_CLK_GPIO6','7':'RTC_DAT_GPIO7','14':'RTC_CE_GPIO14','8':'LCD_RS_GPIO8','9':'LCD_EN_GPIO9','10':'LCD_D4_GPIO10','11':'LCD_D5_GPIO11','12':'LCD_D6_GPIO12','13':'LCD_D7_GPIO13','15':'BUZZ_GPIO15','16':'LED_R_GPIO16','17':'LED_G_GPIO17','18':'LED_B_GPIO18','21':'SD_CS_GPIO21','40':'SD_SCK_GPIO40','41':'SD_MOSI_GPIO41','42':'SD_MISO_GPIO42','3V3':'DEV3V3','GND':'GND'}
-custom_module('ESP32_S3_Logical',45,60,-60,[(n,net.replace('_GPIO',' / GPIO'),55.88-i*5.08) for i,(n,net) in enumerate(U1NET.items())])
+# All exposed GPIO identities are shown, independently of physical header order.
+U1NET = {'4':'I2C_SDA_GPIO4','5':'I2C_SCL_GPIO5','6':'RTC_CLK_GPIO6','7':'RTC_DAT_GPIO7','14':'RTC_CE_GPIO14','8':'TFT_RST_GPIO8','9':'TFT_DC_GPIO9','10':'TFT_CS_GPIO10','11':'TFT_MOSI_GPIO11','12':'TFT_SCK_GPIO12','15':'BUZZ_GPIO15','16':'LED_R_GPIO16','17':'LED_G_GPIO17','18':'LED_B_GPIO18','21':'SD_CS_GPIO21','40':'SD_SCK_GPIO40','41':'SD_MOSI_GPIO41','42':'SD_MISO_GPIO42','3V3':'DEV3V3','GND':'GND'}
+used=list(U1NET)
+unused=[str(n) for n in list(range(22))+list(range(35,49)) if str(n) not in U1NET]+['EN','5V']
+U1NET.update({n:None for n in unused})
+custom_module('ESP32_S3_Logical',45,60,-60,[(n,('GPIO'+n if n.isdigit() else n),50.8-i*5.08) for i,n in enumerate(used)])
+pins=child(LIBS['ESP32_S3_Logical'],'symbol')
+unit=children(LIBS['ESP32_S3_Logical'],'symbol')[1]
+for i,n in enumerate(unused):
+    unit.append(parse(f'(pin passive line (at -30.48 {50.8-i*5.08:.4f} 0) (length 7.62) (name "{("GPIO"+n) if n.isdigit() else n}" {eff(1.05)}) (number "{n}" {eff(1)}))'))
+custom_module('ST7789_Interface',45,25,-25,[(str(i),name,17.78-(i-1)*5.08) for i,name in enumerate(['GND','VCC 3V3','SCK / SCL','MOSI / SDA','RST / RES','DC','CS','BL / BLK'],1)],'left')
+CM['J5']['symbol']='NeoGuard:ST7789_Interface'
 def pin_defs(s):
     out=[]
     for sub in children(s,'symbol'):
@@ -118,7 +118,7 @@ class Page:
             if net is None:self.add(f'(no_connect (at {pt[0]} {pt[1]}) (uuid {uid(ref+"-nc-"+n)}))')
             elif autolabel:
                 rr=math.radians(a+pa)
-                length=20.32 if ref=='J1' else 10.16
+                length=25.4 if math.cos(rr)>.1 else 10.16
                 q=(round(pt[0]-length*math.cos(rr),4),round(pt[1]+length*math.sin(rr),4))
                 self.wire(pt,q);self.label(net,q,0 if math.cos(rr)<-.1 else 180)
         self.add(f'(symbol (lib_id "NeoGuard:{name}") (at {x} {y} {a}) (unit 1) (in_bom {"no" if ref=="U1" or ref.startswith("#") else "yes"}) (on_board {"no" if ref=="U1" or ref.startswith("#") else "yes"}) (dnp {"yes" if c.get("dnp") else "no"}) (uuid {sid}) {props} {ps} (instances (project "NeoGuard" (path "{self.path}" (reference "{ref}") (unit 1)))))')
@@ -130,18 +130,18 @@ class Page:
         defs=[]
         for name,s in LIBS.items():
             s=copy.deepcopy(s);s[1]='NeoGuard:'+name;defs.append(dump(s))
-        head=f'(kicad_sch (version 20250114) (generator "neoguard_design") (uuid {uuid_}) (paper "A3") (title_block (title {json.dumps(title)}) (date "2026-10-22") (rev "LCD-C") (company "NeoGuard research prototype") (comment 1 "GPIO names are logical signals; verify actual module headers and voltages")) (lib_symbols '+''.join(defs)+')\n'
+        head=f'(kicad_sch (version 20250114) (generator "neoguard_design") (uuid {uuid_}) (paper "A3") (title_block (title {json.dumps(title)}) (date "2026-10-29") (rev "SPI-D") (company "NeoGuard research prototype") (comment 1 "GPIO names are logical signals; verify actual module headers and voltages")) (lib_symbols '+''.join(defs)+')\n'
         tail=f'(sheet_instances (path "/" (page "{page}")))' if page==1 else ''
         (ROOT/filename).write_text(head+'\n'.join(self.items)+'\n'+tail+' (embedded_fonts no))\n',encoding='utf-8')
 
 
 # Three readable sheets; global net labels preserve exact cross-sheet wiring.
 main=Page('main','/'+RID)
-main.text('AKENA NEOGUARD | LCD SYSTEM INTEGRATION',15,14,2.3,True)
-main.text('Electrical pin map matches the 22 October LCD firmware. Module footprints and power ratings require physical confirmation.',15,23,1.15)
+main.text('AKENA NEOGUARD | SPI DISPLAY SYSTEM INTEGRATION',15,14,2.3,True)
+main.text('Matches current ST7789 240x280 firmware. Every used pin is wired; X marks intentionally unused external connections.',15,23,1.15)
 main.place('U1',65,140,libname='ESP32_S3_Logical',autolabel=True)
 main.text('ESP32-S3 controller',30,65,1.5,True)
-main.text('Logical GPIO numbers, not header positions.\nConnect through J1 on the carrier.\nExact devboard socket is not assumed.',20,215,1.15)
+main.text('Logical GPIO identities; not header positions.\nX = unused external pin (including GPIO13).\nEN / USB / memory remain managed by devboard.\nGPIO26-34 belong to module memory, not headers.',15,211,1.0)
 for ref,x,y,title in [('J2',185,65,'MAX30102 OXIMETER'),('J3',290,65,'MLX90614 INFRARED'),('J4',385,65,'DS1302 RTC'),('J6',185,130,'SD CARD MODULE'),('J7',290,130,'RGB COMMON CATHODE')]:
     main.text(title,x-35,y-24,1.3,True)
     main.place(ref,x,y,showval=False,autolabel=True)
@@ -152,35 +152,34 @@ main.text('Each LED colour has its own 330-ohm resistor.',240,198,1.1)
 main.text('BUZZER DRIVER | GPIO15',150,208,1.4,True)
 for ref,x,y in [('R6',165,237),('R7',210,237),('Q1',255,237),('D1',305,237),('J8',370,237)]:main.place(ref,x,y,showval=True,autolabel=True)
 main.text('PN2222A E1 B2 C3; verify purchased transistor. D1 cathode -> buzzer positive. Driver sized for <=20mA.',145,263,1.0)
-main.text('LCD pins GPIO8-13 -> sheet 2. SD stays GPIO21/40/41/42.',125,275,1.1)
+main.text('Display SPI GPIO8-12 -> sheet 2. GPIO13 unused. SD SPI GPIO21/40/41/42.',125,275,1.1)
 
 LCDSID=uid('lcd-sheet-instance');LCDID=uid('lcd-sheet')
-for sid,name,filename,y,page in [(LCDSID,'LCD on carrier','NeoGuard-lcd.kicad_sch',247,2),(SID,'Power and controller cable','NeoGuard-power.kicad_sch',266,3)]:
+for sid,name,filename,y,page in [(LCDSID,'SPI display','NeoGuard-display.kicad_sch',247,2),(SID,'Power and controller cable','NeoGuard-power.kicad_sch',266,3)]:
     main.add(f'(sheet (at 20 {y}) (size 90 12) (stroke (width 0.254) (type default)) (fill (color 0 0 0 0)) (uuid {sid}) (property "Sheetname" "{name}" (at 20 {y-1} 0) {eff(1.05,"left bottom")}) (property "Sheetfile" "{filename}" (at 20 {y+13} 0) {eff(1,"left top")}) (instances (project "NeoGuard" (path "/{RID}" (page "{page}")))))')
 
-lcdpage=Page('lcd','/'+RID+'/'+LCDSID)
-lcdpage.text('LCD1602 | PHYSICALLY MOUNTED ON THE CARRIER',15,14,2.3,True)
-lcdpage.text('Assumed footprint: WC1602A, 80 x 36 mm, 16 pins at 2.54mm pitch. Verify against the actual display before manufacture.',15,23,1.15)
-lcdpage.text('3.3V -> 5V UNIDIRECTIONAL BUFFER',35,45,1.5,True)
-lcdpage.place('U2',105,108,showval=False,autolabel=True)
-lcdpage.text('U2 MUST be SN74AHCT245N\nSymbol represents the hardwired A -> B direction.\nDo not substitute a 74HC245.\nDIR pin1 = 5V: A -> B.\nOE pin19 = GND: outputs enabled.\nUnused A6/A7 inputs grounded; B6/B7 left open.',25,166,1.15)
-lcdpage.text('LCD 16 x 2 | 4-BIT MODE',270,45,1.5,True)
-lcdpage.place('J5',310,108,showval=False,autolabel=True)
-lcdpage.text('RS=GPIO8   EN=GPIO9\nD4=GPIO10  D5=GPIO11\nD6=GPIO12  D7=GPIO13\n\nRW grounded: ESP32 never reads a 5V bus.\nD0-D3 left unconnected.',263,166,1.15)
-for ref,x,y in [('RV1',85,230),('R8',190,230),('C5',280,230),('C6',360,230)]:lcdpage.place(ref,x,y,showval=True,autolabel=True)
-lcdpage.text('CONTRAST 10k',50,202,1.3,True)
-lcdpage.text('BACKLIGHT 220R',155,202,1.3,True)
-lcdpage.text('U2 BYPASS 100nF',250,202,1.3,True)
-lcdpage.text('LCD BULK 10uF',330,202,1.3,True)
-lcdpage.text('5V is supplied by regulated EXT5V, independent of ESP32 USB power. All grounds common. Power the controller and carrier together.',15,280,1.1)
+lcdpage=Page('display','/'+RID+'/'+LCDSID)
+lcdpage.text('ST7789 240 x 280 | SPI DISPLAY CONNECTIONS',15,14,2.3,True)
+lcdpage.text('This is the tested SPI screen called "OLED" in earlier project notes. J5 is a cable header; match wires by signal name.',15,23,1.15)
+lcdpage.place('J5',265,102,libname='ST7789_Interface',autolabel=True)
+lcdpage.text('J5 / DISPLAY CABLE',230,60,1.4,True)
+lcdpage.text('J5 PIN     DISPLAY SIGNAL     ESP32-S3',35,57,1.5,True)
+for i,line in enumerate(['1             GND                       Common ground','2             VCC                       Selected 3.3V rail','3             SCK / SCL              GPIO12','4             MOSI / SDA            GPIO11','5             RST / RES              GPIO8','6             DC                         GPIO9','7             CS                         GPIO10','8             BL / BLK                JP4 backlight option']):
+    lcdpage.text(line,35,70+i*8,1.3)
+lcdpage.text('BACKLIGHT OPTION',45,167,1.5,True)
+lcdpage.place('JP4',90,195,showval=False,autolabel=True)
+lcdpage.text('JP4 normally OPEN / DNP. Fit only for a verified\n3.3V-compatible BL input with current limiting.\nNo firmware backlight GPIO is assigned.',45,218,1.2)
+lcdpage.text('INTERFACE NOTES',225,167,1.5,True)
+lcdpage.text('SDA / SCL on this screen mean SPI MOSI / SCK.\nDo not connect them to sensor I2C GPIO4 / GPIO5.\nAll signal levels are 3.3V. No LCD level shifter.\nGPIO13 and J1 pin22 are intentionally unconnected.\nHeader order is functional: verify the actual module.',225,183,1.2)
+lcdpage.text('The 16x2 LCD, AHCT245 buffer, contrast trimmer and LCD backlight resistor have been removed.',15,270,1.15)
 
 power=Page('power','/'+RID+'/'+SID)
 power.text('POWER SELECTION | CONTROLLER CABLE',15,14,2.3,True)
 power.text('No regulator on this carrier. Connect regulated supplies only. Never short external power to a USB-powered ESP32 rail.',15,23,1.15)
 for ref,x,y,title in [('J1',70,80,'ESP32-S3 FUNCTIONAL CABLE'),('J9',200,65,'REGULATED INPUT'),('JP1',325,65,'3V3 SOURCE'),('JP2',200,145,'SD SUPPLY'),('JP3',325,145,'BUZZER SUPPLY')]:
     power.text(title,x-35,y-23,1.35,True);power.place(ref,x,y,autolabel=True)
-power.text('J1 is not a devboard socket.\nPin22 now carries LCD D7 / GPIO13.\nMap cable wires by GPIO name.\nUSB remains on the external controller.',20,135,1.15)
-power.text('J9: 1=EXT3V3, 2=GND, 3=EXT5V\nEXT5V is required for LCD + U2.',160,91,1.1)
+power.text('J1 is not a devboard socket.\nPin22 unused: leave unconnected.\nMap cable wires by GPIO name.\nUSB remains on the external controller.',20,135,1.15)
+power.text('J9: 1=EXT3V3, 2=GND, 3=EXT5V\nEXT5V only if SD / buzzer needs it.',160,91,1.1)
 power.text('JP1: 1-2 DEV3V3; 2-3 EXT3V3\nOne shunt only. Do not bridge both.',285,91,1.1)
 power.text('JP2: 1-2 = 3V3; 2-3 = 5V\nSelect to match the actual SD module.',160,171,1.1)
 power.text('JP3: 1-2 = 3V3; 2-3 = 5V\nSelect to match the actual buzzer.',285,171,1.1)
@@ -191,15 +190,15 @@ power.text('R1/R2 DNP when breakout pull-ups already exist. SDA/SCL must be pull
 
 # Explicit power-origin flags for external regulated rails and the selected 3V3 rail.
 LIBS['PWR_FLAG']=libsym('power','PWR_FLAG')
-for i,net in enumerate(['GND','EXT5V','V3V3','LCD_LED_A']):
+for i,net in enumerate(['GND','EXT5V','V3V3']):
     ref='#FLG'+str(i+1)
     CM[ref]={'value':'PWR_FLAG','footprint':'','symbol':'power:PWR_FLAG','pins':{'1':net}}
-    power.place(ref,45+i*45,275,libname='PWR_FLAG',autolabel=True)
+    power.place(ref,45+i*45,260,libname='PWR_FLAG',autolabel=True)
 
-main.save('NeoGuard.kicad_sch','Akena NeoGuard - LCD System',RID,1)
-lcdpage.save('NeoGuard-lcd.kicad_sch','Akena NeoGuard - Mounted LCD and Logic Buffer',LCDID,2)
+main.save('NeoGuard.kicad_sch','Akena NeoGuard - SPI System',RID,1)
+lcdpage.save('NeoGuard-display.kicad_sch','Akena NeoGuard - ST7789 Display',LCDID,2)
 power.save('NeoGuard-power.kicad_sch','Akena NeoGuard - Power and Controller Cable',CID,3)
 (ROOT/'NeoGuard.kicad_sym').write_text('(kicad_symbol_lib (version 20251024) (generator "neoguard_design")\n'+'\n'.join(dump(s) for s in LIBS.values())+'\n)\n',encoding='utf-8')
-(ROOT/'sym-lib-table').write_text('(sym_lib_table (version 7) (lib (name "NeoGuard") (type "KiCad") (uri "${KIPRJMOD}/NeoGuard.kicad_sym") (options "") (descr "Akena LCD carrier symbols")))\n')
+(ROOT/'sym-lib-table').write_text('(sym_lib_table (version 7) (lib (name "NeoGuard") (type "KiCad") (uri "${KIPRJMOD}/NeoGuard.kicad_sym") (options "") (descr "Akena SPI carrier symbols")))\n')
 (ROOT/'schematic_ids.json').write_text(json.dumps({'root_uuid':RID,'paths':PATHS,'symbols':PLACED,'logical_controller':{'reference':'U1','on_board':False,'pin_nets':U1NET}},indent=2))
-print('Wrote three-sheet LCD integration schematic.')
+print('Wrote three-sheet SPI integration schematic.')

@@ -1,8 +1,8 @@
 {
   "project": "NeoGuard",
-  "revision": "LCD-C",
-  "date": "2026-10-22",
-  "design_type": "LCD module carrier; controller on functional cable header; mechanical fit unconfirmed",
+  "revision": "SPI-D",
+  "date": "2026-10-29",
+  "design_type": "ST7789 SPI display carrier; logical offboard ESP32-S3; cable interfaces",
   "components": [
     {
       "ref": "J1",
@@ -17,11 +17,11 @@
         "5": "RTC_CLK_GPIO6",
         "6": "RTC_DAT_GPIO7",
         "7": "RTC_CE_GPIO14",
-        "8": "LCD_RS_GPIO8",
-        "9": "LCD_EN_GPIO9",
-        "10": "LCD_D4_GPIO10",
-        "11": "LCD_D5_GPIO11",
-        "12": "LCD_D6_GPIO12",
+        "8": "TFT_RST_GPIO8",
+        "9": "TFT_DC_GPIO9",
+        "10": "TFT_CS_GPIO10",
+        "11": "TFT_MOSI_GPIO11",
+        "12": "TFT_SCK_GPIO12",
         "13": "BUZZ_GPIO15",
         "14": "LED_R_GPIO16",
         "15": "LED_G_GPIO17",
@@ -31,7 +31,7 @@
         "19": "SD_MOSI_GPIO41",
         "20": "SD_MISO_GPIO42",
         "21": "GND",
-        "22": "LCD_D7_GPIO13",
+        "22": null,
         "23": "GND",
         "24": "GND"
       }
@@ -76,26 +76,18 @@
     },
     {
       "ref": "J5",
-      "value": "WC1602A LCD 16x2 - VERIFY ACTUAL MODULE",
-      "symbol": "Display_Character:WC1602A",
-      "footprint": "Akena_LCD:LCD1602_80x36_Mounting",
+      "value": "ST7789 240x280 TFT - 3V3",
+      "symbol": "Connector_Generic:Conn_01x08",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical",
       "pins": {
         "1": "GND",
-        "2": "EXT5V",
-        "3": "LCD_CONTRAST",
-        "4": "LCD_RS_5V",
-        "5": "GND",
-        "6": "LCD_EN_5V",
-        "7": null,
-        "8": null,
-        "9": null,
-        "10": null,
-        "11": "LCD_D4_5V",
-        "12": "LCD_D5_5V",
-        "13": "LCD_D6_5V",
-        "14": "LCD_D7_5V",
-        "15": "LCD_LED_A",
-        "16": "GND"
+        "2": "V3V3",
+        "3": "TFT_SCK_GPIO12",
+        "4": "TFT_MOSI_GPIO11",
+        "5": "TFT_RST_GPIO8",
+        "6": "TFT_DC_GPIO9",
+        "7": "TFT_CS_GPIO10",
+        "8": "TFT_BL"
       }
     },
     {
@@ -177,6 +169,17 @@
         "2": "BUZZ_VCC",
         "3": "EXT5V"
       }
+    },
+    {
+      "ref": "JP4",
+      "value": "TFT BL - OPEN UNTIL VERIFIED",
+      "symbol": "Connector_Generic:Conn_01x02",
+      "footprint": "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical",
+      "pins": {
+        "1": "V3V3",
+        "2": "TFT_BL"
+      },
+      "dnp": true
     },
     {
       "ref": "R1",
@@ -308,75 +311,6 @@
       "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
       "pins": {
         "1": "SD_VCC",
-        "2": "GND"
-      }
-    },
-    {
-      "ref": "U2",
-      "value": "SN74AHCT245N - NOT 74HC245",
-      "symbol": "74xx:74HC245",
-      "footprint": "Package_DIP:DIP-20_W7.62mm",
-      "pins": {
-        "1": "EXT5V",
-        "2": "LCD_RS_GPIO8",
-        "3": "LCD_EN_GPIO9",
-        "4": "LCD_D4_GPIO10",
-        "5": "LCD_D5_GPIO11",
-        "6": "LCD_D6_GPIO12",
-        "7": "LCD_D7_GPIO13",
-        "8": "GND",
-        "9": "GND",
-        "10": "GND",
-        "11": null,
-        "12": null,
-        "13": "LCD_D7_5V",
-        "14": "LCD_D6_5V",
-        "15": "LCD_D5_5V",
-        "16": "LCD_D4_5V",
-        "17": "LCD_EN_5V",
-        "18": "LCD_RS_5V",
-        "19": "GND",
-        "20": "EXT5V"
-      }
-    },
-    {
-      "ref": "RV1",
-      "value": "10k LCD CONTRAST",
-      "symbol": "Device:R_Potentiometer",
-      "footprint": "Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical",
-      "pins": {
-        "1": "EXT5V",
-        "2": "LCD_CONTRAST",
-        "3": "GND"
-      }
-    },
-    {
-      "ref": "R8",
-      "value": "220 LCD BACKLIGHT",
-      "symbol": "Device:R",
-      "footprint": "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
-      "pins": {
-        "1": "EXT5V",
-        "2": "LCD_LED_A"
-      }
-    },
-    {
-      "ref": "C5",
-      "value": "100nF U2 BYPASS",
-      "symbol": "Device:C",
-      "footprint": "Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm",
-      "pins": {
-        "1": "EXT5V",
-        "2": "GND"
-      }
-    },
-    {
-      "ref": "C6",
-      "value": "10uF 10V LCD",
-      "symbol": "Device:C_Polarized",
-      "footprint": "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm",
-      "pins": {
-        "1": "EXT5V",
         "2": "GND"
       }
     }

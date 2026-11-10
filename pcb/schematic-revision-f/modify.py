@@ -1,0 +1,27 @@
+from pathlib import Path
+import json
+p=Path(__file__).parent
+m=json.loads((p/'design_manifest.json').read_text())
+def add(ref,val,sym,fp,a,b):m['components'].append({'ref':ref,'value':val,'symbol':sym,'footprint':fp,'pins':{'1':a,'2':b}})
+add('J10','USB-C POWER ONLY','Connector:USB_C_Receptacle_PowerOnly_6P','Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal','USB_VBUS','GND')
+add('BT1','3.7V LiPo SMARTWATCH CELL','Device:Battery_Cell','Battery:BatteryHolder_Keystone_1042_1x12mm','BAT','GND')
+add('U3','BQ24074RGT 1S CHARGER','Battery_Management:BQ24074RGT','Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm','USB_VBUS','BAT')
+add('U4','TPS63001 3V3 BUCK-BOOST','Regulator_Switching:TPS63001','Package_SON:Texas_DRC0010J_ThermalVias','SYS_OUT','SYS_3V3')
+add('L1','2.2uH BUCK-BOOST','Device:L','Inductor_SMD:L_4.0x4.0mm_L4.0-W4.0','SW_L1','SW_L2')
+for r,v,a,b in [('R10','5.1k USB CC1','USB_CC1','GND'),('R11','5.1k USB CC2','USB_CC2','GND'),('R12','1.13k CHARGE 0.8A','CHG_ISET','GND'),('R13','8.06k INPUT LIMIT','USB_ILIM','GND'),('R14','10k NTC BIAS','SYS_3V3','BATT_NTC'),('C10','4.7uF USB INPUT','USB_VBUS','GND'),('C11','4.7uF SYSTEM OUT','SYS_OUT','GND'),('C12','10uF BATTERY','BAT','GND'),('C13','10uF 3V3','SYS_3V3','GND')]:add(r,v,'Device:R' if r[0]=='R' else 'Device:C','Resistor_SMD:R_0603_1608Metric' if r[0]=='R' else 'Capacitor_SMD:C_0603_1608Metric',a,b)
+m.update(revision='E-POWER',date='2026-10-30',design_type='Onboard ESP32-S3 with USB-C 1S LiPo charger and 3V3 buck-boost')
+(p/'design_manifest.json').write_text(json.dumps(m,indent=2))
+s=(p/'build_schematic.py').read_text().replace('E-DRAFT','E-POWER')
+s=s.replace("main.place('U1',65,140,libname='ESP32_S3_Logical',autolabel=True)","main.place('U1',190,136.5,libname='ESP32-S3-WROOM-1')")
+s=s.replace("main.text('ESP32-S3 controller',30,65,1.5,True)","main.text('ESP32-S3-WROOM-1 ONBOARD MODULE',145,65,1.5,True)")
+ins="""power.text('USB-C LI-ION CHARGER / POWER PATH',15,14,2.0,True)
+power.text('Protected 3.7V LiPo smartwatch cell target. Charge current set to 0.8A; verify actual cell rating.',15,23,1.05)
+for ref,x,y in [('J10',45,55),('U3',120,55),('BT1',205,55),('U4',300,55),('L1',250,110),('R10',45,95),('R11',75,95),('R12',120,105),('R13',150,105),('R14',205,105),('C10',75,130),('C11',150,130),('C12',210,130),('C13',300,130)]: power.place(ref,x,y,showval=True,autolabel=True)
+power.text('USB-C CC1/CC2 use 5.1k Rd. VBUS enters BQ24074. D+/D- and SBU are unused.',15,155,1.0)
+power.text('BQ24074 BAT goes to cell, OUT to system rail, TS to battery NTC, CE low enables charging, ISET 1.13k targets 0.8A.',15,165,1.0)
+power.text('TPS63001 converts the cell/system rail to regulated 3.3V for ESP32-S3 and ST7789.',15,175,1.0)
+"""
+s=s.replace('# Explicit power-origin flags',ins+'# Explicit power-origin flags')
+s=s.replace("'GND','EXT5V','V3V3'","'GND','EXT5V','V3V3','USB_VBUS','BAT','SYS_OUT','SYS_3V3'")
+(p/'build_schematic.py').write_text(s)
+(p/'README.md').write_text('Revision E-POWER: onboard ESP32-S3-WROOM-1, USB-C power-only input, BQ24074 1-cell LiPo charger/power path, battery NTC, TPS63001 3.3V buck-boost. Target: protected 3.7V smartwatch-style LiPo. Charge current 0.8A via 1.13k ISET. PCB migration follows schematic review.')

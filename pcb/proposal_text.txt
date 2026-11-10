@@ -1,0 +1,1028 @@
+--- PAGE 1 ---
+1 
+ 
+ 
+MAKERERE UNIVERSITY 
+COLLEGE OF COMPUTING AND INFORMATION SCIENCES 
+PROJECT PROPOSAL 
+Offline-First Neonatal Vital Sign Monitor with AI-Assisted Early 
+Warning 
+Course: CSC 2118 
+Embedded and Real-Time Systems 
+Submitted to: MR. BYANSI DAVID 
+Prepared by GROUP D: 
+NAME STUDENT NUMBER REGISTRATION NUMBER 
+AKENA JONATHAN OGABA 2500728727 25/U/28727/PS 
+OKUJA EMMANUEL DILA JOHN 2500728777 25/U/28777/PSA 
+MUTEBI STEVEN 2500703479 25/U/03479/PSA 
+SSEMWOGERERE GODWIN 2500703577 25/U/03577/PSA 
+NAHATE SIMON 2500703495 25/U/03495/PS 
+ASIIMWE FAITH CLARISSA   2500703336 25/U/03336/ PSA 
+ELIJAH KIWUMULO LULE 2500703366 25/U/03366/PSA 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 2 ---
+2 
+ 
+Table of Contents 
+ 
+CHAPTER 1: INTRODUCTION 3 
+1.1 Background 3 
+1.2 Problem Statement 3 
+1.3 Main Objective 4 
+1.3.1 Specific Objectives 4 
+1.4 Significance 4 
+1.5 Scope and Limitations 4 
+CHAPTER 2: LITERATURE REVIEW 5 
+2.1 Literature Review 5 
+2.1.1 Epidemiological Context: Where the Problem Comes From 5 
+2.1.2 Related Work: Existing Monitoring and AI-Assisted Solutions 5 
+2.1.3 Comparison of Existing Solutions 6 
+2.1.4 Research Gap 7 
+CHAPTER 3: METHODOLOGY 8 
+3.1 Overview of the Approach 8 
+3.2 Design (Hardware) 8 
+3.2.1 Interfacing the Sensors with the ESP32 8 
+3.2.2 Alert, Display and Timekeeping Hardware 9 
+3.3 Develop (Software) 9 
+3.3.1 Firmware: Timed Sampling and On-Device Threshold Alerts 9 
+3.3.2 Local Buffering and Synchronisation 9 
+3.3.3 Database and REST API 10 
+3.3.4 Explainable Risk Scoring and Trend Detection 10 
+3.3.5 React Dashboard 10 
+3.4 Test 11 
+3.4.1 Hardware Testing 11 
+3.4.2 Software Testing 11 
+3.4.3 Test Data and Sampling Metrics 12 
+3.5 Evaluate 14 
+3.5.1 Evaluation of Test Data and Metrics 14 
+3.6 Budget and Cost Analysis 16 
+3.7 Project Timeline 16 
+3.8 Ethical Considerations 17 
+REFERENCES 17 
+
+--- PAGE 3 ---
+3 
+ 
+CHAPTER 1: INTRODUCTION 
+1.1 Background 
+Neonatal mortality remains a significant public health challenge in Uganda and across sub-Saharan 
+Africa. Two preventable and closely monitorable conditions, hypothermia and hypoxia, contribute 
+substantially to this burden, particularly in rural clinics and home-birth settings where continuous 
+vital-sign monitoring is limited by cost, staffing, and infrastructure. 
+A community-based cross-sectional study conducted in Lira district, Northern Uganda, found that 
+51.0% of neonates (678 of 1,330) exper ienced hypothermia within their first three days of life, 
+with home birth, low birth weight, and delayed breastfeeding initiation identified as statistically 
+significant risk factors (Mukunya et al., 2021).  
+Detection in that study relied on intermittent h ome visit spot checks using a digital thermometer, 
+even under research conditions, continuous monitoring was absent. This mirrors the reality in most 
+rural Ugandan clinics, where multi -parameter monitors, when available at all, are commercial 
+devices that assume stable mains power and network connectivity neither of which can be 
+guaranteed in these settings. 
+Existing efforts to address this gap, reviewed in detail in Chapter 2, have tended to address only 
+one dimension of the problem at a time. Single -parameter devices such as wearable temperature 
+alarms, cloud -dependent multi -parameter systems that assume reliable connectivity, or AI 
+techniques applied narrowly to incubator climate control rather than portable ward -level early 
+warning. This project proposes  a system that combines multi -parameter sensing, offline -first 
+operation, and explainable AI -assisted early warning in a single, low -cost, locally appropriate 
+device. 
+1.2 Problem Statement 
+Rural Ugandan clinics lack affordable, continuous, multi -parameter neonatal monitoring capable 
+of functioning reliably without dependable power or network infrastructure. Consequently, 
+deterioration from hypothermia or hypoxia frequently goes undetected between manual 
+observation rounds, delaying clinical response. Existi ng commercial and academic monitoring 
+solutions either address only a single vital sign, depend on continuous cloud connectivity to 
+function, or apply artificial intelligence narrowly to equipment climate control rather than to early 
+clinical warning.  
+This leaves a specific, unaddressed gap for a portable, offline -capable, multi-parameter device 
+with explainable AI-assisted early warning suited to the rural Ugandan context. 
+ 
+ 
+
+--- PAGE 4 ---
+4 
+ 
+1.3 Main Objective 
+To design, develop, test and evaluate a low -cost, offline-capable embedded neonatal monitoring 
+device that provides real-time, on-device early-warning alerts for hypothermia and hypoxia, with 
+backend-assisted AI risk scoring and trend analysis when network access is available. 
+1.3.1 Specific Objectives 
+Design (Hardware) 
+● To design the device hardware by interfacing the MAX30102 (SpO2 and heart rate) and 
+GY-906 MLX90614 (non -contact temperature) sensors, a buzzer, an LED, a 16x2 I2C 
+LCD and a DS3231 real -time clock with an ESP32 microcontroller for sensing, local 
+alerting, display and offline timekeeping. 
+Develop (Software) 
+● To develop the firmware, Flask and PostgreSQL backend with explainable AI risk scoring, 
+and React dashboard that together provide on-device threshold alerts, offline buffering with 
+automatic synchronisation, and risk-prioritised live and historical monitoring. 
+Test 
+● To test the hardware components and the software (device sketch, backend and dashboard), 
+individually and as an integrated system, through connectivity, end -to-end dataflow, API 
+and security tests. 
+Evaluate 
+● To evaluate the data obtained from the tests and present the metrics involved: real -time 
+performance, sampling accuracy, on -device alert latency and jitter, and, for the AI layer 
+against a threshold-only baseline, false-alarm rate and detection lead time. 
+1.4 Significance 
+Given that over half of neonates in a comparable Ugandan district were found to experience 
+hypothermia within days of birth (Mukunya et al., 2021), a device demonstrating even a partial 
+improvement in early detection ca rries meaningful clinical significance. For clinical officers and 
+nurses, an AI-prioritised, offline-capable monitor reduces the reliance on infrequent manual checks 
+and directs limited staff attention to the patients who need it most.  
+For the health syst em, the proposed device offers a substantially lower -cost alternative to 
+commercial multi -parameter monitors, using components realistically available in Uganda. 
+Academically, the project contributes a documented, evidence -grounded design and evaluation 
+methodology, particularly the comparison between threshold -only and AI -assisted alerting, that 
+extends beyond this course and could inform future student or research projects in the same space. 
+1.5 Scope and Limitations 
+
+--- PAGE 5 ---
+5 
+ 
+This project produces a screening and early -warning aid, not a diagnostic or certified medical 
+device, and does not replace clinical judgement. It detects physiological signs correlated with 
+hypothermia and hypoxia; it does not diagnose their underlying ca uses. The working prototype 
+targets a single active device -patient session at a time, though the underlying data model is 
+designed to support multiple concurrent devices and patients. The prototype will not be tested on 
+real neonates.  
+Testing will use student volunteers or clearly labelled simulated data. The AI models are trained 
+on synthetically generated, threshold and scenario derived labelled data rather than real clinical 
+outcome data, since no such dataset is available to the project team. 
+ 
+CHAPTER 2: LITERATURE REVIEW 
+2.1 Literature Review 
+2.1.1 Epidemiological Context: Where the Problem Comes From 
+The clearest evidence that this problem is real and severe in the Ugandan context comes from 
+Mukunya et al. (2021), a community-based cross-sectional study of 1,330 neonates in Lira district, 
+Northern Uganda. The study found a 51.0% incidence of neonatal hypothermia (defined per WHO 
+thresholds: mild 36.0-36.49°C, moderate 32.0-35.99°C, severe below 32.0°C) within the first three 
+days of life, with home bir th (adjusted risk ratio 1.9), low birth weight (ARR 1.7), and delayed 
+breastfeeding initiation (ARR 1.2) identified as significant risk factors. Detection relied on 
+periodic home-visit spot-checks with a digital thermometer, even under research conditions with 
+trained field workers, monitoring was intermittent, not continuous. This single study substantiates 
+both the scale of the problem and the specific inadequacy of intermittent manual checking that this 
+project's continuous, offline-first design directly addresses. 
+2.1.2 Related Work: Existing Monitoring and AI-Assisted Solutions 
+Several existing efforts address parts of this problem. McAbee et al. (2023) conducted a clinical 
+field evaluation of the BEMPU TempWatch, a wearable temperature -alarm bracelet, in Ghana. 
+Across 1,973 temperature readings from 249 neonates, the device achieved 67.8% sensitivity and 
+95.9% specificity for detecting hypothermia, with sensitivity notably lower among neonates in 
+incubators (58.4%) and those with very low birth weight (62.8%).  
+This is a valuable real -world benchmark. Even a purpose -built, field-validated single-parameter 
+device misses roughly one in three hypothermic episodes, which motivates a multi -parameter 
+approach that does not rely on a single threshold crossing to detect deterioration. 
+De et al. (2016) proposed a neonatal health monitoring system using Sensor Mobile Cloud 
+Computing (SMCC), combining temperature, acceleration, and heart -rate sensors with wireless 
+transmission to a cloud backend and Android-based alerts.  
+
+--- PAGE 6 ---
+6 
+ 
+While multi-parameter and wireless, the design assumes continuous cloud connectivity for both 
+processing and storage, an assumption that does not hold in the rural, connectivity -constrained 
+clinics this project targets. Similarly, Abd El-Aziz and Taloba (2021) developed an IoT-based real 
+time monitoring system for neonatal incubators using an Arduino Uno, tracking pulse rate, 
+temperature, humidity, and gas levels, transmitted wirelessly to clinical staff. This system is 
+incubator-specific and, like t he SMCC design, depends on continuous connectivity rather than 
+offline-first operation. 
+On the AI side, Rahmawati et al. (2024) conducted a systematic review of nine studies applying 
+artificial intelligence to neonatal hypothermia management. The review fo und that most 
+applications used fuzzy logic controllers for incubator climate regulation (temperature and 
+humidity control) rather than for patient-facing early-warning alerting, with one notable exception 
+applying artificial neural networks to sepsis diag nosis using laboratory parameters (CRP, 
+leukocyte count) not available in a low -resource point -of-care embedded device. No reviewed 
+study combined multi-parameter ward-level monitoring, offline operation, and explainable trend-
+based early warning. 
+2.1.3 Comparison of Existing Solutions 
+The table below summarises how each reviewed system compares against the design requirements. 
+System Offline-
+capable? 
+Multi-
+parameter? 
+AI-assisted? Rural low -
+resource 
+context? 
+BEMPU TempWatch 
+(Ghana field study, 
+McAbee et al. 2023) 
+Yes (standalone 
+alarm) 
+No (temperature 
+only) 
+No (fixed 
+threshold) 
+Yes, but single -
+parameter, 
+67.8% 
+sensitivity 
+SMCC Neonatal 
+Monitor (De et al. 
+2016) 
+No (cloud -
+dependent) 
+Yes (temp, HR, 
+movement) 
+No (threshold 
+alerting) 
+No (assumes 
+reliable 
+connectivity) 
+IoT Neonatal 
+Incubator Monitor 
+(Abd El -Aziz & 
+Taloba, 2021) 
+No (cloud -
+dependent) 
+Yes (incubator 
+climate + pulse) 
+No Partially, 
+incubator-
+focused, not 
+ward-portable 
+AI-based hypothermia 
+management 
+(Rahmawati et al. 
+2024, review of 9 
+studies) 
+Not addressed Mostly single -
+parameter 
+(temp) 
+Yes, mostly 
+incubator 
+climate control 
+(fuzzy logic), 
+not ward early -
+warning 
+Not addressed 
+
+--- PAGE 7 ---
+7 
+ 
+Proposed System Yes (local 
+threshold + 
+buffering) 
+Yes (HR, SpO2, 
+temperature) 
+Yes, 
+explainable 
+composite risk 
+score + t rend 
+anomaly 
+detection 
+Yes, designed 
+specifically for 
+rural Uganda 
+2.1.4 Research Gap 
+No reviewed solution combines offline-first operation, multi-parameter sensing (heart rate, SpO2, 
+and temperature), evidence-based localised thresholds, and explainable AI-assisted early warning 
+specifically designed for the rural Ugandan context. The BEMPU TempWatch is offline -capable 
+but single-parameter with a measured 32% miss rate, the SMCC and IoT incubator systems are 
+multi-parameter but connectivity -dependent, exi sting AI applications target incubator climate 
+control or require laboratory data unavailable at the point of care. This project's contribution is to 
+close that specific, evidenced gap. 
+
+--- PAGE 8 ---
+8 
+ 
+CHAPTER 3: METHODOLOGY 
+3.1 Overview of the Approach 
+This chapter descr ibes how each specific objective stated in Section 1.3.1 will be achieved. The 
+objectives are grouped into four stages, Design, Develop, Test and Evaluate, and the methodology 
+follows the same order. The project follows an iterative, milestone -based prototyping approach, 
+so that each hardware and software layer is validated before the next is built on top of it, rather 
+than integrating untested components at the end. Requirements are drawn from the literature 
+reviewed in Chapter 2, including the neonatal hy pothermia thresholds and vital -sign reference 
+ranges cited there, and from the practical constraints of clinical officers and nurses working in 
+rural, low-resource clinics. 
+The technology stack is: Arduino C/C++ on the ESP32 for firmware (Arduino IDE or VS  Code); 
+HTTP over WiFi with JSON payloads for device-to-backend communication; Flask (Python) with 
+Flask-SQLAlchemy and PostgreSQL for the backend; scikit -learn, pandas and joblib for the AI 
+layer; React with Chart.js for the dashboard; and Git/GitHub for version control. 
+3.2 Design (Hardware) 
+The design stage produces the device hardware. Components are selected against three criteria: 
+affordability and availability in Uganda, safety for use near a neonate (3.3V sensor operation and 
+non-contact infrared temperature sensing), and suitability for offline-first operation. 
+Specific objective: To design the device hardware by interfacing the MAX30102 (SpO2 and heart 
+rate) and GY-906 MLX90614 (non-contact temperature) sensors, a buzzer, an LED, a 16x2 I2C 
+LCD and a DS3231 real -time clock with an ESP32 microcontroller for sensing, local alerting, 
+display and offline timekeeping. The two parts below cover the sensing side and the alert, display 
+and timekeeping side of this single objective. 
+3.2.1 Interfacing the Sensors with the ESP32 
+Objective: To design the sensing hardware by interfacing the MAX30102 and GY -906 
+MLX90614 sensors with an ESP32 microcontroller. 
+How it will be achieved: Both sensors communicate over I2C, so they will be connected to the 
+ESP32 I2C pins (SDA and SCL) on a shared bus with their distinct addresses, powered from the 
+3.3V rail with pull-up resistors where required. A wiring schematic will be drawn before assembly, 
+and the circuit will first be built on a breadboard so that each sensor can be brought up on its own, 
+confirming that the ESP32 detects its I2C address and returns plausible values, before both are run 
+together on the same bus. The MAX30102 will be read for heart rate and SpO2 using its red and 
+infrared channels, and the MLX90614 for non-contact skin temperature. Sensor placement (finger 
+or foot for the pulse oximeter, a fixed short distance for the infrared thermometer) will be fixed in 
+a simple mount so that readings are repeatable. 
+
+--- PAGE 9 ---
+9 
+ 
+3.2.2 Alert, Display and Timekeeping Hardware 
+Part of the objective: To design the local alert, display and timekeeping hardware, comprising 
+the buzzer, LED, 16x2 I2C LCD and DS3231 real-time clock. 
+How it will be achieved: The 16x2 LCD and the battery-backed DS3231 will share the same I2C 
+bus as the sensors, with each device on a unique address. The active buzzer and the LED will be 
+driven from ESP32 GPIO pins, with a current-limiting resistor for the LED and a transistor driver 
+if the buzzer draws more current than a GPIO pin can supply. The DS3231 will be set once to the 
+correct time and will keep it on its coin cell independently of WiFi, so readings can be timestamped 
+correctly even after long offline periods. The complete circuit will be documented in a schematic 
+and wiring table, powered from a USB 5V source, and then moved from the breadboard to a neat, 
+stable prototype layout. 
+Circuit schematic. The complete circuit is documented in the schematic in Figure 3.1. It is 
+organised into four blocks around the ESP32: the Sensing and Timekeeping Layer (MA X30102, 
+MLX90614 and DS3231), the Power Supply Unit, the Actuation and Local Display Layer (LCD, 
+LED and buzzer), and the Communication and Cloud Layer (WiFi link to the Flask REST API and 
+React dashboard). Table 3.1 lists the connection of every module. 
+
+--- PAGE 10 ---
+10 
+ 
+ 
+ Fig 3.1 
+ 
+ 
+ 
+ 
+
+
+--- PAGE 11 ---
+11 
+ 
+Module Typical I2C 
+address 
+ESP32 connection Role in the circuit 
+MAX30102 
+pulse oximeter 
+0x57 +VCC to 3V3; GND 
+to GND; SDA to 
+GPIO 21; SCL to 
+GPIO 22 
+Red and infrared LEDs and 
+photodetector; gives raw signals for 
+heart rate and SpO2 
+GY-906 
+(MLX90614) IR 
+temperature 
+sensor 
+0x5A +VCC to 3V3; GND 
+to GND; SDA to 
+GPIO 21; SCL to 
+GPIO 22 
+Non-contact skin temperature 
+DS3231 real-
+time clock 
+0x68 +VCC to 3V3; GND 
+to GND; SDA to 
+GPIO 21; SCL to 
+GPIO 22 
+Timestamps every reading; keeps 
+time on its CR2032 coin cell when 
+WiFi and mains are absent 
+16x2 LCD with 
+PCF8574 
+backpack 
+0x27 (some 
+backpacks 
+0x3F) 
+VCC to +5V; GND 
+to GND; SDA to 
+GPIO 21; SCL to 
+GPIO 22 
+Local display of HR, temperature, 
+SpO2 and status 
+Red LED alert 
+circuit 
+n/a (digital 
+output) 
+GPIO 18 through a 
+220 ohm resistor to 
+the LED, then to 
+GND 
+Visual alarm when a reading is out of 
+range 
+Active buzzer n/a (digital 
+output) 
+GPIO 19 to the 
+buzzer, other 
+terminal to GND 
+Audible alarm when a reading is out 
+of range 
+5V USB or 
+battery supply 
+n/a 5V DC to VIN; 
+common GND 
+Powers the ESP32 and the LCD; the 
+3.3V regulator (AMS1117) supplies 
+the +3.3V rail to the sensors 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 12 ---
+12 
+ 
+Physical prototype. The figure below shows the breadboard prototype built from this schematic. 
+It is the same circuit as Figure 3.1, laid out on a solderless breadboard so that each module can be 
+connected, tested and changed on its own before the layout is made permanent. 
+ 
+  
+How the prototype is connected, part by part.  
+ESP32 and power. The ESP32 development board sits at the top left of the breadboard. Its USB 
+cable supplies 5V, which powers the board and is also used to upload the firmware and read serial 
+output during testing. The red and black jumper wires carry power and ground from the ESP32 to 
+the breadboard power rails, so that every module shares one common ground. The 3.3V pin feeds 
+the sensors and the clock, and the 5V pin feeds the LCD backpack. 
+Shared I2C bus. The green and yellow jumper wires run from the ESP32 SDA (GPIO 21) and 
+SCL (GPIO 22) pins to a common  row on the breadboard. The MAX30102, the MLX90614, the 
+DS3231 and the LCD backpack are all attached to these two lines, and the ESP32 tells them apart 
+by their I2C addresses (Table 3.1). This is why only two GPIO pins are needed for four devices. 
+MAX30102 pulse oximeter (red board, bottom left). Its VCC and GND pins connect to the 3.3V 
+and ground rails and its SDA and SCL pins to the shared bus. The finger or foot is placed over the 
+sensor window. The red and infrared light reflected through the skin is me asured by the 
+photodetector, and the ESP32 reads these raw values over I2C and calculates heart rate and SpO2 
+from them. 
+GY-906 MLX90614 infrared temperature sensor (yellow board, bottom centre). It is 
+connected to the same 3.3V, ground, SDA and SCL lines.  Pointed at the skin from a short fixed 
+distance, it measures the infrared radiation from the skin without touching it, and the ESP32 reads 
+the temperature over I2C. 
+
+
+--- PAGE 13 ---
+13 
+ 
+DS3231 real-time clock (blue board with coin cell, bottom centre). It is connected to the same 
+3.3V, ground, SDA and SCL lines. Its CR2032 cell keeps the time when the device is unpowered 
+or offline. The ESP32 reads the time from it each cycle and attaches it to the heart rate, SpO2 and 
+temperature values, so that every reading has a correct timestamp even during long offline periods. 
+16x2 LCD with I2C backpack (top right). The backpack has four pins, VCC, GND, SDA and 
+SCL, shown on its left edge in the photo. It takes power from the 5V rail and joins the shared I2C 
+bus, so the ESP32 can write text to the display with two signal wires instead of the usual sixteen. 
+The LCD shows the current heart rate, temperature, SpO2 and a status word, for example OK or 
+an alert. 
+LED and buzzer (right side of the breadboard). The red LED is driven from GPIO 18 through 
+a 220 ohm current -limiting resistor to ground. The active buzzer is driven from GPIO 19 and 
+returns to ground. When the ESP32 sets these pins HIGH the LED lights and the buzzer sounds. 
+Neither depends on WiFi, so the alarm works offline. 
+How the connected parts give results. In each sampling cycle of 2 to 5 seconds the ESP32 (1) 
+reads the DS3231 for the current time, (2) reads the MAX30102 and calculates heart rate and 
+SpO2, and (3) reads the MLX90614 for skin temperature. The three values are compa red against 
+the neonatal threshold ranges held in the firmware. The result is written to the LCD in the same 
+cycle, and if a value is out of range on consecutive samples the LED and buzzer are switched on. 
+The timestamped reading is then stored in the loca l buffer and, when WiFi is available, sent as 
+JSON over HTTP to the Flask REST API, from which the React dashboard displays it. In this way 
+the local display and alarms give the result immediately at the bedside, while the network path 
+adds the stored history and the AI risk scoring. 
+3.3 Develop (Software) 
+The development stage covers the firmware on the device, the Flask backend and database, the AI 
+models and the React dashboard. The safety-critical alert path is developed to run entirely on the 
+device, separate from everything that depends on the network. 
+Specific objective: To develop the firmware, Flask and PostgreSQL backend with explainable AI 
+risk scoring, and React dashboard that together provide on -device threshold alerts, offline 
+buffering with automatic synchronisation, and risk-prioritised live and historical monitoring. The 
+five parts below cover the firmware, buffering and synchronisation, database and API, AI scoring, 
+and dashboard that make up this objective. 
+3.3.1 Firmware: Timed Sampling and On-Device Threshold Alerts 
+Part of the objective: To develop firmware that performs periodic, timed sampling and an on -
+device threshold-checking algorithm that triggers local alerts within a bounded maximum latency. 
+How it will be achieved: The firmware will sample heart rate, SpO2 and temperature at a fixed 
+period of 2 to 5 seconds, scheduled with a hardware timer or a FreeRTOS task on the ESP32 rather 
+
+--- PAGE 14 ---
+14 
+ 
+than with blocking delay() calls, so that the sampling period stays steady. Each reading will be 
+compared against evidence -based neonatal ranges held as constants in the firmware, taken from 
+the WHO temperature classes (mild, moderate and severe hypothermia) and the neonatal heart -
+rate and SpO2 reference ranges cited in Chapter 2. When a value is out of range the firmware will 
+switch on the buzzer and LED and show the alert on the LCD in the same sampling cycle, without 
+any call to the network. To limit alarm fatigue, an alert will be raised only after a reading is out of 
+range on consecutive samples and will clear when readings return to range. The maximum allowed 
+delay between a threshold breach and the alert will be set as a design bound (no more than one 
+sampling period plus processing time) and checked in testing. 
+3.3.2 Local Buffering and Synchronisation 
+Part of the objective: To develop local buffering of readings during connectivity loss, with 
+automatic synchronisation to the Flask backend once WiFi is restored. 
+How it will be achieved: Every reading will be stamped with the DS3231 time and the session ID 
+and stored in a circular buffer in ESP32 memory (or on the optional microSD module, if used). 
+The firmware will check WiFi state on every cycle and log each online/offline transition. While 
+the device is offline it will continue sampling and alerting locally and keep adding readings to the 
+buffer. When WiFi returns, the buffered readings will be sent to the backend in batches as JSON 
+over HTTP in their original order, and a reading will be removed from the buffer only after the 
+backend confirms it has been stored. If the buffer fills, the oldest readings will be overwritten and 
+the loss will be counted and reported on the next sync. 
+3.3.3 Database and REST API 
+Part of the objective: To develop a PostgreSQL -backed data model and Flask REST API 
+supporting multiple devices and patients. 
+How it will be achieved: An entity-relationship diagram will model patients (identified by an 
+anonymised patient code), devices, monitoring sessions, readings and alerts, with the session 
+acting as the link between a device and a patient so that a device can be reused across patients. The 
+tables will be created in PostgreSQL through Flask -SQLAlchemy models. The Flask REST API 
+will provide endpoints to register devices and patients, start and end sessions, receive single or 
+batched readings, and return readings, alerts and risk scores to the dashboard. Requests will be 
+validated and identified by device credentials, and duplicate readings arriving after a re-sent batch 
+will be rejected using the device ID and timestamp. 
+3.3.4 Explainable Risk Scoring and Trend Detection 
+Part of the objective: To develop an explainable backend composite risk -scoring model and a 
+rolling-window trend-anomaly detector, distinct from the safety-critical local alert path. 
+How it will be achieved: Both AI components run only on the backend, never on the device alert 
+path. A composite risk score will be produced by logistic regression trained with scikit -learn, 
+
+--- PAGE 15 ---
+15 
+ 
+chosen over black-box models so that each score can be explained from its coefficients. Becau se 
+no real clinical dataset is available, training data will be generated synthetically from normal 
+sessions and simulated deterioration scenarios, labelled using the clinical thresholds, and this is 
+stated openly as a limitation. The trained model will be saved with joblib and loaded by the Flask 
+service. The trend detector will run over a rolling window of the most recent readings and flag a 
+consistent directional decline (for example, temperature falling or SpO2 drifting down) before any 
+single threshold is crossed. Each score will be stored together with the main contributing factors 
+so the dashboard can show why a patient was ranked high. 
+3.3.5 React Dashboard 
+Part of the objective: To develop a React -based dashboard presenting live and historical data,  
+sorted and prioritised by AI-derived risk. 
+How it will be achieved: The dashboard will be built in React and will poll the Flask API at a 
+fixed interval. Polling is used instead of persistent WebSocket connections because it degrades 
+more predictably on intermittent rural connections. It will show a patient list ordered by risk score, 
+live and historical charts of heart rate, SpO2 and temperature drawn with Chart.js (with alert events 
+marked using chartjs-plugin-annotation), the device connectivity state, and the explanation behind 
+each risk score. Wireframes will be drawn first and refined with feedback from the group and 
+supervisor. 
+3.4 Test 
+Testing follows the layered approach of the iterative development process: individual hardware 
+tests first, then software tests, then the full pipeline. Test cases, expected results and actual results 
+will be recorded in test tables so that the data can be used in the evaluation stage. 
+Specific objective: To test the hardware components and the software (device sketch,  backend 
+and dashboard), individually and as an integrated system, through connectivity, end -to-end 
+dataflow, API and security tests. The hardware tests come first, followed by the software tests and 
+then the integrated end-to-end tests. 
+3.4.1 Hardware Testing 
+Part of the objective: To test the hardware components, individually and when integrated, to 
+confirm that each functions correctly. 
+How it will be achieved: Each component will be tested on its own before integration: the ESP32 
+(upload, serial output,  GPIO and WiFi), the MAX30102 and MLX90614 (I2C detection and 
+readings compared against a reference clinical -grade pulse oximeter and digital thermometer on 
+volunteers), the DS3231 (time kept across a power cycle, and drift checked over an extended 
+period), the LCD (correct display of heart rate and temperature), and the buzzer and LED 
+(activation on command). An integration test will then run all components together on the shared 
+I2C bus to check for address conflicts and power problems. Simulated out-of-range conditions will 
+
+--- PAGE 16 ---
+16 
+ 
+be used to confirm that the buzzer, LED and LCD alerts activate and clear as designed. Any failed 
+component will be replaced or rewired and retested before software testing begins. 
+3.4.2 Software Testing 
+Part of the objective: To test the software (the device sketch, backend and dashboard) for 
+connectivity, end-to-end dataflow, API correctness and security. 
+How it will be achieved: The following tests will be carried out: 
+● Connectivity tests: the sketch is tested for WiFi connection, reconnection after the access 
+point is switched off and on, and correct logging of online/offline transitions. 
+● Internet connectivity tests: the device and the dashboard are tested for reaching the backend 
+over the network, including behaviour when WiFi is connected but there is no internet 
+access, to confirm that buffering starts and local alerts continue. 
+● Dataflow tests: readings are traced from the sensor through the device, the HTTP channel, 
+the Flask API and PostgreSQL to the dashboard, and back (for example, configuration and 
+acknowledgements from the backend to the device), checking that values, timestamps and 
+ordering are preserved. Buffered readings from an offline period are checked for 
+completeness and order after synchronisation. 
+● API tests: every endpoint is tested with valid, missing, malformed and duplicate input using 
+Postman or automated Python tests, checking status codes, response formats and database 
+contents. 
+● Security tests: checks that endpoints reject requests without valid device credent ials, that 
+inputs are sanitised against injection, that patient records contain no real names, and that 
+credentials and secrets are not exposed in the code repository or in responses. 
+● Dashboard tests: correct display of live and historical data, risk -based ordering, alert 
+markers and behaviour when the backend is unreachable. 
+3.4.3 Test Data and Sampling Metrics 
+Objective: To define the data that will be sampled during testing, and how it will be measured, so 
+that the system can be evaluated objectively from the results it produces. 
+How it will be achieved: Every test will record its inputs, the expected result and the actual result 
+in a test table, with each row time -stamped from the DS3231 clock. Device readings, reference 
+readings and timing measurements will be saved as CSV files so they can be analysed in Python 
+(pandas) without manual copying. Human -subject measurements will use 5 adult student 
+volunteers who give verbal consent, and any simulated data will be labelled as simulated. The table 
+below lists, for each metric, what is sampled, how much, what it is compared with, and what result 
+will be reported. 
+
+--- PAGE 17 ---
+17 
+ 
+Table: Test data and sampling metrics 
+Metric Data sampled and sampling 
+plan 
+Reference or 
+instrument 
+Result reported and 
+target 
+Body 
+temperature 
+accuracy 
+Paired readings from 5 
+volunteers, 20 readings each 
+(100 pairs), plus a warm-water 
+check from 32 to 40 °C in 
+steps of about 1 °C (10 
+readings per step) to cover the 
+WHO hypothermia bands. 
+Clinical-grade 
+digital 
+thermometer 
+Mean absolute error and 
+bias (°C). Target: MAE 
+of 0.5 °C or less. 
+Heart rate 
+accuracy 
+Paired readings from 5 
+volunteers, 20 each, at rest and 
+after light activity so that more 
+than one heart-rate level is 
+covered. 
+Reference pulse 
+oximeter 
+Mean absolute error 
+(bpm). Target: MAE of 5 
+bpm or less. 
+SpO2 
+accuracy 
+Paired readings from 5 
+volunteers, 20 each, at rest. 
+Low SpO2 values cannot be 
+produced safely on volunteers, 
+so they are covered by 
+injecting simulated values (see 
+alert correctness). 
+Reference pulse 
+oximeter 
+Mean absolute error 
+(percentage points). 
+Target: MAE of 3 points 
+or less. 
+Sampling 
+period and 
+jitter 
+At least 1,000 consecutive 
+sample timestamps from a 1-
+hour continuous run at the 
+configured period. 
+ESP32 micros() 
+timestamps 
+logged over serial 
+or a GPIO pin 
+Mean, maximum and 
+standard deviation of the 
+interval. Target: jitter 
+within 10% of the 
+configured period. 
+Threshold 
+alert 
+correctness 
+Scripted test vectors for 
+temperature, heart rate and 
+SpO2 (at least 20 per 
+parameter): clearly normal, 
+just inside and just outside 
+each boundary, and single 
+versus consecutive out-of-
+range samples. 
+Expected-
+outcome table 
+built from the 
+WHO and 
+neonatal reference 
+ranges 
+Correct decisions out of 
+total, with missed and 
+false alerts counted 
+separately. Target: 100% 
+agreement. 
+On-device 
+alert latency 
+30 trials per parameter, each a 
+simulated threshold breach 
+injected into the firmware or 
+sensor input. 
+Timestamp of the 
+breach compared 
+with the 
+buzzer/LED pin 
+change 
+Mean and maximum 
+latency (ms). Target: no 
+more than one sampling 
+period plus processing 
+time. 
+
+--- PAGE 18 ---
+18 
+ 
+Metric Data sampled and sampling 
+plan 
+Reference or 
+instrument 
+Result reported and 
+target 
+Timekeeping 
+(DS3231) 
+Time read at the start, after 24 
+hours and after 7 days, plus 10 
+power cycles with the coin cell 
+fitted. 
+NTP-
+synchronised 
+phone or PC clock 
+Drift in seconds per day 
+and number of power 
+cycles that keep the time. 
+Target: drift of 1 s/day or 
+less and 10 of 10 cycles 
+retained. 
+Offline 
+buffering and 
+synchronisati
+on 
+Offline periods of 5, 15 and 30 
+minutes, 3 repeats each, with 
+WiFi switched off. Readings 
+generated are counted on the 
+device and again in 
+PostgreSQL. 
+Device buffer log 
+compared with 
+database row 
+counts 
+Percentage delivered, 
+percentage in correct 
+order, duplicates, time to 
+clear the buffer and 
+readings lost to 
+overflow. Target: 100% 
+delivered and in order, 0 
+duplicates, while the 
+buffer is not full. 
+Connectivity 
+transitions 
+20 WiFi drop-and-restore 
+cycles, including cases where 
+WiFi is connected but has no 
+internet access. 
+Device serial log 
+and backend 
+request log 
+Reconnection success 
+rate, time to reconnect, 
+correct logging of each 
+transition, and whether 
+local alerts continued 
+throughout. 
+API 
+correctness 
+and response 
+time 
+At least 10 test cases per 
+endpoint (valid, missing, 
+malformed and duplicate 
+input), plus 100 timed requests 
+to the readings endpoint. 
+Postman or 
+automated Python 
+(pytest) tests 
+Pass rate, correct status 
+codes and database 
+contents, and mean and 
+95th-percentile response 
+time. 
+Security Checklist run per endpoint: no 
+credentials, wrong credentials, 
+injection strings, and a scan of 
+the repository and responses 
+for exposed secrets or real 
+patient names. 
+Manual checks 
+and automated 
+request scripts 
+Number of checks 
+passed out of total. 
+Target: every 
+unauthorised or 
+malformed request 
+rejected and no secrets 
+exposed. 
+Dashboard 
+delay and 
+consistency 
+30 readings followed from the 
+device to the dashboard at the 
+fixed polling interval, with 
+displayed values compared 
+with the database. 
+Device, API and 
+dashboard 
+timestamps 
+Mean and maximum 
+end-to-end delay, and 
+percentage of values that 
+match the database. 
+Target: delay no more 
+than the polling interval 
+plus API time. 
+
+--- PAGE 19 ---
+19 
+ 
+Metric Data sampled and sampling 
+plan 
+Reference or 
+instrument 
+Result reported and 
+target 
+AI layer 
+against 
+threshold-
+only baseline 
+Three simulated scenarios 
+(normal, gradual deterioration, 
+sudden deterioration), 50 
+sessions each (150 in total). 
+Models are trained on 80% of 
+the synthetic data and scored 
+on the held-out 20% and on 
+new scenario runs. 
+Threshold-only 
+alerting run over 
+exactly the same 
+sessions 
+False alarms per session 
+hour, detection lead time 
+(minutes), sensitivity, 
+precision, recall and F1 
+for the AI layer and for 
+the baseline. 
+Continuous 
+operation 
+One 8-hour continuous run 
+with WiFi switched on and off 
+at intervals. 
+Serial log with 
+DS3231 
+timestamps 
+Unexpected resets, 
+crashes and uptime 
+percentage. Target: no 
+unexpected resets. 
+ 
+The sample sizes are planned minimums for a course prototype; they are chosen to give a stable 
+estimate of the mean and spread of each metric, not to claim clinical validation. Each metric will 
+be reported with the number of samples (n), the mean, the standard deviation and the minimum 
+and maximum. The targets shown are proposed design targets, to be confirmed with the supervisor 
+before testing begins, and they form the basis of the evaluation in Section 3.5: a result within its 
+target counts as met, and a result outside it is investigated, corrected and retested. 
+3.5 Evaluate 
+3.5.1 Evaluation of Test Data and Metrics 
+Part of the objective: To evaluate the data obtained from the tests and present the metrics 
+involved. 
+How it will be achieved: The data recorded during testing, as specified in Section 3.4.3, will be 
+analysed and reported with the following metrics: 
+● Sampling accuracy: The difference between device readings and the reference instruments, 
+reported as mean absolute error. 
+● Sampling period and jitter: The interval between consecutive samples, logged with GPIO 
+or serial timestamps over a long run, reported as mean, maximum and standard deviation 
+against the configured period. 
+● On-device alert latency: The time from a simulated threshold breach to the buzzer and LED 
+activating, measured over repeated trials and compared with the design bound. 
+● Synchronisation and dataflow performance: The share of buffered readings correctly 
+delivered, and the time to clear a buffer after WiFi is restored. 
+
+--- PAGE 20 ---
+20 
+ 
+● AI layer against a threshold -only baseline: Both approaches are run over the same 
+simulated scenarios (normal, gradual deterioration and sudden deterioration), comparing 
+false-alarm rate and detection lead time. 
+● Alert correctness and timekeeping: The share of test vectors that produced the expected 
+alert decision, and the DS3231 drift in seconds per day. 
+● Backend and dashboard performance: API pass rate, mean and 95th -percentile response 
+time, security checks passed, and end-to-end delay from device to dashboard. 
+● Continuous operation: unexpected resets and uptime over the long run. 
+Results will be presented in tables and charts, compared with the design requirements and with the 
+benchmarks from the reviewed literature (for example, the sensitivity reported for the BEMPU 
+TempWatch). Limitations will be stated, in particular the use of synthetic data rather than real 
+neonates. 
+  
+
+--- PAGE 21 ---
+21 
+ 
+3.6 Budget and Cost Analysis 
+The table below presents the estimated hardware cost for a single working prototype, including 
+the DS3231 RTC and 16x2 I2C LCD additions. 
+Component Purpose Essential? Approx. Cost 
+(UGX) 
+ESP32 DevKit Controller, WiFi, local 
+threshold logic 
+Essential 25,000-40,000 
+MAX30102 module SpO2 + heart rate (pulse 
+oximetry) 
+Essential 20,000-35,000 
+GY-906 MLX90614 Skin/body temperature Essential 50,000 
+DS3231 RTC module Battery-backed accurate 
+timestamps during offline 
+periods 
+Essential 8,000-15,000 
+16x2 I2C LCD Local at -a-glance readout 
+of HR and temperature 
+Essential 15,000-25,000 
+Active buzzer Audible alert Essential 2,000-5,000 
+LED Visual alert Essential 2,000 
+Breadboard + jumper wires Prototyping Essential 10,000-15,000 
+USB cable + 5V power source Power / programming Essential 5,000-10,000 
+microSD module Larger offline buffer 
+(optional) 
+Optional 10,000-15,000 
+Total (essential components)   ~137,000-212,000 
+ 
+3.7 Project Timeline 
+The chart below presents the project timeline across three calendar months, September to 
+November 2026, structured around four phases. Project idea presentation (completed), proposal 
+document preparation and presentation (current), project implementation, and final report and 
+presentation.  
+The implementation phase retains the original milestone breakdown for context. Hardware and 
+firmware milestones must be substantially complete before backend and dashboard integration 
+begins, since realistic sensor data is needed to validate the AI scoring pipeline meaningfully, before 
+the project concludes with testing, analysis, and final reporting in November. 
+ 
+ 
+
+--- PAGE 22 ---
+22 
+ 
+. 
+3.8 Ethical Considerations 
+● No real neonates are used in testing at any stage. Testing uses student volunteers or clearly 
+labelled simulated data. 
+● Patient records use an anonymised patient_code identifier rather than real names, by 
+design. 
+● The device and dashboard are explicitly presented as a screening/early -warning aid, not a 
+diagnostic tool, in all documentation and any demonstration to clinical staff. 
+● Any future extension toward real clinical deployment or data collection would require 
+formal ethical review and informed consent, which is outside the scope of this course 
+project. 
+ 
+REFERENCES 
+1. Mukunya D, Tumwine JK, Nankabirwa V, et al. Neonatal hypothermia in Northern Uganda. A 
+community-based cross-sectional study. BMJ Open. 2021;11:e041723. doi:10.1136/bmjopen-
+2020-041723 
+2. McAbee L, Mundagowa PT, Agbinko-Djobalar B, et al. Evaluation of a device to detect neonatal 
+hypothermia in a clinical setting in Ghana. PLOS Glob Public Health. 2023;3(10):e0001681. 
+doi:10.1371/journal.pgph.0001681 
+3. De D, Mukherjee A, Sau A, Bhakta I. Design of smart neonatal health monitoring system using 
+SMCC. Healthcare Technology Letters. 2016;4(1):13-19. doi:10.1049/htl.2016.0054 
+4. Abd El-Aziz RM, Taloba AI. Real Time Monitoring and Control of Neonatal Incubator using 
+IoT. International Journal of Grid and Distributed Computing. 2021;14(1):2117-2127. 
+
+
+--- PAGE 23 ---
+23 
+ 
+5. Rahmawati I, Widyawati  MN, Kurnianingsih K, Walin W. Hypothermia Management in 
+Newborns Artificial Intelligence Based: Systematic Review. Journal of Maternal and Child 
+Health. 2024;9(3):421-432. 
+6. Vital signs by age reference (neonatal heart rate and SpO2), based on the Americ an Academy 
+of Pediatrics / American Heart Association Textbook of Neonatal Resuscitation, 8th ed., 2021. 
+7. Oxygen saturation reference ranges for healthy newborns within 24 hours at 1800m altitude, 
+Nairobi, Kenya. PMC5474098. 
+8. Using intermittent pulse oximetry to guide neonatal oxygen therapy in a low -resource context. 
+PMC7363784. 
+9. Alarm Fatigue Reduction in a Single Patient Room Neonatal Intensive Care Unit. OJIN: The 
+Online Journal of Issues in Nursing. 
+10. The Alarm Fatigue Challenge in the Neonatal Intensive Care Unit: A Before-and-After Study. 
+PubMed 37339673. 
+11. Multidimensional Analysis of Alarm Management in the NICU: Alarm Frequencies, 
+Actionable Alarms and Nurse Perceptions. Nursing in Critical Care, 2026. 

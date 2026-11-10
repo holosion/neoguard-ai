@@ -1,0 +1,43 @@
+CHAPTER 6: AI MODEL DEVELOPMENT, TRAINING, AND EVALUATION
+
+6.1 Introduction
+The AI component was developed as a backend decision-support system for early warning. It analysed temperature, oxygen saturation and heart-rate patterns and returned an explainable risk score. It did not replace the ESP32 local LED, buzzer or display alert path.
+
+6.2 Data Collection From Kaggle
+Two datasets obtained from Kaggle were present in the workspace. archive.zip contained newborn_health_monitoring_with_risk.csv with 3,000 records and 100 de-identified baby identifiers. archive_1.zip contained Hypothermia.csv with 200 records. The datasets included temperature, heart rate, oxygen saturation and related neonatal fields. The original Kaggle URLs and licence information were not preserved.
+
+6.3 Kaggle Data Audit and Review
+The archive audit removed the name field from the newborn dataset and the code field from the hypothermia dataset. It flagged invalid oxygen-saturation values, unverified source labels, unverified units and unverified timing. Seven newborn records were flagged for invalid oxygen saturation. All archived records were marked review-only and were not inserted into clinical patient or device-reading tables.
+
+6.4 Why the Deployed Model Used Synthetic Data
+The Kaggle data was not used as the direct training set for the deployed NeoGuard model because the available files did not provide verified continuous monitoring sequences with reliable event timestamps. Their risk labels were not documented as confirmed clinical deterioration outcomes. The Kaggle records were therefore used for audit and an exploratory benchmark only. The deployed model used controlled synthetic sessions with known scenario labels and event times.
+
+6.5 Exploratory Kaggle Benchmark
+After excluding seven invalid oxygen-saturation records, the exploratory benchmark used temperature, heart rate and oxygen saturation and split records by baby identifier into 60 training, 20 validation and 20 test subjects. The test set contained 600 rows and 78 positive rows. It produced precision 1.0000, recall 0.0256, average precision 0.2649, ROC-AUC 0.6034 and Brier score 0.1093, with TN=522, FP=0, FN=76 and TP=2. It was marked never deployed because the source labels were unverified.
+
+6.6 Synthetic Dataset Generation
+The deployed model was trained by ai/train.py. A fixed seed, 20261009, generated 480 independent sessions. There were 60 sessions in each of eight scenarios: normal, cooling, desaturation, combined, recovery, artifact, near-threshold and dropout. Each session covered 1,200 seconds with a five-second sampling step. The generator created baseline temperature, SpO2 and heart rate values, applied scenario-specific deterioration or recovery, added noise, and represented artifact and dropout through quality flags.
+
+6.7 Event Labelling
+An event was labelled when latent temperature fell below 36.5 C or latent SpO2 fell below 90 percent at the current observation or within the following 120 seconds. The final 120 seconds were excluded when a complete future label horizon was unavailable. These were simulated labels, not clinical diagnoses.
+
+6.8 Data Pre-processing
+Readings were sorted by timestamp and only the causal 120-second history was used. Duplicate timestamps, future leakage, gaps above 15 seconds, missing values, invalid ranges and poor-quality terminal readings were rejected. At least 12 valid readings per vital and at least 60 seconds of coverage were required. Valid ranges were 30–42 C, 50–100 percent SpO2 and 40–220 bpm.
+
+6.9 Feature Engineering
+The model used 12 features: last value, mean, slope per minute and standard deviation for temperature, SpO2 and heart rate. Trend flags were raised for temperature slopes below -0.08 C/minute and SpO2 slopes below -1 percentage point/minute. Patient identifiers were not used as features.
+
+6.10 Model Selection and Training
+An explainable logistic-regression model was selected. Features were standardised using training-set means and scales. Sessions were split by session identifier into 288 training, 96 validation and 96 test sessions. Logistic regression was fitted on training sessions, the validation set selected the operating point, and the test set was held out until final evaluation. The model, coefficients, intercept, means, scales and threshold were saved in ai/artifacts/risk_model.json. The selected threshold was 0.75.
+
+6.11 Backend Integration
+The Flask backend loaded the JSON model in prototype mode and verified its schema, feature contract, validation scope and target. Each response included a risk score, risk category, warning state, model version, feature contributions and trend flags. Contributions were returned in standardised log-odds units and sorted by absolute magnitude.
+
+6.12 Model Performance Results
+The held-out synthetic test set contained 19,272 rows and 5,375 positive rows. Precision was 0.9377, recall/sensitivity 0.8177, average precision 0.9475, ROC-AUC 0.9748 and Brier score 0.0476. The confusion matrix was TN=13,605, FP=292, FN=980 and TP=4,395. At event level, 44 of 49 events were detected at onset, event sensitivity was 0.8980, warning-episode precision was 0.7361, false-warning episodes were 38 over 26.7667 monitoring hours, the false-warning rate was 1.4197 per simulated hour and median lead time was 107.5 seconds.
+
+6.13 AI Versus Threshold-Only Baseline
+The threshold-only baseline had precision 0.9940, recall 0.7669, ROC-AUC 0.8825 and Brier score 0.0663. It detected 25 of 49 events at onset, with event sensitivity 0.5102, warning-episode precision 0.8077, 20 false-warning episodes, 0.7472 false-warning episodes per hour and zero median lead time. The AI detected more simulated events earlier but produced more warning episodes and lower warning-episode precision.
+
+6.14 Explainability, Limitations and Objective Evaluation
+The backend explained scores using standardised feature contributions and trend flags. The model was synthetic-only; train and test shared the same generator; labels were threshold-derived; clinical calibration was not performed; and the Kaggle labels were not verified clinical outcomes. The AI objective was achieved at prototype level through data audit, synthetic generation, causal features, model training, held-out evaluation, baseline comparison and backend integration. Clinical validation was not achieved.

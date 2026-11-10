@@ -1,0 +1,2408 @@
+OFFLINE-FIRST NEONATAL VITAL SIGN MONITOR WITH AI-ASSISTED EARLY WARNING
+Final Project Report
+Course: CSC 2118 Embedded and Real-Time Systems
+Makerere University, College of Computing and Information Sciences
+Submitted to: Mr. Byansi David
+Prepared by: Group D
+[MISSING INFORMATION: insert the exact group-member names, student numbers and registration numbers from the proposal.]
+Date: [MISSING INFORMATION: insert approved submission date]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABSTRACT
+This report presented the design, implementation, testing and evaluation of an offline-first neonatal vital-sign monitoring prototype. The implemented system used an ESP32-S3 with a MAX30102 pulse-oximetry sensor, MLX90614 non-contact temperature sensor, DS1302 timekeeping interface, ST7789 SPI display, microSD storage, RGB indicator and buzzer. The firmware acquired vital-sign data, applied local threshold logic, displayed system status, stored readings locally and synchronised queued records through an authenticated backend when Wi-Fi was available. The backend used REST services, PostgreSQL models, authentication and a React dashboard for live and historical monitoring.
+Kaggle-derived datasets were audited and de-identified, but their source labels were not verified as clinical deterioration outcomes. The deployed AI model was therefore trained on 480 controlled synthetic monitoring sessions covering eight scenarios. The data was divided into 288 training, 96 validation and 96 test sessions. On 19,272 held-out synthetic rows, the model achieved precision of 0.9377, recall of 0.8177 and ROC-AUC of 0.9748. It detected 44 of 49 simulated events at onset with a median lead time of 107.5 seconds. Compared with the threshold-only baseline, the AI detected more simulated events earlier but produced more warning episodes per hour.
+Firmware compilation and upload passed, repeated SD diagnostics passed, runtime, heartbeat and synchronisation requests returned HTTP 200, and the validated SPI carrier recorded zero reported ERC, DRC, unrouted or schematic-parity violations. Heart-rate stability, reference-instrument accuracy and clinical validation were not established. The project therefore produced a reproducible research prototype rather than a clinically deployable diagnostic device.
+TABLE OF CONTENTS
+ABSTRACT
+
+CHAPTER 1: INTRODUCTION
+1.1 Background
+1.2 Problem Statement
+1.3 Main Objective
+1.4 Specific Objectives
+1.5 Significance
+1.6 Scope and Limitations
+1.7 Report Organisation
+
+CHAPTER 2: LITERATURE REVIEW
+2.1 Introduction
+2.2 Neonatal Hypothermia and Hypoxia
+2.3 Existing Monitoring Solutions
+2.4 Comparison of Existing Solutions
+2.5 Research Gap
+2.6 Summary
+
+CHAPTER 3: SYSTEM DESIGN AND METHODOLOGY
+3.1 Overview of the System
+3.2 System Architecture
+3.3 Requirements Analysis
+3.4 Hardware Design
+3.5 Software Design
+3.6 Testing Strategy
+3.7 Ethical Considerations
+
+CHAPTER 4: SYSTEM IMPLEMENTATION
+4.1 Introduction
+4.2 Hardware Implementation
+4.3 Firmware Implementation
+4.4 Backend Implementation
+4.5 AI Implementation
+4.6 Web Dashboard Implementation
+
+CHAPTER 5: SYSTEM TESTING AND RESULTS
+5.1 Introduction
+5.2 Hardware Testing
+5.2.1 ESP32 and GPIO Tests
+5.2.2 MAX30102 Tests
+5.2.3 MLX90614 Tests
+5.2.4 DS3231 Timekeeping Tests
+5.2.5 LCD and ST7789 Display Tests
+5.2.6 LED and Buzzer Tests
+5.2.7 Shared I²C Bus Integration Test
+5.3 Sensor Accuracy Testing
+5.3.1 Temperature Accuracy
+5.3.2 Heart-Rate Accuracy
+5.3.3 SpO₂ Accuracy
+5.4 Firmware and Real-Time Performance Testing
+5.5 Offline Buffering and Synchronisation Testing
+5.6 Connectivity Testing
+5.7 Backend, API, Security and Dashboard Testing
+5.8 Continuous-Operation Testing
+5.9 Summary of Test Results
+
+CHAPTER 6: AI MODEL DEVELOPMENT, TRAINING, AND EVALUATION
+6.1 Introduction
+6.2 Data Collection from Kaggle
+6.3 Data Audit and De-identification
+6.4 Dataset Preparation
+6.5 Synthetic Data Generation
+6.6 Data Pre-processing
+6.7 Feature Engineering
+6.8 Model Selection
+6.9 Model Training
+6.10 Model Evaluation
+6.11 Comparison with Threshold-Only Baseline
+6.12 Trend and Anomaly Detection
+6.13 Explainability and Limitations
+6.14 AI Integration with the Backend and Dashboard
+
+CHAPTER 7: EVALUATION OF PROJECT OBJECTIVES
+7.1 Introduction
+7.2 Evaluation Criteria
+7.3 Hardware Objective Evaluation
+7.4 Software Objective Evaluation
+7.5 Testing Objective Evaluation
+7.6 AI Evaluation Objective
+7.7 Overall Objectives Achievement
+7.8 Discussion of Results
+7.9 Limitations Encountered
+7.10 Recommendations for Future Work
+
+CHAPTER 8: CONCLUSION AND RECOMMENDATIONS
+8.1 Conclusion
+8.2 Recommendations
+8.3 Future Work
+
+REFERENCES
+
+APPENDICES
+Appendix A: Final Circuit Schematic
+Appendix B: PCB Layout
+Appendix C: Hardware Wiring and Pin Assignment Table
+Appendix D: Firmware Test Evidence
+Appendix E: Backend API and Database Evidence
+Appendix F: AI Training and Evaluation Results
+Appendix G: Dashboard and Trend Analysis Screens
+Appendix H: System Architecture Diagram
+Appendix I: Additional Graphs and Metrics
+Appendix J: Project Source-Code and Evidence Register
+CHAPTER 1: INTRODUCTION
+1.1 Background
+Neonatal health required close observation because newborns could experience rapid changes in temperature, oxygen saturation and heart rate. Two conditions of particular concern were neonatal hypothermia and hypoxia.
+Neonatal hypothermia occurred when the newborn’s body temperature fell below the recommended range. The proposal used the following WHO temperature categories:
+Mild hypothermia: 36.0–36.49 °C.
+Moderate hypothermia: 32.0–35.99 °C.
+Severe hypothermia: below 32.0 °C.
+Hypoxia or low oxygen saturation represented another potentially serious condition. A decline in SpO₂ could indicate respiratory compromise and could occur together with changes in heart rate.
+Evidence from Northern Uganda demonstrated the importance of this problem. Mukunya et al. reported a 51.0% incidence of neonatal hypothermia among 1,330 neonates in Lira District [1]. The study identified low birth weight, home birth and delayed breastfeeding initiation as risk factors.
+The study relied on periodic measurements rather than continuous monitoring. This meant that a change occurring between observation visits could remain undetected. This limitation was important in rural facilities where staffing, electricity and network connectivity could be constrained.
+The project therefore implemented an offline-first monitoring prototype. It used an ESP32-S3 to collect vital-sign data from embedded sensors, apply local threshold rules, display the current status, activate local alerts and store readings locally. When network connectivity was available, the device synchronised readings with a backend for storage, history, dashboard visualisation and experimental AI risk scoring.
+The final implemented revision used:
+MAX30102 for heart-rate and SpO₂ signal acquisition.
+MLX90614 for non-contact temperature acquisition.
+ST7789 for local graphical display.
+SD storage for offline logging.
+RGB output and buzzer for local status and warning indication.
+ESP32-S3 for processing and communication.
+Backend API and PostgreSQL for persistence.
+React dashboard for monitoring and review.
+Explainable logistic-regression risk scoring for synthetic research evaluation.
+The final implementation differed from the original proposal in some hardware details. The proposal described a 16x2 I2C LCD and DS3231 arrangement, while the implemented firmware used an ST7789 SPI display and a DS1302 pin arrangement. These differences were recorded in the report.
+1.2 Problem Statement
+Rural and resource-limited health facilities could lack affordable continuous monitoring systems capable of observing several neonatal vital signs at the same time.
+Existing systems could also depend on:
+Frequent manual observation.
+Continuous electricity.
+Continuous network connectivity.
+Expensive commercial monitoring equipment.
+Cloud services for storage and analysis.
+When connectivity was unavailable, a cloud-dependent system could fail to transmit readings or provide remote analysis. When staff observations were intermittent, abnormal changes could be detected late.
+The project therefore addressed the need for a low-cost embedded monitor that could:
+Measure more than one neonatal vital sign.
+Generate local alerts without internet access.
+Store readings during offline periods.
+Synchronise records when connectivity returned.
+Provide backend history and dashboard visualisation.
+Provide experimental AI-assisted risk scoring and trend interpretation.
+Preserve a clear separation between prototype research output and clinical diagnosis.
+1.3 Main Objective
+The main objective of the project was to design, develop, test and evaluate a low-cost, offline-capable embedded neonatal monitoring device that generated real-time local early-warning alerts for possible hypothermia and hypoxia and provided backend-assisted AI risk scoring and trend analysis when network access was available.
+The objective was implemented through the following system path:
+Sensors acquired temperature, pulse and oxygenation signals.
+The ESP32-S3 validated and processed the readings.
+Local threshold rules controlled the display, RGB output and buzzer.
+Readings were stored locally on SD media.
+Wi-Fi synchronisation transferred queued records to the backend.
+PostgreSQL stored device, session, reading and alert data.
+The AI service calculated a synthetic-only risk score and trend flags.
+The React dashboard displayed monitoring and risk information.
+1.4 Specific Objectives
+1.4.1 Hardware design objective
+The first specific objective was to design the device hardware by interfacing:
+The MAX30102 heart-rate and SpO₂ sensor.
+The GY-906 MLX90614 temperature sensor.
+The buzzer.
+The LED or RGB indicator.
+The display.
+The real-time clock.
+The ESP32 controller.
+The objective required the hardware to support:
+Vital-sign sensing.
+Local threshold alerting.
+Local display.
+Time-stamped readings.
+Offline data storage.
+The objective was achieved at prototype integration level. The final implementation connected the sensing, display, storage and alert functions to the ESP32-S3 and produced a validated carrier schematic and PCB revision.
+1.4.2 Software development objective
+The second specific objective was to develop:
+ESP32 firmware.
+A Flask-compatible REST backend.
+PostgreSQL persistence.
+Explainable AI risk scoring.
+Trend detection.
+A React dashboard.
+The software was required to provide:
+Local threshold alerts.
+Offline buffering.
+Automatic synchronisation.
+Live monitoring.
+Historical monitoring.
+Alert history.
+Risk-prioritised review.
+Explainable AI output.
+This objective was achieved as a working prototype. The implemented system included firmware acquisition and alerting, SD queueing, HTTP synchronisation, authenticated backend routes, PostgreSQL models, dashboard paths and a synthetic-only AI model.
+1.4.3 Testing objective
+The third specific objective was to test:
+Hardware components.
+Firmware functions.
+Sensor interfaces.
+Display output.
+Indicator and buzzer operation.
+SD storage.
+Wi-Fi and synchronisation.
+Backend API behaviour.
+Database operations.
+Authentication and access control.
+Dashboard data paths.
+Integrated data flow.
+The project completed several functional and integration tests. Firmware compilation and upload passed, I2C scanning passed for the tested sensors, SD operations passed repeatedly, display operation passed, and backend smoke tests passed.
+The objective was partly achieved because reference-instrument accuracy tests, complete timing datasets, controlled offline-duration trials and clinical validation were not completed.
+1.4.4 Evaluation objective
+The fourth specific objective was to evaluate the collected data using:
+Real-time performance.
+Sensor accuracy.
+Sampling period.
+Sampling jitter.
+Alert correctness.
+Alert latency.
+Synchronisation performance.
+AI false-warning rate.
+AI detection lead time.
+Comparison with a threshold-only baseline.
+The AI evaluation objective was partly achieved. A complete synthetic AI evaluation and threshold comparison were produced. However, sensor accuracy, clinical alert performance, jitter and several deployment metrics were not fully measured.
+1.5 Significance
+The project was significant in several ways.
+1.5.1 Embedded-systems significance
+The project demonstrated how an ESP32-S3 could combine:
+Sensor acquisition.
+Real-time processing.
+Local display.
+Local alerting.
+SD storage.
+Wi-Fi communication.
+Quality checking.
+Backend synchronisation.
+The project also demonstrated the importance of separating safety-critical local functions from optional network services.
+1.5.2 Healthcare significance
+The system addressed the need for more frequent observation of neonatal temperature, heart rate and oxygenation in settings where manual observation could be intermittent.
+The local alert path was designed to continue operating when:
+Wi-Fi was unavailable.
+The backend was unreachable.
+AI scoring was disabled.
+Synchronisation was delayed.
+This design could reduce dependence on continuous network connectivity for immediate local warnings.
+1.5.3 Artificial-intelligence significance
+The project demonstrated how recent vital-sign values and trends could be combined into an explainable backend risk score.
+The AI returned:
+A risk score.
+A risk category.
+Feature contributions.
+Trend flags.
+Model version.
+Validation scope.
+The model did not replace clinical judgement. Its contribution was to demonstrate a reproducible research approach for early-warning assistance; this limitation was consistent with the reviewed literature and the absence of clinical validation [5].
+1.5.4 Educational significance
+The project integrated several areas of study:
+Embedded C/C++ programming.
+Microcontroller interfacing.
+I2C and SPI communication.
+SD-card storage.
+Wi-Fi networking.
+REST APIs.
+PostgreSQL databases.
+React dashboard development.
+Machine learning.
+Data validation.
+PCB design.
+Hardware and software testing.
+This integration provided practical experience in moving from a proposal to an implemented and evaluated system.
+1.6 Scope and Limitations
+1.6.1 Scope
+The project covered:
+ESP32-S3 firmware.
+MAX30102 signal acquisition.
+MLX90614 temperature acquisition.
+Local display output.
+RGB and buzzer alerting.
+SD-card logging.
+Wi-Fi synchronisation.
+Backend API.
+PostgreSQL persistence.
+React dashboard data flow.
+Synthetic AI training.
+AI risk scoring.
+Trend flags.
+Hardware and software verification.
+PCB carrier design.
+1.6.2 Hardware limitations
+The following hardware limitations remained:
+Heart-rate estimates were unstable, ranging from 42 bpm to 187 bpm in the recorded finger capture.
+No reference pulse oximeter was used for accuracy comparison.
+No clinical thermometer was used for temperature accuracy comparison.
+Automatic event-triggered buzzer audibility was not confirmed.
+Battery capacity and endurance were not measured.
+Power-rail current and thermal performance were not fully characterised.
+The final manufactured enclosure was not documented.
+1.6.3 Software and network limitations
+The following software and network limitations remained:
+Controlled 5-, 15- and 30-minute offline tests were not available.
+Controlled Wi-Fi drop-and-restore cycle results were not available.
+Dashboard delay measurements were not available.
+Complete database-to-dashboard consistency measurements were not available.
+Long-duration continuous operation beyond the recorded diagnostic runs was not established.
+1.6.4 AI limitations
+The AI model had the following limitations:
+It was trained on synthetic sessions.
+Its labels were threshold- and scenario-derived.
+The Kaggle source labels were not verified clinical outcomes.
+The train and test sessions shared the same synthetic generator.
+Clinical probability calibration was not performed.
+The model was not clinically validated.
+Real neonatal variability and sensor artefacts were not fully represented.
+The AI ran in the backend and was unavailable during network outages.
+The AI did not control the local ESP32 alert path.
+The model did not constitute a diagnosis or medical certification.
+1.6.5 Ethical limitations
+No real neonates were used during testing. The system was tested using bench observations, software tests, synthetic sessions and available non-clinical readings.
+Clinical deployment would require:
+Ethical approval.
+Consent procedures.
+Calibrated reference instruments.
+Clinical expert review.
+Real neonatal outcome data.
+Independent validation.
+Medical-device safety review.
+1.7 Report Organisation
+Chapter 1 introduced the neonatal monitoring problem, the project objectives, significance, scope and limitations.
+Chapter 2 reviewed neonatal hypothermia and hypoxia, existing monitoring systems, AI-assisted neonatal systems and the research gap addressed by the project.
+Chapter 3 described the system design and methodology, including requirements, hardware selection, wiring, power design, PCB design, firmware architecture, backend design, AI design, dashboard design, testing strategy and ethical considerations.
+Chapter 4 described the implementation of the hardware, firmware, backend, PostgreSQL database, AI model and React dashboard.
+Chapter 5 presented the hardware, firmware, API, storage, connectivity and integrated-system testing results, including successful checks, unresolved limitations and missing quantitative measurements.
+Chapter 6 described the complete AI-development process, including Kaggle data collection, dataset auditing, synthetic-data generation, preprocessing, feature engineering, model training, backend integration, AI evaluation and threshold-baseline comparison.
+Chapter 7 evaluated each project objective against the recorded implementation and testing evidence.
+Chapter 8 concluded the report and presented recommendations and future work required before clinical or manufacturing deployment.
+CHAPTER 2: LITERATURE REVIEW
+2.1 Introduction
+This chapter reviewed the evidence supporting the development of an offline-first neonatal vital-sign monitoring system with AI-assisted early warning. The review focused on five themes:
+The prevalence and consequences of neonatal hypothermia and hypoxia.
+The limitations of intermittent manual monitoring.
+Existing neonatal monitoring devices and connected systems.
+The use of artificial intelligence in neonatal monitoring and hypothermia management.
+The research gap addressed by the NeoGuard project.
+The reviewed literature guided the hardware selection, local alert strategy, offline-storage design, AI design and evaluation metrics [1–5].
+2.2 Neonatal Hypothermia and Hypoxia
+Neonatal hypothermia is a significant concern because newborns have limited ability to regulate body temperature. The proposal used the WHO temperature categories:
+Mild hypothermia: 36.0–36.49 °C.
+Moderate hypothermia: 32.0–35.99 °C.
+Severe hypothermia: below 32.0 °C.
+Mukunya et al. reported a 51.0% incidence of neonatal hypothermia among 1,330 neonates in Lira District, Northern Uganda [1]. The study identified home birth, low birth weight and delayed breastfeeding initiation as important risk factors.
+The monitoring approach used in that study relied on periodic home visits and digital thermometer spot checks. The measurements were therefore intermittent rather than continuous. A newborn could experience a clinically important temperature change between visits without the change being detected immediately.
+Hypoxia or low oxygen saturation represents another important neonatal danger. Oxygen saturation and heart rate can change rapidly during respiratory compromise. A system that monitors temperature alone may therefore miss deterioration that first appears through oxygenation or pulse changes.
+The reviewed evidence consequently supported a multi-parameter system that could monitor:
+Temperature.
+Oxygen saturation.
+Heart rate.
+The project used these parameters because they could be measured using compact embedded sensors and could be processed locally without laboratory equipment.
+The system was designed as an early-warning aid. It did not diagnose hypothermia, hypoxia, sepsis or any other medical condition.
+2.3 Existing Monitoring Solutions
+2.3.1 BEMPU TempWatch
+McAbee et al. evaluated the BEMPU TempWatch wearable temperature-alarm bracelet in Ghana [2]. The study included 1,973 temperature readings from 249 neonates.
+The device achieved:
+Sensitivity: 67.8%.
+Specificity: 95.9%.
+Sensitivity was lower among:
+Neonates in incubators: 58.4%.
+Very-low-birth-weight neonates: 62.8%.
+The BEMPU TempWatch was important because it demonstrated that an offline temperature-alarm device could be used in a low-resource African setting. It also provided a real-world performance benchmark.
+However, the device was primarily temperature-based. Its results showed that a single-parameter threshold device could miss some hypothermia episodes. This motivated the NeoGuard design to combine temperature with heart rate and SpO₂ and to include trend analysis rather than relying only on one temperature threshold.
+2.3.2 Sensor Mobile Cloud Computing Neonatal Monitor
+De et al. proposed a neonatal health-monitoring system based on Sensor Mobile Cloud Computing [3]. The system combined temperature, acceleration and heart-rate sensors with wireless communication, a cloud backend and Android-based alerts.
+The system demonstrated the value of multi-parameter monitoring and remote reporting. However, the design depended on wireless transmission and cloud services for continued processing and storage.
+This dependency presented a limitation for the rural context targeted by NeoGuard. If the network connection failed, the system could not provide the same level of cloud-based monitoring. NeoGuard therefore retained local threshold alerts and local buffering on the embedded device.
+2.3.3 IoT Neonatal Incubator Monitoring
+Abd El-Aziz and Taloba developed an IoT-based neonatal-incubator monitoring system using an Arduino Uno [4]. The system monitored pulse rate, temperature, humidity and gas-related conditions and transmitted data wirelessly to clinical staff.
+The work demonstrated that embedded devices could monitor several environmental and physiological variables. However, the system was designed around an incubator and was not primarily intended as a portable ward-level monitor.
+The system also assumed continued wireless connectivity. NeoGuard differed by treating connectivity as optional: local alerting and storage continued first, while backend synchronisation occurred when the network became available.
+2.3.4 Artificial Intelligence in Neonatal Hypothermia Management
+Rahmawati et al. reviewed nine studies applying artificial intelligence to neonatal hypothermia management [5]. The review found that many AI applications focused on fuzzy-logic control of incubator temperature and humidity.
+Other AI applications used laboratory values for tasks such as sepsis diagnosis. These laboratory inputs were not necessarily available at a low-resource point of care.
+The reviewed work did not identify a system that combined:
+Multi-parameter bedside monitoring.
+Offline-first operation.
+Local threshold alarms.
+Explainable trend-based AI.
+Portable use in rural Ugandan facilities.
+This observation guided the NeoGuard AI design. The model was implemented as a backend risk-scoring and trend-analysis component, while the safety-critical alert path remained on the ESP32.
+2.4 Comparison of Existing Solutions
+Table 2.1: Comparison of existing neonatal monitoring solutions
+System
+Offline-capable
+Multi-parameter
+AI-assisted
+Rural or low-resource suitability
+Main limitation
+BEMPU TempWatch, Ghana field study [2]
+Yes; standalone alarm
+No; temperature only
+No; fixed threshold
+Demonstrated use in a low-resource African context
+Single-parameter monitoring; reported sensitivity of 67.8%
+SMCC neonatal monitor [3]
+No; cloud-dependent
+Yes; temperature, heart rate and movement
+No; threshold alerting
+Limited by the assumption of reliable connectivity
+Cloud dependence
+IoT neonatal incubator monitor [4]
+No; cloud-dependent
+Yes; pulse and incubator variables
+No
+Partly suitable; focused on incubators
+Not designed as a portable ward monitor
+AI-based hypothermia-management studies [5]
+Not addressed
+Mostly temperature-focused
+Yes; mainly fuzzy control
+Not addressed for rural point-of-care use
+Focused on incubator climate control rather than patient early warning
+NeoGuard prototype
+Yes; local alerts and SD buffering
+Yes; heart rate, SpO₂ and temperature
+Yes; explainable risk score and trend flags
+Designed for low-connectivity settings
+Prototype only; not clinically validated
+The comparison showed that the reviewed solutions addressed different parts of the problem:
+BEMPU TempWatch addressed offline temperature alerting.
+The SMCC system addressed multi-parameter cloud monitoring.
+The IoT incubator monitor addressed connected incubator monitoring.
+AI studies addressed automated control or specialised prediction.
+NeoGuard combined local alerting, multi-parameter monitoring, offline buffering, backend analysis and explainable AI in one prototype.
+The comparison did not establish that NeoGuard was clinically superior. It identified the design position of the prototype and the gap it was intended to investigate.
+2.5 Research Gap
+The review identified four main gaps.
+2.5.1 Lack of combined offline-first and multi-parameter monitoring
+The BEMPU TempWatch demonstrated offline operation but focused on temperature. Other reviewed systems monitored several variables but depended on continuous connectivity.
+NeoGuard combined:
+Temperature.
+Heart rate.
+SpO₂.
+Local threshold alerts.
+SD-card buffering.
+Later synchronisation.
+2.5.2 Dependence on cloud connectivity
+The SMCC and incubator-monitoring systems relied on wireless or cloud services. This created a weakness in environments where network access was intermittent.
+NeoGuard addressed this by keeping the safety-critical alert path on the ESP32. The display, RGB indicator and buzzer could continue to operate without backend access.
+2.5.3 Limited explainable AI for bedside early warning
+The reviewed AI literature focused mainly on incubator climate control or laboratory-based prediction. It did not provide a direct example of an explainable, trend-based risk score using only compact bedside vital-sign inputs.
+NeoGuard implemented a logistic-regression risk model that returned:
+A risk score.
+A warning state.
+Feature contributions.
+Trend flags.
+Model version and validation scope.
+2.5.4 Limited rural Ugandan design focus
+The reviewed literature did not describe a system designed specifically around:
+Intermittent connectivity.
+Low-cost embedded hardware.
+Local warning.
+Offline storage.
+Portable multi-parameter monitoring.
+Explainable backend analysis.
+NeoGuard was designed to investigate this combination in the context of rural Ugandan healthcare.
+2.6 Summary
+The literature established that neonatal hypothermia and hypoxia required timely monitoring. The Northern Uganda evidence showed a high burden of neonatal hypothermia and demonstrated the limitations of intermittent manual measurements [1].
+The BEMPU TempWatch demonstrated the value of standalone temperature alarms but also showed that a single-parameter system could miss episodes [2]. The SMCC and IoT incubator systems demonstrated multi-parameter wireless monitoring but depended more strongly on connectivity [3], [4]. The AI literature showed increasing interest in automated neonatal management but focused mainly on incubator control or laboratory-based prediction [5].
+The literature therefore supported the NeoGuard architecture:
+Multi-parameter sensing.
+Local threshold alerting.
+Offline buffering.
+Optional backend synchronisation.
+Explainable AI risk scoring.
+Trend-based early warning.
+The review also established the limits of the contribution. NeoGuard was a prototype designed to address an engineering gap. Its AI results were based on synthetic data, and its sensor measurements were not clinically validated. Therefore, the system was presented as a screening and early-warning aid rather than a replacement for clinical judgement.
+References used in this chapter: the proposal references [1] Mukunya et al.; [2] McAbee et al.; [3] De et al.; [4] Abd El-Aziz and Taloba; and [5] Rahmawati et al. The full IEEE-formatted entries should remain in the report reference list exactly as approved in the proposal.
+CHAPTER 3: SYSTEM DESIGN AND METHODOLOGY
+3.1 Overview of the System
+The system followed a design, develop, test and evaluate process.
+During the design stage, the required sensing, local-alert, storage, communication, database, AI and dashboard functions were identified. The hardware interfaces were assigned to the ESP32-S3 and represented in the KiCad schematic and PCB files.
+During development, the firmware was implemented first so that the sensors, display, indicators, timekeeping and SD storage could be tested independently. The backend was then implemented to receive readings, validate data, store records and expose monitoring information. The AI service was implemented as a backend prototype, while the React dashboard was implemented as the staff-facing interface.
+During testing, the system was tested at component level and integrated-system level. Firmware build logs, serial-monitor evidence, SD diagnostics, backend tests, API smoke tests, AI reports and KiCad verification records were used.
+During evaluation, the project compared the recorded evidence with the proposal objectives. The evaluation distinguished between functional prototype success, measured performance, incomplete measurements and clinical limitations.
+
+Figure 3.3: Full system architecture linking the device, backend, AI and dashboard.
+3.2 System Architecture
+The implemented architecture contained five main layers:
+Sensing layer: MAX30102 and MLX90614 sensors.
+Embedded-control layer: ESP32-S3 firmware, display, RGB indicator, buzzer, timekeeping and SD storage.
+Communication layer: Wi-Fi and HTTP/JSON synchronisation.
+Backend layer: authenticated API, PostgreSQL database, alerts and risk scoring.
+User-interface layer: React dashboard displaying live values, history, alerts and AI explanations.
+Figure 3.1: System hardware schematic and signal connections
+The schematic showed the ESP32-S3 as the central controller. The MAX30102 and MLX90614 were connected through the shared I2C bus on GPIO4 and GPIO5. The DS1302 used GPIO6, GPIO7 and GPIO14. The ST7789 used SPI-related GPIO8–GPIO12. The SD interface used GPIO21, GPIO40, GPIO41 and GPIO42. The buzzer and RGB outputs used GPIO15–GPIO18.
+The schematic also showed the common ground connections and the separation between sensor acquisition, local alerting, display output and storage.
+Figure 3.2: Full system architecture from sensors to backend, AI and dashboard
+The end-to-end data flow was:
+The MAX30102 measured optical pulse and oxygenation signals.
+The MLX90614 measured infrared surface temperature.
+The ESP32-S3 validated and processed the readings.
+The firmware applied local threshold rules.
+The display, RGB indicator and buzzer were updated.
+The reading was timestamped and written to SD storage.
+If Wi-Fi was available, the reading was sent as HTTP/JSON.
+The backend authenticated and validated the request.
+PostgreSQL stored the device, session, reading and alert information.
+The AI service calculated a prototype risk score and trend flags.
+The React dashboard displayed values, history, alerts and explanations.
+The local alert path was independent of the backend and AI. Therefore, a network outage or unavailable model did not disable the ESP32 warning path.
+3.3 Requirements Analysis
+3.3.1 Functional requirements
+ID
+Requirement
+Acceptance evidence
+FR1
+The system shall acquire heart-rate and SpO₂ signals
+MAX30102 I2C response and raw signal capture
+FR2
+The system shall acquire temperature readings
+MLX90614 readings and packet validation
+FR3
+The system shall timestamp readings
+Firmware time readback and CSV timestamps
+FR4
+The system shall display monitoring status
+ST7789 visible text and colour output
+FR5
+The system shall activate local warning indicators
+RGB and buzzer command tests
+FR6
+The system shall store readings locally
+SD write/read/append/compare/delete tests
+FR7
+The system shall queue readings during connectivity loss
+Firmware queue and synchronisation implementation
+FR8
+The system shall synchronise readings through the backend
+Runtime, heartbeat and synchronisation HTTP status 200
+FR9
+The backend shall persist device and monitoring data
+PostgreSQL models and integration tests
+FR10
+The backend shall expose authenticated monitoring routes
+API smoke and access-control tests
+FR11
+The AI shall calculate an exploratory risk score
+Synthetic training report and model artifact
+FR12
+The dashboard shall display monitoring information
+React API and dashboard implementation
+3.3.2 Non-functional requirements
+ID
+Requirement
+Target or acceptance condition
+NFR1
+Local alert availability
+Alerts shall continue without backend availability
+NFR2
+Data integrity
+Invalid, stale or poor-quality readings shall be rejected from inference
+NFR3
+Storage reliability
+SD write/read/append/compare/delete operations shall pass
+NFR4
+Backend security
+Authentication and role/access checks shall be enforced
+NFR5
+AI traceability
+Model version, validation scope and feature contributions shall be returned
+NFR6
+Clinical safety boundary
+The system shall not claim diagnosis or certification
+NFR7
+Reproducibility
+Source code, model artifact, reports and test logs shall be retained
+The following quantitative targets were specified in the proposal but were not all measured in the available evidence:
+Temperature MAE of 0.5 °C or less.
+Heart-rate MAE of 5 bpm or less.
+SpO₂ MAE of 3 percentage points or less.
+Sampling jitter within 10%.
+100% alert agreement.
+Clock drift of 1 second per day or less.
+100% synchronisation delivery with zero duplicates.
+No unexpected resets.
+3.4 Hardware Design
+3.4.1 Component Selection
+The MAX30102 was selected because it provided compact optical pulse and oxygenation sensing. The MLX90614 was selected because it provided non-contact infrared temperature sensing. The ESP32-S3 was selected because it provided processing, GPIO, Wi-Fi and support for the required embedded firmware.
+SD storage was selected for offline retention. The ST7789 was used in the final implemented revision because it provided a larger graphical display than the original proposal LCD. The RGB indicator and buzzer were retained for local warning and status feedback.
+The final hardware therefore differed from the initial proposal in the display, timekeeping implementation and pin assignments.
+
+Figure 3.4: Final NeoGuard schematic with ESP32-S3, sensors, display, storage and indicators.
+3.4.2 Circuit Schematic
+The final implemented SPI carrier used:
+MAX30102 and MLX90614 on I2C GPIO4/GPIO5.
+DS1302 on GPIO6/GPIO7/GPIO14.
+ST7789 on GPIO8–GPIO12.
+Buzzer on GPIO15.
+RGB outputs on GPIO16–GPIO18.
+SD interface on GPIO21/GPIO40/GPIO41/GPIO42.
+The earlier proposal used GPIO21 and GPIO22 for the shared I2C bus and specified a 16x2 LCD. The final implementation used the revised pin mapping and ST7789 display. This deviation was recorded because the report described the implemented system rather than silently reproducing the proposal.
+3.4.3 Wiring and Interfacing Design
+Device
+Interface and pins
+Function
+Evidence
+MAX30102
+I2C GPIO4/GPIO5
+Heart rate and SpO₂ acquisition
+Firmware and I2C diagnostic
+MLX90614
+I2C GPIO4/GPIO5
+Non-contact temperature
+Firmware and packet diagnostic
+DS1302
+GPIO6, GPIO7, GPIO14
+Timekeeping
+Firmware pin map
+ST7789
+CS10, DC9, RST8, MOSI11, SCK12
+Local display
+Display diagnostic
+microSD
+CS21, SCK40, MOSI41, MISO42
+Offline data logging
+SD diagnostic
+Buzzer
+GPIO15
+Audible warning
+Firmware diagnostic
+RGB indicator
+GPIO16–GPIO18
+Status and warning indication
+RGB diagnostic
+The MAX30102 and MLX90614 shared the I2C bus because their addresses were different. The bus test detected 0x57 and 0x5A with zero scan errors.
+3.4.4 Power Supply Design
+The tested carrier used the available board power arrangement and common-ground architecture.
+The exact measured values were not recorded for:
+3.3 V rail.
+5 V rail.
+Average current.
+Peak current.
+Battery capacity.
+Charger current.
+Battery endurance.
+Regulator thermal performance.
+[MISSING INFORMATION: insert the measured power-rail voltages, current budget, battery and charger specifications, regulator details and final power schematic.]
+
+Figure 3.5: Validated two-layer NeoGuard PCB layout.
+3.4.5 PCB Design
+The validated carrier PCB used two copper layers, ground pours and stitching vias. The PCB was checked for:
+Electrical-rule violations.
+Design-rule violations.
+Unrouted connections.
+Schematic/PCB parity.
+The verification record reported zero violations, zero unrouted items and zero schematic-parity differences for the validated SPI carrier revision.
+The later onboard ESP32-S3 and USB-C/LiPo concept was kept as a separate schematic revision because exact production dimensions, battery dimensions, charger selection and antenna layout had not been finalised.
+Figure 3.3: Validated two-layer SPI carrier PCB layout
+The PCB layout demonstrated the placement and routing of the ESP32 carrier connections, display interface, sensors, storage interface, RGB outputs, buzzer and power-related connections.
+3.5 Software Design
+3.5.1 Firmware Design
+The firmware was implemented in Arduino C/C++ for the ESP32-S3. It used timed acquisition and separate processing paths for sensing, display, storage and network work.
+The firmware sequence was:
+Initialise the controller and peripherals.
+Start the display.
+Scan and initialise the sensors.
+Read time.
+Acquire pulse, SpO₂ and temperature data.
+Validate signal quality and packet integrity.
+Apply threshold logic.
+Update the display.
+Update RGB and buzzer outputs.
+Save the reading to SD.
+Queue the reading for synchronisation.
+Send queued records when network access was available.
+The integrated build used a ten-second heart-rate average refreshed every three seconds. This display smoothing did not change the raw upload data or model inputs.
+3.5.2 Local Threshold Alerting
+Threshold evaluation ran locally on the ESP32-S3. It did not depend on Wi-Fi, the Flask backend, PostgreSQL or the AI model.
+The local path controlled:
+Display alert states.
+RGB warning states.
+Buzzer activation.
+Local recording of the event.
+Unqualified or stale readings were not treated as reliable AI inputs. The system therefore separated display estimates from inference-quality measurements.
+3.5.3 Offline Buffering and Synchronisation
+The firmware logged readings to SD and maintained queued events. When network connectivity was restored, the queue was sent to the backend using HTTP/JSON.
+The backend preserved event identity and used synchronisation logic to prevent the same buffered reading from being treated as a new independent observation.
+The analysed runs returned HTTP 200 for:
+Runtime requests.
+Heartbeat requests.
+Synchronisation requests.
+A complete controlled 5-, 15- and 30-minute offline experiment was not available.
+3.5.4 Database Design
+The PostgreSQL database represented:
+Devices.
+Device components.
+Patients.
+Monitoring sessions.
+Readings.
+Alerts.
+Risk inferences.
+Audit and health information.
+Review-only archive datasets.
+The database migrations were applied successfully to a fresh test database. The migrated schema matched the application models at the recorded verification checkpoint.
+3.5.5 REST API Design
+The API handled:
+Authentication.
+Device registration.
+Device health.
+Patient records.
+Session management.
+Reading synchronisation.
+Alert retrieval and acknowledgement.
+Risk-score retrieval.
+Administrative actions.
+Password lifecycle management.
+The API accepted JSON device data, validated ownership and session relationships, applied quality handling and persisted accepted readings.
+3.5.6 AI Risk-Scoring and Trend-Detection Design
+The AI service used a logistic-regression model trained on synthetic monitoring sessions. It used a causal 120-second history and extracted twelve features:
+Last temperature.
+Mean temperature.
+Temperature slope.
+Temperature standard deviation.
+Last SpO₂.
+Mean SpO₂.
+SpO₂ slope.
+SpO₂ standard deviation.
+Last heart rate.
+Mean heart rate.
+Heart-rate slope.
+Heart-rate standard deviation.
+The model returned:
+Risk score.
+Low or high risk category.
+Warning state.
+Feature contributions.
+Trend flags.
+Model version.
+Synthetic-only validation scope.
+Temperature and SpO₂ trend flags were generated when their slopes crossed the configured negative limits.
+The model was not executed on the ESP32. It ran in the backend when prototype AI mode was enabled.
+3.5.7 React Dashboard Design
+The React dashboard consumed API data and represented:
+Live readings.
+Historical vital-sign charts.
+Device connectivity.
+Alerts.
+Patient and session context.
+Risk scores.
+Risk categories.
+Feature explanations.
+Trend warnings.
+The dashboard used API polling because polling degraded more predictably than persistent WebSocket connections under unstable network conditions.
+3.6 Testing Strategy
+Testing was performed in layers.
+Hardware tests
+I2C scan.
+Sensor response.
+Display output.
+Buzzer command.
+RGB state changes.
+SD storage.
+Time readback.
+Firmware tests
+Compilation.
+Upload.
+Measurement and threshold behaviour.
+Temperature packet validation.
+Live estimate availability.
+Stale/removal handling.
+Rolling heart-rate averaging.
+Indicator safeguards.
+Backend tests
+Authentication.
+Access control.
+Device synchronisation.
+Exact reading round-trip.
+Quality-aware alerts.
+Component health.
+Session races.
+Pagination.
+Retry and rate-limit handling.
+Device-clock validation.
+AI tests
+Feature extraction.
+Causal-window protection.
+Future-reading exclusion.
+Invalid-window rejection.
+Model equation verification.
+Feature-contract validation.
+Independent train/validation/test session splits.
+PCB tests
+KiCad ERC.
+KiCad DRC.
+Unrouted-item check.
+Schematic/PCB parity check.
+The tests were designed to identify functional success and failure, not to inflate performance claims.
+3.7 Ethical Considerations
+No real neonates were used during the project. Student or bench-level testing and synthetic data were used instead.
+The AI model was trained and evaluated using synthetic, threshold- and scenario-derived labels. The Kaggle-derived labels were not treated as verified clinical outcomes.
+The system was therefore described as:
+A screening prototype.
+An early-warning aid.
+A research system.
+A non-diagnostic device.
+The system was not presented as:
+A medical diagnosis.
+A replacement for nurses or doctors.
+A clinically validated risk calculator.
+A certified medical device.
+Before clinical use, the system would require ethical approval, calibrated reference testing, clinical data collection, clinical expert review, safety testing, battery qualification and independent validation
+CHAPTER 4: SYSTEM IMPLEMENTATION
+4.1 Introduction
+The implementation converted the approved design into an operational prototype consisting of embedded firmware, sensing hardware, local alerting, SD-card storage, Wi-Fi communication, backend services, PostgreSQL persistence, an exploratory AI service and a React dashboard.
+The implementation was completed in stages. First, the ESP32-S3 firmware and individual hardware interfaces were tested. Next, the sensing, display, alert and SD functions were combined into an integrated firmware revision. The network synchronisation path was then connected to the backend. Finally, the backend, AI service and dashboard were integrated.
+The implemented system was treated as a screening and early-warning prototype. It was not presented as a diagnostic or certified medical device.
+4.2 Hardware Implementation
+4.2.1 Components Used
+The final implemented hardware revision contained:
+ESP32-S3 microcontroller.
+MAX30102 pulse-oximetry sensor.
+MLX90614 infrared temperature sensor.
+DS1302 timekeeping interface.
+ST7789 SPI display.
+microSD storage interface.
+RGB status indicator.
+Active buzzer.
+USB power input.
+Common ground and power rails.
+Jumper-wire and carrier-board interconnections.
+The original proposal specified a 16x2 I2C LCD and DS3231 real-time clock. During implementation, the display was changed to an ST7789 SPI display and the timekeeping interface used the DS1302 pin arrangement. These changes were recorded as implementation deviations.
+4.2.2 ESP32-S3 and Power Supply Wiring
+The ESP32-S3 acted as the processing and communication centre. It received sensor data, applied threshold logic, updated the display, controlled the RGB and buzzer outputs, stored readings and managed Wi-Fi communication.
+The final signal assignments were:
+Function
+ESP32-S3 pin
+I2C SDA for MAX30102 and MLX90614
+GPIO4
+I2C SCL for MAX30102 and MLX90614
+GPIO5
+DS1302 clock
+GPIO6
+DS1302 data
+GPIO7
+ST7789 reset
+GPIO8
+ST7789 data/command
+GPIO9
+ST7789 chip select
+GPIO10
+ST7789 MOSI
+GPIO11
+ST7789 SCK
+GPIO12
+DS1302 enable
+GPIO14
+Buzzer
+GPIO15
+RGB channel 1
+GPIO16
+RGB channel 2
+GPIO17
+RGB channel 3
+GPIO18
+microSD chip select
+GPIO21
+microSD SCK
+GPIO40
+microSD MOSI
+GPIO41
+microSD MISO
+GPIO42
+The exact measured power rail voltage, current consumption and battery endurance were not recorded in the available evidence.
+[MISSING INFORMATION: insert measured 3.3 V and 5 V rail values, operating current, peak current, battery capacity, charger details and measured battery duration.]
+4.2.3 MAX30102 Sensor Wiring
+The MAX30102 was connected to the shared I2C bus:
+SDA: GPIO4.
+SCL: GPIO5.
+I2C address: 0x57.
+Supply: low-voltage sensor rail.
+Ground: common ground.
+The sensor provided red and infrared optical measurements. The firmware used these signals to estimate heart rate and SpO₂.
+During implementation testing, the sensor produced fresh red and infrared samples. Finger placement increased the infrared signal substantially, while removal reduced the signal and caused the firmware to clear unavailable estimates.
+The sensor response confirmed signal acquisition, but it did not establish accuracy against a clinical reference device.
+4.2.4 MLX90614 Temperature Sensor Wiring
+The MLX90614 was connected to the same I2C bus:
+SDA: GPIO4.
+SCL: GPIO5.
+I2C address: 0x5A.
+Supply: low-voltage sensor rail.
+Ground: common ground.
+The sensor measured infrared surface temperature and ambient temperature. The firmware validated the received packet before accepting the value.
+The recorded surface-temperature values ranged from 25.97 °C to 30.73 °C during the diagnostic captures. The corrected firmware run recorded zero temperature-packet errors.
+The test confirmed packet integrity and temperature acquisition. It did not establish absolute temperature accuracy.
+4.2.5 DS1302 Timekeeping Wiring
+Although the proposal specified a DS3231 real-time clock, the implemented firmware record used a DS1302-style interface:
+Clock: GPIO6.
+Data: GPIO7.
+Enable: GPIO14.
+Ground: common ground.
+Backup operation: [MISSING INFORMATION: insert the exact backup-cell and retention arrangement used in the final hardware.]
+The timekeeping path was used to associate readings with timestamps and to support CSV logging and synchronisation.
+The available hardware evidence recorded successful time readback and advancing timestamps. Long-term drift and controlled power-cycle retention were not established.
+4.2.6 ST7789 Display Implementation
+The proposal specified a 16x2 I2C LCD. The final implemented revision used an ST7789 SPI display.
+The ST7789 connections were:
+Reset: GPIO8.
+Data/command: GPIO9.
+Chip select: GPIO10.
+MOSI: GPIO11.
+SCK: GPIO12.
+The display presented sensor status, readings, setup information, network information and firmware diagnostic results. During testing, colour bars and text were visibly displayed, and display commands were received and executed.
+The final system therefore implemented a display function, but not the exact LCD component described in the original proposal.
+4.2.7 LED and Buzzer Wiring
+The final firmware used GPIO15 for the buzzer and GPIO16–GPIO18 for RGB output.
+The RGB indicator represented system states such as:
+Blue: sensor or contact state.
+Green: valid displayed bench-range value.
+Red: warning or abnormal state.
+The RGB-range analysis recorded:
+Indicator state
+Average-analysis run
+LED-range run
+Blue
+59
+14
+Green
+0
+4
+Red
+50
+9
+Explicit buzzer commands produced audible beeps. Automatic event-triggered beeps were not confirmed during the sensor interaction test.
+4.2.8 Shared I2C Bus Configuration
+The final implemented I2C bus used:
+SDA: GPIO4.
+SCL: GPIO5.
+The MAX30102 and MLX90614 responded on the bus at 0x57 and 0x5A. The bus lines were idle high, and the scan reported zero bus errors.
+The original proposal’s GPIO21/GPIO22 shared bus arrangement was therefore not the final implemented mapping.
+
+Figure 4.1: PCB carrier used as the hardware implementation visual record.
+4.2.9 Assembled Hardware Prototype
+The workspace contained schematic and PCB design evidence but did not contain a verified photograph of the complete assembled prototype.
+[MISSING INFORMATION: insert a clear photograph and labelled photograph showing the ESP32-S3, MAX30102, MLX90614, timekeeping module, ST7789 display, microSD interface, RGB indicator, buzzer, power wiring and ground connections.]
+4.3 Firmware Implementation
+4.3.1 Sensor Reading and Timestamping
+The firmware performed the following sequence:
+Initialised the ESP32-S3 peripherals.
+Initialised the display.
+Initialised the I2C sensors.
+Read the current device time.
+Acquired MAX30102 optical data.
+Calculated or received heart-rate and SpO₂ estimates.
+Read MLX90614 temperature data.
+Validated packet integrity and reading quality.
+Stored the reading with a timestamp.
+Updated the display and indicator states.
+Sent or queued the reading for backend synchronisation.
+The firmware rejected poor-quality or stale readings from AI scoring. This prevented an apparently stable display value from automatically becoming an eligible AI input.
+4.3.2 Threshold Checking and Local Alerts
+The ESP32-S3 performed local threshold evaluation before any backend operation.
+When an abnormal condition persisted according to the firmware rules, the local alert path could:
+Display an alert state.
+Change the RGB output.
+Activate the buzzer.
+Store the event.
+Continue operating without Wi-Fi.
+This local path was deliberately independent of the backend and AI model. A network or model failure therefore did not disable the local warning mechanism.
+4.3.3 Local Buffering
+The firmware logged readings to SD storage and maintained queued events for later transmission.
+The SD diagnostic verified:
+File creation.
+Data writing.
+File closing and reopening.
+Data comparison.
+Data appending.
+File deletion.
+Four repeated SD test attempts passed. This demonstrated the local storage path used by the offline-first design.
+4.3.4 Wi-Fi Communication and Synchronisation
+The firmware connected to Wi-Fi and sent device data through HTTP and JSON requests.
+The analysed runs recorded:
+Runtime HTTP status: 200.
+Heartbeat HTTP status: 200.
+Synchronisation HTTP status: 200.
+The average-analysis run recorded 588 saved rows and queue cursor 10955. The LED-range run recorded 230 saved rows and queue cursor 12040.
+A complete controlled 5-, 15- and 30-minute offline synchronisation experiment was not available.
+[MISSING INFORMATION: insert the offline-duration trials, generated readings, delivered readings, delivery order, duplicates, overflow and buffer-clear time.]
+4.4 Backend Implementation
+4.4.1 Flask REST API
+The backend API received device readings and validated the submitted data before persistence. It supported device synchronisation, patient and session handling, reading storage, alert handling, device health and risk-score access.
+The API smoke flow tested sensor synchronisation, exact reading round-trip, authentication, access control, quality-aware alerts, component health, session handling, pagination, retry behaviour and device-clock validation.
+4.4.2 PostgreSQL Database
+PostgreSQL was used to persist application data. Database migrations were applied to a fresh test database, and the migrated schema was compared with the application models.
+The workspace recorded that:
+All 21 backend tests passed at the recorded checkpoint.
+Four Alembic migrations applied successfully.
+No migration/model differences were reported.
+The PostgreSQL-backed API smoke flow passed.
+4.4.3 Device, Patient, Session, Reading and Alert Models
+The database model separated:
+Devices.
+Device components.
+Patients.
+Monitoring sessions.
+Vital-sign readings.
+Alert events.
+Risk inferences.
+Audit and health information.
+The model separation allowed the backend to preserve device ownership, patient/session relationships and alert history.
+Archive training records were stored separately from live clinical records and did not create clinical patients or readings.
+4.4.4 API Endpoints
+The backend included routes for:
+Authentication.
+Device registration and device health.
+Patient records.
+Monitoring sessions.
+Reading synchronisation.
+Alerts.
+Risk scoring.
+Administration.
+Staff access and password management.
+[MISSING INFORMATION: insert the final deployed endpoint paths and the endpoint-by-endpoint test results.]
+4.4.5 Security Implementation
+The backend implemented:
+JWT bearer tokens.
+Argon2 password hashing.
+Role-based access controls.
+Clinic-scoped access checks.
+Temporary-password lifecycle management.
+Password-change enforcement.
+Device authentication.
+Session ownership checks.
+Synchronisation validation.
+Rate limiting and retry handling.
+Audit logging.
+The backend smoke flow passed authentication and access-control checks.
+[MISSING INFORMATION: insert the exact security test count, passed cases, failed cases and test timestamps.]
+4.5 AI Implementation
+4.5.1 AI Model Purpose
+The AI model supported backend early warning and trend interpretation. It analysed recent vital-sign patterns and returned:
+A risk score.
+A risk category.
+A warning state.
+Feature contributions.
+Trend flags.
+Model version and validation scope.
+The model was not a diagnostic tool.
+4.5.2 Data Source
+The project reviewed two Kaggle-derived archive datasets:
+newborn_health_monitoring_with_risk.csv: 3,000 rows.
+Hypothermia.csv: 200 rows.
+The archive files were audited and de-identified. Their source labels were not verified as clinical deterioration labels, so they were not used as the direct training data for the deployed risk model.
+4.5.3 Dataset Description
+The deployed AI model used a synthetic dataset generated by ai/train.py.
+Dataset property
+Implemented value
+Total synthetic sessions
+480
+Scenarios
+8
+Sessions per scenario
+60
+Sampling step
+5 seconds
+Session duration
+1,200 seconds
+Feature window
+120 seconds
+Label horizon
+120 seconds
+Training sessions
+288
+Validation sessions
+96
+Test sessions
+96
+Test rows
+19,272
+Positive test rows
+5,375
+4.5.4 Data Generation and Labelling
+The generator created:
+Normal sessions.
+Cooling sessions.
+Desaturation sessions.
+Combined deterioration sessions.
+Recovery sessions.
+Motion-artifact-like sessions.
+Near-threshold sessions.
+Sensor-dropout sessions.
+Temperature, SpO₂ and heart-rate baselines were generated within defined ranges. Scenario-specific deterioration was then applied. Noise was added to observed values, while latent values were retained for event labelling.
+An event was labelled when latent temperature fell below 36.5 °C or latent SpO₂ fell below 90%, either immediately or within the next 120 seconds.
+4.5.5 Data Pre-processing
+The preprocessing pipeline:
+Sorted observations by time.
+Kept only the causal 120-second history.
+Excluded future values.
+Rejected duplicate timestamps.
+Required at least 12 valid readings per vital.
+Required at least 60 seconds of coverage.
+Rejected gaps above 15 seconds.
+Required the latest reading to have quality ok.
+Restricted temperature to 30–42 °C.
+Restricted SpO₂ to 50–100%.
+Restricted heart rate to 40–220 bpm.
+Rejected missing and invalid windows.
+4.5.6 Feature Engineering
+The model used four features per vital sign:
+Vital sign
+Features
+Temperature
+Last value, mean, slope per minute, standard deviation
+SpO₂
+Last value, mean, slope per minute, standard deviation
+Heart rate
+Last value, mean, slope per minute, standard deviation
+Trend flags were generated when:
+Temperature slope was below −0.08 °C per minute.
+SpO₂ slope was below −1 percentage point per minute.
+4.5.7 Model Selection and Architecture
+A logistic-regression model was selected because its output could be explained using feature contributions.
+The model:
+Standardised features.
+Calculated a linear log-odds score.
+Converted the score to a probability-like value.
+Applied a decision threshold of 0.75.
+Returned low or high risk.
+Returned feature contributions and trend flags.
+4.5.8 Rolling-Window Trend Detection
+The model used a causal 120-second feature window. The slope features described the direction and rate of change for temperature, SpO₂ and heart rate.
+The trend detector did not use future interpolation or patient identifiers. This prevented future leakage and reduced the risk of producing a warning from information that would not have been available at the scoring time.
+4.5.9 Model Training Procedure
+The training procedure was:
+Generate 480 synthetic sessions using seed 20261009.
+Extract valid causal feature windows.
+Assign simulated event labels.
+Split sessions into training, validation and test groups.
+Standardise features using training data.
+Fit logistic regression on the training sessions.
+Select the operating threshold using validation sessions.
+Evaluate the final model using test sessions.
+Save coefficients, intercept, means, scales and threshold.
+Verify that exported inference matched the training implementation.
+Save the model as ai/artifacts/risk_model.json.
+Save metrics as ai/reports/training_report.json.
+4.5.10 Model Integration With Flask and Dashboard
+The backend loaded the model only when prototype AI mode was enabled. It checked:
+Schema version.
+Feature version.
+Feature names.
+Validation scope.
+Target definition.
+Model parameter validity.
+The backend returned the risk score, risk category, warning state, model version, feature contributions, trend flags and synthetic-only validation notice.
+The local ESP32 alert path remained independent of this backend model.
+4.6 Web Dashboard Implementation
+4.6.1 Dashboard Pages and Features
+The React dashboard was designed to present:
+Live vital-sign values.
+Historical vital-sign charts.
+Device connection status.
+Alert history.
+Patient and session information.
+Risk score.
+Risk category.
+Feature-based explanation.
+Trend warnings.
+Device health information.
+4.6.2 Live Monitoring Screens
+The dashboard consumed live values from the API rather than using fabricated frontend values.
+[MISSING INFORMATION: insert the verified live-monitoring screenshot and explain the displayed fields.]
+4.6.3 Historical Data and Charts
+Historical values were retrieved from persisted backend readings and displayed as trends.
+[MISSING INFORMATION: insert the verified historical heart-rate, SpO₂ and temperature chart screenshot.]
+4.6.4 Risk-Based Patient Prioritisation
+The risk-scoring response included the risk category and warning state intended to support prioritisation.
+[MISSING INFORMATION: insert the verified risk-prioritisation screenshot and describe the ordering logic.]
+4.6.5 Alert and Trend Warnings
+The dashboard received alert events and trend flags from the backend. The explanation could identify the vital-sign features that contributed most strongly to the score.
+[MISSING INFORMATION: insert the verified alert/trend screenshot and an actual explanation example from the dashboard.]
+
+Figure 4.2: Application and backend architecture supporting dashboard views.
+
+Figure 4.3: Recorded firmware indicator-state evaluation output.
+
+Figure 4.4: Recorded firmware run outputs used for dashboard/result reporting.
+
+Figure 4.5: Recorded heart-rate average ranges from analysed runs.
+The frontend source tree contained no saved PNG/JPG/WebP dashboard screenshots. The figures below therefore provide the available system and evaluation visuals; live dashboard screenshots should be captured from the deployed interface when available.
+4.6.6 Dashboard Screenshots
+The following screenshots were required for final documentation:
+Live monitoring screen.
+Historical vital-sign chart.
+Risk-prioritisation screen.
+AI risk explanation.
+Alert and trend-warning screen.
+[MISSING INFORMATION: insert the final dashboard screenshots and captions.]
+CHAPTER 5: SYSTEM TESTING AND RESULTS
+5.1 Introduction
+Testing was conducted at hardware, firmware, storage, connectivity, backend, database and integrated-system levels. The testing process was used to determine whether the implemented system behaved according to the design requirements and to identify limitations that prevented clinical or deployment claims.
+The available evidence came from:
+firmware/display_sensor_check/HARDWARE_TEST.md
+firmware/display_sensor_check/BUILD_CHECK.txt
+firmware/rgb_sd_check/HARDWARE_TEST.md
+firmware/rgb_sd_check/BUILD_CHECK.txt
+firmware/tests/measurement_test.cpp
+firmware/tests/temperature_packet_test.cpp
+firmware/tests/live_vitals_test.cpp
+firmware/tests/heart_average_test.cpp
+.local/neoguard-average-analysis.json
+.local/neoguard-led-range-analysis.json
+backend/tests
+backend/scripts/smoke_test_live.py
+pcb/verification_summary.json
+The tests were interpreted as prototype verification tests. They did not establish clinical accuracy, medical certification or safe neonatal deployment.
+5.2 Hardware Testing
+Table 5.1: Hardware and integration test results
+Test description
+Method
+Expected result / target
+Actual result
+Status
+Interpretation
+ESP32 build and upload
+Compile and upload the firmware to the ESP32-S3
+Firmware should compile, link, upload and start
+Compilation, linking and upload passed; ESP32-S3 revision 0.2 was identified and the flash hash was verified
+Passed
+The firmware was loadable and executable
+ESP32 GPIO operation
+Exercise display, RGB, buzzer and sensor-related GPIO functions
+Assigned GPIO functions should respond
+Display commands, RGB states and buzzer commands responded
+Passed for exercised functions
+GPIO paths operated during the diagnostic
+I2C bus scan
+Scan the configured I2C bus on GPIO4 and GPIO5
+Expected devices should respond without bus errors
+Addresses 0x57 and 0x5A responded; SDA and SCL were idle high; zero scan-bus errors were reported
+Passed
+The MAX30102 and MLX90614 bus path was operating
+MAX30102 acquisition
+Compare raw red/infrared readings with finger present and removed
+Raw signal should change when a finger was detected
+Finger IR was 91,561–105,770 compared with approximately 700 when uncovered
+Passed for signal acquisition
+Optical signal acquisition operated; accuracy was not established
+MLX90614 acquisition
+Record surface and ambient readings across captures
+Temperature values should be returned and change with the target
+Surface readings changed between 25.97 °C and 30.73 °C
+Passed for reading acquisition
+Temperature packets were being received
+SD storage
+Repeated create, write, close, reopen, compare, append and delete operations
+All storage operations should pass
+Four diagnostic attempts passed
+Passed
+The local storage path operated
+Display operation
+Run the display diagnostic and issue display commands
+Text and colour output should be visible
+The display showed visible colour bars and text; the display command was received and executed
+Passed
+Display communication operated
+Buzzer command operation
+Issue explicit buzzer commands
+The buzzer should produce an audible tone
+User-confirmed audible command beeps
+Passed for command path
+The explicit command path operated
+Automatic interaction beep
+Trigger the sensor interaction event
+Automatic event should generate an audible beep
+The event was logged but the automatic beep was not confirmed by the user
+Not confirmed
+Driver timing, event path or buzzer hardware required further testing
+PCB verification
+Run KiCad ERC, DRC, unrouted and schematic-parity checks
+No electrical, design-rule, unrouted or parity errors
+Zero reported violations, zero unrouted items and zero parity differences
+Passed
+The validated carrier connectivity was consistent
+5.2.1 ESP32 and GPIO Tests
+The ESP32-S3 firmware compiled and linked successfully using the ESP32-S3 target. The display/sensor build used 345,966 bytes of flash and 24,912 bytes of static RAM. The upload process identified the ESP32-S3 revision 0.2 and verified the written flash hash.
+The RGB and SD build used 391,730 bytes of program storage and 24,240 bytes of static RAM. The test firmware successfully exercised the RGB output states and SD operations.
+The ESP32 and GPIO objective was therefore achieved for the functions that were explicitly exercised. No claim was made for unused GPIOs or for functions without a corresponding test record.
+5.2.2 MAX30102 Tests
+The MAX30102 responded on the I2C bus at address 0x57. Fresh red and infrared samples were observed.
+When the finger was placed on the sensor, the recorded infrared value ranged from 91,561 to 105,770. When the sensor was uncovered, the value was approximately 700. This confirmed that the sensor detected a significant optical change associated with finger placement.
+The diagnostic also recorded one finger-detected event. When the finger was removed, heart-rate and SpO₂ values returned to unavailable and the measurement window reset to 0/100.
+The sensor-acquisition test passed. However, the test did not compare the readings with a reference pulse oximeter. Therefore, heart-rate and SpO₂ accuracy remained unverified.
+5.2.3 MLX90614 Tests
+The MLX90614 responded through the I2C bus and produced changing surface and ambient temperature values. The recorded surface-temperature range across the two captures was 25.97–30.73 °C.
+The corrected firmware run recorded:
+temperature_packet_errors = 0
+The packet-validation unit test also passed for valid packets and rejected corrupted, mismatched or invalid packets.
+The MLX90614 packet-integrity and acquisition tests passed. Absolute temperature accuracy was not established because no calibrated reference thermometer was used.
+5.2.4 DS3231 Timekeeping Tests
+The final firmware evidence used a DS1302-style pin arrangement rather than the proposal’s DS3231 GPIO arrangement. The implemented timekeeping path used:
+GPIO6 for clock.
+GPIO7 for data.
+GPIO14 for enable.
+The available hardware record confirmed that time readback passed and that subsequent clock and CSV timestamps advanced in Nairobi time.
+The following measurements were not available:
+Long-term clock drift in seconds per day.
+Ten controlled power-cycle retention trials.
+Battery-retention duration.
+Reference-clock comparison.
+Therefore:
+[MISSING INFORMATION: insert measured clock drift, number of power cycles, retention success count and final verdict.]
+5.2.5 LCD and ST7789 Display Tests
+The proposal specified a 16x2 I2C LCD. The final implemented revision used an ST7789 SPI display instead. This deviation was recorded in the implementation chapter and was not treated as an LCD test result.
+The ST7789 display was initialised successfully. The diagnostic confirmed visible text and colour bars, and display commands were received and executed.
+The implemented display path therefore passed its functional display test. The proposal LCD requirement was not implemented in the final revision.
+5.2.6 LED and Buzzer Tests
+The RGB output was exercised during the RGB and SD diagnostic. The analysed average run recorded:
+BLUE indicator states: 59.
+GREEN indicator states: 0.
+RED indicator states: 50.
+The LED-range run recorded:
+BLUE indicator states: 14.
+GREEN indicator states: 4.
+RED indicator states: 9.
+Explicit buzzer commands produced audible beeps. However, automatic interaction beeps triggered by a sensor event were not confirmed. The event was logged, but logging did not prove that the sound was audible.
+The LED test passed for the exercised output states. The explicit buzzer command test passed, while automatic event-triggered audibility remained unresolved.
+5.2.7 Shared I2C Bus Integration Test
+The implemented I2C bus used:
+GPIO4 for SDA.
+GPIO5 for SCL.
+The MAX30102 and MLX90614 responded on the bus at:
+MAX30102: 0x57.
+MLX90614: 0x5A.
+The bus lines were idle high and zero scan errors were reported.
+The shared I2C integration test passed for the devices included in the final implemented revision.
+5.3 Sensor Accuracy Testing
+Sensor acquisition was verified, but reference-instrument accuracy testing was not completed.
+5.3.1 Temperature Accuracy
+The available evidence demonstrated that the MLX90614 returned changing temperature values and that packet validation operated correctly. It did not include paired measurements against a clinical-grade reference thermometer.
+The following values were unavailable:
+Number of paired readings.
+Reference thermometer model.
+Mean absolute error.
+Bias.
+Standard deviation.
+Minimum and maximum error.
+Warm-water validation from 32 °C to 40 °C.
+[MISSING INFORMATION: insert the paired temperature readings, reference instrument, sample count, MAE, bias, standard deviation, minimum, maximum and verdict.]
+The temperature objective was therefore not validated for accuracy.
+5.3.2 Heart-Rate Accuracy
+The software produced heart-rate estimates between 42 bpm and 187 bpm during the finger capture. The average-analysis run recorded available average values from 82.5 to 125.7 bpm. The LED-range run recorded available average values from 79 to 119 bpm.
+These values described observed software output only. They were not paired with a reference pulse oximeter and could not be used to calculate clinical accuracy.
+[MISSING INFORMATION: insert paired reference readings, sample count, MAE, bias, standard deviation, minimum, maximum and verdict.]
+The heart-rate accuracy objective was therefore not validated.
+5.3.3 SpO₂ Accuracy
+The firmware produced observed SpO₂ estimates between 96% and 100% during the recorded finger capture. No reference pulse oximeter comparison was documented.
+[MISSING INFORMATION: insert paired SpO₂ readings, reference instrument, sample count, MAE, bias, standard deviation, minimum, maximum and verdict.]
+The SpO₂ accuracy objective was therefore not validated.
+5.4 Firmware and Real-Time Performance Testing
+5.4.1 Sampling Period and Jitter
+The firmware generated repeated readings and analysed heart-rate averages, but the workspace did not contain a complete timestamp dataset for calculating the configured sampling interval, mean interval, maximum interval, minimum interval, standard deviation and jitter percentage.
+The required calculation was:
+\[ \text{jitter percentage} = \frac{\text{maximum deviation from configured period}} {\text{configured period}} \times 100 \]
+The following information was unavailable:
+Configured sampling period for the tested revision.
+Number of timestamp samples.
+Mean sampling interval.
+Maximum sampling interval.
+Minimum sampling interval.
+Standard deviation.
+Jitter percentage.
+[MISSING INFORMATION: insert the timestamp log and calculated jitter statistics.]
+5.4.2 Threshold-Alert Correctness
+The firmware unit test reported:
+Measurement and threshold alarm behaviour: PASS.
+However, a complete table of threshold test vectors was not available. The project did not contain the final count of:
+Temperature vectors.
+Heart-rate vectors.
+SpO₂ vectors.
+Correct decisions.
+Missed alerts.
+False alerts.
+[MISSING INFORMATION: insert threshold test vectors, expected decisions, actual decisions, missed alerts, false alerts and final agreement percentage.]
+The available unit test supported threshold-logic operation, but it did not establish 100% agreement across a complete clinical test vector set.
+5.4.3 On-Device Alert Latency
+The workspace did not contain instrumented timestamps for:
+The exact moment a threshold was breached.
+The exact moment the alert GPIO changed.
+The processing time between the two events.
+[MISSING INFORMATION: insert trial count, mean latency, maximum latency, minimum latency, configured sampling period and verdict.]
+The alert path was implemented, but its measured latency was not established.
+5.5 Offline Buffering and Synchronisation Testing
+The firmware implemented local storage and synchronisation. The average-analysis and LED-range runs recorded successful HTTP statuses:
+Runtime request: 200.
+Heartbeat request: 200.
+Synchronisation request: 200.
+The average-analysis run recorded:
+588 saved rows.
+Queue cursor 10955.
+Zero sampler resets.
+Zero temperature-packet errors.
+The LED-range run recorded:
+230 saved rows.
+Queue cursor 12040.
+Zero sampler resets.
+Zero temperature-packet errors.
+A controlled experiment containing 5-, 15- and 30-minute offline intervals was not available. Therefore, the following values remained unavailable:
+Readings generated during each offline interval.
+Readings delivered after reconnection.
+Delivery percentage.
+In-order delivery percentage.
+Duplicate count.
+Buffer-overflow loss count.
+Time taken to clear the buffer.
+[MISSING INFORMATION: insert controlled offline-buffer trial logs and calculated synchronisation results.]
+5.6 Connectivity Testing
+The analysed system runs returned HTTP 200 for runtime, heartbeat and synchronisation requests. This demonstrated that the device-to-backend communication path operated during the recorded online runs.
+A controlled drop-and-restore experiment was not documented. The following values remained unavailable:
+Number of Wi-Fi drop-and-restore cycles.
+Successful reconnections.
+Reconnection success rate.
+Mean reconnection time.
+Local-alert behaviour during every offline period.
+Online/offline transition logging result.
+[MISSING INFORMATION: insert the connectivity-cycle log and reconnection calculations.]
+5.7 Backend, API, Security and Dashboard Testing
+5.7.1 API Correctness Tests
+The backend smoke flow tested:
+Authentication.
+Access control.
+Device synchronisation.
+Exact reading round-trip.
+Quality-aware alerts.
+Component health.
+Session and status race handling.
+Pagination.
+Synchronisation retries.
+Rate limiting.
+Device-clock validation.
+The recorded API smoke result stated that the flow passed these checks.
+[MISSING INFORMATION: insert the endpoint-by-endpoint pass/fail table and exact endpoint names used in the final deployment.]
+5.7.2 API Response-Time Tests
+The API implementation and smoke flow were available, but a complete response-time dataset was not available.
+[MISSING INFORMATION: insert API request timestamps, number of requests, mean response time, 95th-percentile response time, maximum response time and verdict.]
+5.7.3 Security Tests
+The backend implemented:
+JWT bearer access tokens.
+Argon2 password hashing.
+Role-based access checks.
+Clinic-scoped access.
+Temporary-password lifecycle controls.
+Password-change enforcement.
+Device credentials.
+Session ownership checks.
+Synchronisation validation.
+Access-control checks for protected routes.
+The backend test suite and smoke flow covered authentication and access-control behaviour.
+[MISSING INFORMATION: insert the security checklist showing the number of passed and failed security cases.]
+5.7.4 Dashboard Delay and Data Consistency Tests
+The React dashboard was connected to backend data and displayed live and historical monitoring information. However, the workspace did not contain a controlled dashboard timestamp comparison.
+The following values remained unavailable:
+Mean dashboard end-to-end delay.
+Maximum dashboard delay.
+Percentage of displayed values matching PostgreSQL.
+Number of dashboard refresh trials.
+Number of stale or missing values.
+[MISSING INFORMATION: insert dashboard timing and database-consistency results.]
+5.8 Continuous-Operation Testing
+The average-analysis run recorded:
+Uptime: 607,414 ms.
+Approximate duration: 607.414 seconds.
+Sampler resets: 0.
+Temperature packet errors: 0.
+Saved rows: 588.
+The LED-range run recorded:
+Uptime: 239,723 ms.
+Approximate duration: 239.723 seconds.
+Sampler resets: 0.
+Temperature packet errors: 0.
+Saved rows: 230.
+These runs demonstrated that the firmware continued operating during the recorded captures without sampler resets or temperature packet errors.
+A full eight-hour continuous-operation trial was not documented.
+[MISSING INFORMATION: insert intended continuous-run duration, actual duration, unexpected resets, crashes, downtime and final uptime percentage.]
+5.9 Summary of Test Results
+The testing produced the following verified results:
+ESP32-S3 compilation and upload passed.
+Display operation passed.
+I2C scanning passed for the tested sensors.
+MAX30102 raw signal acquisition passed.
+MLX90614 packet acquisition passed.
+Temperature packet errors remained at zero in the analysed runs.
+SD write, read, append, compare and delete operations passed in four attempts.
+RGB output tests passed.
+Explicit buzzer command tests passed.
+Backend authentication and access-control smoke tests passed.
+Backend API and database integration tests passed at the recorded checkpoint.
+Runtime, heartbeat and synchronisation requests returned HTTP 200.
+Sampler resets remained at zero in the analysed runs.
+Heart-rate estimates were unstable.
+Automatic interaction beeps were not confirmed.
+Sensor accuracy was not established against reference instruments.
+Controlled jitter, latency, offline-duration, reconnection and dashboard-delay metrics were not available.
+The testing objective was therefore partly achieved. The project demonstrated functioning hardware, firmware, storage, communication, backend and AI data paths, but it did not complete the full quantitative and clinical validation programme specified in the proposal
+CHAPTER 6: AI MODEL DEVELOPMENT, TRAINING, AND EVALUATION
+6.1 Introduction
+The artificial-intelligence component was developed to provide backend-assisted early warning for possible neonatal deterioration. It was designed to analyse temperature, oxygen-saturation and heart-rate patterns and to identify abnormal conditions either at the current observation or within a short future window.
+The AI system was implemented as a decision-support component. It did not replace the safety-critical alert logic running on the ESP32. The local ESP32 firmware continued to generate its own warning states through the display, RGB indicator and buzzer, even when Wi-Fi, the backend or the AI model was unavailable.
+The AI model was not presented as a diagnostic system. Its purpose was to demonstrate how an embedded neonatal monitor could combine current vital-sign values with recent trends to produce an explainable risk score for further attention by a health worker.
+6.2 Data Collection From Kaggle
+Two source datasets were available in the project workspace as archive files obtained from Kaggle.
+The first dataset was stored in archive.zip and contained the file newborn_health_monitoring_with_risk.csv. It contained 3,000 records representing 100 de-identified baby identifiers. The dataset included temperature, heart rate, oxygen saturation, respiratory rate, birth and growth measurements, feeding information, jaundice level, Apgar score, and a risk-level field.
+The second dataset was stored in archive_1.zip and contained the file Hypothermia.csv. It contained 200 records with temperature observations and related case and timing fields.
+The original Kaggle URLs and licence information were not preserved in the project workspace.
+The archive-audit process recorded the following:
+Dataset
+Records
+Main variables
+Review result
+newborn_health_monitoring_with_risk.csv
+3,000
+Temperature, heart rate, oxygen saturation, respiratory rate, growth and risk level
+Staged for review; source risk labels were unverified
+Hypothermia.csv
+200
+Case, date, time, weight and temperature fields
+Staged for review; units and timing were unverified
+The project excluded identifying fields before staging. The name field was removed from the newborn dataset, and the code field was removed from the hypothermia dataset. The audit also recorded quality flags for invalid oxygen-saturation values, unverified source labels, unverified units and unverified timing.
+Seven newborn records were flagged for invalid oxygen-saturation values and were excluded from the exploratory archive benchmark. All archived records were marked as review data and were not inserted into clinical patient or device-reading tables.
+6.3 Decision to Use Synthetic Training Sessions
+The Kaggle datasets were not used as the direct training data for the deployed NeoGuard model. This decision was made because the available datasets did not provide a verified continuous neonatal monitoring sequence with reliable event timestamps.
+The source risk labels were not documented as confirmed clinical deterioration outcomes. In addition, the hypothermia dataset contained unverified temperature field meanings and incomplete later measurements. Training a clinical-warning model directly from those labels could therefore have produced misleading results.
+For this reason, the project separated the Kaggle archive work from the deployed prototype model:
+The Kaggle files were audited and de-identified.
+The archived records were staged as review-only research data.
+An exploratory archive benchmark was created but was explicitly marked as “never deployed.”
+The deployed prototype model was trained on controlled synthetic monitoring sessions with known scenario labels and known event times.
+This separation prevented unverified source labels from being presented as clinical truth.
+6.4 Exploratory Benchmark Using the Kaggle Data
+A separate exploratory benchmark was generated from the staged newborn archive. It used temperature, heart rate and oxygen saturation as input features and attempted to reproduce the source At Risk label.
+After excluding seven invalid oxygen-saturation records, the data was split by baby identifier into 60 training subjects, 20 validation subjects and 20 test subjects. The test portion contained 600 rows, including 78 positive rows.
+The exploratory benchmark produced precision of 1.0000, recall of 0.0256, average precision of 0.2649, ROC-AUC of 0.6034 and Brier score of 0.1093. Its confusion matrix was TN=522, FP=0, FN=76 and TP=2.
+These results showed that the source label could not be treated as a reliable clinical target. Although the benchmark produced no false positives at the selected threshold, it detected only two of the 78 positive test rows. The benchmark was therefore retained for research review only and was not deployed in the backend.
+6.5 Synthetic Dataset Generation
+The deployed model was trained using synthetic monitoring sessions generated by ai/train.py.
+The generator created 480 independent sessions using the fixed random seed 20261009. Each session represented one simulated neonatal-monitoring scenario. Eight scenarios were used:
+Normal
+Cooling
+Desaturation
+Combined deterioration
+Recovery
+Motion-artifact-like observations
+Near-threshold observations
+Sensor dropout
+There were 60 sessions for each scenario.
+Each generated session covered 1,200 seconds and produced one observation every five seconds. The generator therefore simulated a time series rather than isolated independent records.
+The initial physiological values were randomly generated within defined ranges:
+Temperature was generated between 36.7 °C and 37.3 °C.
+SpO₂ was generated between 95.5% and 99%.
+Heart rate was generated between 115 bpm and 150 bpm.
+A deterioration onset time was randomly selected between 200 and 500 seconds. Cooling scenarios gradually reduced temperature. Desaturation scenarios gradually reduced SpO₂ and increased heart rate. Combined scenarios applied both changes. Recovery scenarios introduced a deterioration phase followed by gradual recovery.
+Noise was added to the observed values to represent sensor variation:
+Temperature noise was added using a normal distribution.
+SpO₂ noise was added and clipped to the range 50–100%.
+Heart-rate noise was added before rounding.
+Artifact scenarios changed the quality field to motion_artifact.
+Dropout scenarios changed the quality field to sensor_error and removed the SpO₂ value for the affected interval.
+The latent physiological values were kept separate from noisy observed values. This was important because the event label represented the simulated physiological condition rather than a sensor artefact.
+6.6 Synthetic Event Labelling
+A synthetic event was labelled when the latent temperature fell below 36.5 °C or the latent SpO₂ fell below 90%.
+The model target was:
+A simulated low-temperature or low-oxygen event occurring at the current observation or within the next 120 seconds.
+The label horizon was therefore 120 seconds. The final 120 seconds of each session were excluded from training rows when a complete future label horizon was not available.
+The labels were not clinical diagnoses. They were generated from the known rules used to create the synthetic scenarios.
+6.7 Data Pre-processing
+Before a row was allowed to enter the model-training dataset, the feature extractor applied the following checks:
+Readings were sorted by timestamp.
+Only the causal 120-second history before the scoring time was used.
+Future readings were excluded.
+Duplicate timestamps were rejected.
+At least 12 valid readings were required for each vital sign.
+At least 60 seconds of time coverage was required.
+Gaps greater than 15 seconds were rejected.
+The latest reading had to have quality marked as ok.
+Temperature values had to remain between 30 °C and 42 °C.
+SpO₂ values had to remain between 50% and 100%.
+Heart-rate values had to remain between 40 bpm and 220 bpm.
+Missing, invalid or poor-quality terminal readings were rejected.
+These checks prevented the model from scoring incomplete, stale, future-leaking or obviously invalid windows.
+6.8 Feature Engineering
+The final model used 12 features. Four features were calculated for each of the three vital signs.
+Vital sign
+Features
+Temperature
+Last temperature, mean temperature, slope per minute, standard deviation
+SpO₂
+Last SpO₂, mean SpO₂, slope per minute, standard deviation
+Heart rate
+Last heart rate, mean heart rate, slope per minute, standard deviation
+The slope represented the direction and rate of change across the causal window. Negative temperature or SpO₂ slopes indicated deterioration trends. Standard deviation represented short-term variability.
+The feature extractor also generated trend flags:
+Temperature declining faster than −0.08 °C per minute.
+SpO₂ declining faster than −1 percentage point per minute.
+Patient identifiers were not used as model features.
+6.9 Model Selection and Training
+A logistic-regression model was selected because it provided a simple and explainable relationship between the extracted features and the risk score.
+The training process was:
+Synthetic sessions were generated.
+Valid causal feature windows were extracted.
+Feature values were standardised using training-set means and scales.
+Sessions were split by session identifier rather than by individual rows.
+The split produced 288 training sessions, 96 validation sessions and 96 test sessions.
+Logistic regression was fitted on the training sessions.
+Validation sessions were used to select the operating threshold.
+The test sessions were kept separate until final evaluation.
+The trained coefficients, intercept, means, scales and threshold were written to ai/artifacts/risk_model.json.
+The backend loaded the JSON model and verified its feature contract before scoring.
+The decision threshold was 0.75. The model returned a probability-like score between 0 and 1. A score at or above 0.75 produced a high-risk warning; a lower score produced a low-risk result.
+6.10 Model Integration With the Backend
+The Flask backend loaded the JSON model only when prototype AI mode was enabled. The model file contained:
+Feature names
+Feature version
+Standardisation means
+Standardisation scales
+Logistic coefficients
+Intercept
+Decision threshold
+Model version
+Validation scope
+Event thresholds
+The backend rejected a model if its feature contract, schema version, validation scope or target definition did not match the expected prototype configuration.
+For each score, the backend returned:
+Risk score
+Risk category
+Warning state
+Model version
+Validation scope
+Feature contributions
+Trend flags
+Data-window information
+The feature contributions were calculated in standardised log-odds units. They were sorted by absolute contribution so that the largest factors could be displayed first.
+6.11 Model Performance Results
+The held-out synthetic test set contained 19,272 rows, of which 5,375 were positive.
+Metric
+Result
+Precision
+0.9377
+Recall or sensitivity
+0.8177
+Average precision
+0.9475
+ROC-AUC
+0.9748
+Brier score
+0.0476
+True negatives
+13,605
+False positives
+292
+False negatives
+980
+True positives
+4,395
+At event level, the test set contained 49 simulated events. The AI detected 44 events at onset, giving event sensitivity of 0.8980. The median lead time among detected events was 107.5 seconds.
+The AI generated 144 warning episodes. Of these, 38 were false-warning episodes. The false-warning rate was 1.4197 false-warning episodes per simulated monitoring hour.
+6.12 Comparison With the Threshold-Only Baseline
+The AI was compared with a threshold-only baseline on the same synthetic test sessions.
+Metric
+AI model
+Threshold-only baseline
+Precision
+0.9377
+0.9940
+Recall
+0.8177
+0.7669
+ROC-AUC
+0.9748
+0.8825
+Brier score
+0.0476
+0.0663
+Events detected at onset
+44 of 49
+25 of 49
+Event sensitivity
+0.8980
+0.5102
+Warning-episode precision
+0.7361
+0.8077
+False-warning episodes
+38
+20
+False-warning episodes per hour
+1.4197
+0.7472
+Median lead time
+107.5 seconds
+0 seconds
+The AI detected more simulated events at onset and provided earlier simulated warnings. However, it generated more warning episodes and had lower warning-episode precision than the threshold-only method.
+The comparison therefore did not show that the AI was universally better. It showed a trade-off: earlier and more sensitive simulated warnings were obtained at the cost of more false-warning episodes.
+6.13 Explainability of the AI Model
+The model generated an explanation by calculating the contribution of each feature to the final log-odds score.
+For each feature, the contribution was calculated from:
+The current feature value.
+The training mean.
+The training scale.
+The learned logistic-regression coefficient.
+The explanation could therefore indicate that risk increased because:
+The latest temperature was low.
+Temperature was falling across the recent window.
+SpO₂ was low.
+SpO₂ was declining.
+Heart-rate variability was high.
+The recent mean differed from the normal training distribution.
+The explanation was returned by the backend together with the score and trend flags. This made the output more interpretable than a score without supporting evidence.
+6.14 AI Limitations
+The AI results had the following limitations:
+The deployed model was trained on synthetic sessions.
+The synthetic labels were threshold- and scenario-derived.
+The train and test data shared the same synthetic generator.
+The model was not clinically validated.
+Clinical probability calibration was not performed.
+The Kaggle source labels were not verified clinical outcomes.
+The exploratory Kaggle benchmark was not deployed.
+False-alarm and lead-time results represented simulated monitoring scenarios only.
+Sensor motion, poor contact and real patient variability were not fully represented.
+The model ran on the backend and could not replace the local ESP32 warning path.
+The AI did not constitute a diagnosis or medical certification.
+6.15 Evaluation of the AI Objective
+The AI objective was achieved at prototype level. The project:
+Audited and de-identified Kaggle datasets.
+Identified limitations in the source labels.
+Generated controlled synthetic monitoring sessions.
+Created causal time-series features.
+Trained an explainable logistic-regression model.
+Selected a validation-based decision threshold.
+Evaluated the model on held-out sessions.
+Compared the model with a threshold-only baseline.
+Integrated the model into the backend.
+Returned risk explanations and trend flags to the application.
+The objective was not achieved at clinical-validation level because the model was not trained or tested against verified neonatal clinical outcomes. The results demonstrated a reproducible research prototype, not a clinically deployable diagnostic system.
+
+CHAPTER 7: EVALUATION OF PROJECT OBJECTIVES
+7.1 Introduction
+This chapter evaluated the extent to which the project achieved the main and specific objectives stated in the proposal. Each objective was assessed using the implementation evidence, source code, firmware logs, backend tests, AI reports, schematic verification and PCB verification available in the project workspace.
+The evaluation distinguished between:
+What was designed.
+What was implemented.
+What was tested.
+What results were obtained.
+Whether the objective was fully achieved, partly achieved or remained incomplete.
+The project was evaluated as an embedded monitoring prototype. It was not evaluated as a clinically certified or diagnostic medical device because no real neonatal clinical outcome data was available and sensor accuracy was not established against calibrated reference instruments.
+7.2 Evaluation Criteria
+The objectives were evaluated using the following criteria:
+Completion of the required hardware interfaces.
+Correct assignment of signals to the ESP32-S3.
+Successful firmware compilation and upload.
+Successful operation of sensor, display, storage and alert interfaces.
+Successful backend communication and database persistence.
+Successful operation of authentication and API controls.
+Availability of offline buffering and synchronisation.
+Availability of AI scoring and trend-explanation logic.
+Availability of test evidence.
+Availability of quantitative performance measurements.
+Honesty and traceability of limitations.
+The following verdicts were used:
+Achieved: the objective was implemented and supported by recorded evidence.
+Partly achieved: the main implementation was completed, but one or more required measurements or validation activities remained incomplete.
+Not achieved: the required implementation or evidence was not available.
+7.3 Evaluation of the Hardware Design Objective
+7.3.1 Objective statement
+The first specific objective was to design the device hardware by interfacing the MAX30102 heart-rate and SpO₂ sensor, GY-906 MLX90614 non-contact temperature sensor, buzzer, LED, 16x2 I2C LCD and real-time clock with the ESP32 for sensing, local alerting, display and offline timekeeping.
+7.3.2 Hardware that was implemented
+The implemented revision used the following hardware functions:
+ESP32-S3 microcontroller.
+MAX30102 pulse-oximetry sensor.
+MLX90614 infrared temperature sensor.
+DS1302 timekeeping interface in the implemented firmware revision.
+ST7789 SPI display.
+microSD storage.
+RGB status indicator.
+Buzzer.
+Common power and ground connections.
+Wi-Fi communication.
+The implemented revision differed from the original proposal. The proposal described a 16x2 I2C LCD and DS3231 arrangement, while the final firmware and validated carrier used an ST7789 SPI display and DS1302 pin arrangement. This deviation was recorded instead of being hidden.
+7.3.3 Final reproducible pin mapping
+Function
+Final ESP32-S3 connection
+Evidence
+MAX30102 SDA
+GPIO4
+Firmware pin map and backend health record
+MLX90614 SDA
+GPIO4
+Firmware pin map and I2C diagnostic
+MAX30102 and MLX90614 SCL
+GPIO5
+Firmware pin map and I2C diagnostic
+DS1302 clock
+GPIO6
+Firmware source and schematic
+DS1302 data
+GPIO7
+Firmware source and schematic
+DS1302 enable
+GPIO14
+Firmware source and schematic
+ST7789 reset
+GPIO8
+Display firmware
+ST7789 data/command
+GPIO9
+Display firmware
+ST7789 chip select
+GPIO10
+Display firmware
+ST7789 MOSI
+GPIO11
+Display firmware
+ST7789 SCK
+GPIO12
+Display firmware
+Buzzer
+GPIO15
+Firmware source and schematic
+RGB channel 1
+GPIO16
+Firmware source and PCB mapping
+RGB channel 2
+GPIO17
+Firmware source and PCB mapping
+RGB channel 3
+GPIO18
+Firmware source and PCB mapping
+microSD chip select
+GPIO21
+Firmware source and PCB mapping
+microSD clock
+GPIO40
+Firmware source and PCB mapping
+microSD MOSI
+GPIO41
+Firmware source and PCB mapping
+microSD MISO
+GPIO42
+Firmware source and PCB mapping
+The final mapping was reproducible from:
+firmware/akena_firmware/README.md
+pcb/NeoGuard.kicad_sch
+pcb/NeoGuard.kicad_pcb
+pcb/verification_summary.json
+7.3.4 Hardware verification results
+The display and sensor diagnostic produced the following results:
+ESP32-S3 compilation and linking passed.
+The firmware used 345,966 bytes of flash and 24,912 bytes of static RAM.
+Upload passed and the ESP32-S3 revision 0.2 was identified.
+The written flash hash was verified.
+GPIO4 SDA and GPIO5 SCL were idle high.
+I2C addresses 0x57 and 0x5A responded.
+The I2C scan reported zero bus errors.
+MLX90614 surface readings changed between 25.97 °C and 30.73 °C.
+MAX30102 red and infrared readings changed when a finger was placed on the sensor.
+Finger infrared readings ranged from 91,561 to 105,770, compared with approximately 700 when uncovered.
+Finger removal cleared HR and SpO₂ to unavailable and reset the measurement window.
+Display text and colour bars were visible.
+Buzzer command tests produced audible beeps.
+The SD and RGB diagnostic produced the following results:
+Compilation and upload passed.
+The test used 391,730 bytes of program storage and 24,240 bytes of static RAM.
+Four SD test attempts passed.
+Write, read, append, compare and delete operations passed.
+SD verification succeeded while RGB output states were active.
+The integrated firmware recorded zero sampler resets.
+The integrated firmware recorded zero temperature-packet errors.
+7.3.5 Hardware limitations
+The hardware evidence also revealed unresolved limitations:
+Heart-rate estimates ranged from 42 bpm to 187 bpm during the finger test.
+No calibrated reference instrument was used for heart-rate accuracy.
+The test therefore confirmed signal acquisition but not measurement accuracy.
+The largest observed surface-to-ambient temperature difference was 0.84 °C.
+The configured 1.5 °C warm-target rule therefore produced zero warm-target events.
+Automatic interaction beeps were not confirmed, although command beeps were audible.
+The reason for unstable heart-rate estimates was not isolated.
+Battery safety, current consumption and long-term power retention were not established.
+7.3.6 Hardware objective verdict
+The hardware design objective was achieved at prototype integration level.
+The sensors, display, storage, indicators and controller were connected and exercised. The schematic and PCB were validated, and the hardware diagnostics passed several functional checks. However, the objective was not achieved at clinical measurement-validation level because sensor accuracy, battery safety and long-term reliability were not established.
+7.4 Evaluation of the Software Development Objective
+7.4.1 Objective statement
+The second specific objective was to develop firmware, a Flask and PostgreSQL backend with explainable AI risk scoring, and a React dashboard that together provided local threshold alerts, offline buffering, automatic synchronisation and risk-prioritised live and historical monitoring.
+7.4.2 Firmware implementation
+The firmware was implemented in Arduino C/C++ for the ESP32-S3. Its main operations were:
+Initialising the display, sensors, SD interface and timekeeping interface.
+Reading the current device time.
+Acquiring MAX30102 pulse and oxygenation signals.
+Acquiring MLX90614 temperature readings.
+Applying quality and validity checks.
+Applying local threshold logic.
+Updating the display.
+Updating RGB and buzzer outputs.
+Writing readings to SD storage.
+Queuing data for backend synchronisation.
+Reconnecting to Wi-Fi when required.
+Sending JSON readings to the backend.
+The firmware kept local warning behaviour independent from the network and AI service.
+7.4.3 Offline buffering and synchronisation
+The firmware stored readings locally when backend connectivity was unavailable. When communication returned, queued readings were sent using HTTP and JSON.
+The analysed firmware runs recorded:
+Recorded value
+Average-analysis run
+LED-range run
+Status samples
+590
+212
+Contact samples
+109
+27
+Available average samples
+82
+17
+Saved rows
+588
+230
+Sampler resets
+0
+0
+Temperature-packet errors
+0
+0
+Runtime HTTP status
+200
+200
+Heartbeat HTTP status
+200
+200
+Synchronisation HTTP status
+200
+200
+These records demonstrated that the device produced data, saved readings and communicated with the backend during the analysed runs.
+7.4.4 Backend implementation
+The backend implemented:
+Authentication.
+Device registration and health records.
+Patient records.
+Session records.
+Reading persistence.
+Alert persistence.
+Risk-score persistence.
+Device synchronisation.
+Quality-aware handling.
+Access-control checks.
+Pagination.
+Clock validation.
+Synchronisation retry handling.
+Separate archive-review tables.
+The backend used PostgreSQL and Flask-compatible REST services. Passwords were stored as hashes, and the security layer used JWT access tokens, role checks, clinic scoping and password lifecycle controls.
+7.4.5 Dashboard implementation
+The React dashboard was designed to provide:
+Current vital-sign values.
+Historical heart-rate charts.
+Historical SpO₂ charts.
+Historical temperature charts.
+Device connectivity status.
+Alert history.
+Patient and session information.
+AI risk category.
+AI risk score.
+Risk explanations.
+Trend warnings.
+The dashboard consumed backend data rather than relying on invented frontend sample data.
+7.4.6 Software objective verdict
+The software development objective was achieved as a working prototype.
+Firmware, local alerting, SD logging, backend persistence, API routes, authentication, dashboard data paths and AI integration were implemented. The limitation was not absence of software functionality but the incomplete validation of some quantitative performance measures and the experimental nature of the AI model.
+7.5 Evaluation of the Testing Objective
+7.5.1 Objective statement
+The third specific objective was to test the hardware components, firmware, backend and dashboard individually and as an integrated system through connectivity, end-to-end dataflow, API and security tests.
+7.5.2 Hardware and firmware tests
+The following tests were performed:
+Firmware compilation and linking.
+Firmware upload.
+ESP32-S3 identification.
+I2C bus scanning.
+MAX30102 response testing.
+MLX90614 response testing.
+Display operation.
+Buzzer command operation.
+RGB output operation.
+SD write operation.
+SD read operation.
+SD append operation.
+SD comparison operation.
+SD deletion operation.
+Temperature packet validation.
+Pulse acquisition and sampler reset monitoring.
+The firmware unit tests also reported passes for:
+Measurement and threshold alarm behaviour.
+MLX90614 packet validation.
+Live estimate availability and stale/removal handling.
+Rolling heart-rate average and indicator safeguards.
+7.5.3 Backend and API tests
+The backend smoke flow tested:
+Authentication.
+Access control.
+Temporary password changes.
+Device synchronisation.
+Exact reading round-trip.
+Quality-aware alerts.
+Component health.
+Session and status race handling.
+Pagination.
+Synchronisation retry and rate-limit behaviour.
+Device-clock validation.
+The workspace recorded that the API smoke flow passed these checks and that all 21 backend tests passed at the recorded checkpoint. Four Alembic migrations applied successfully to a fresh database, and no schema differences were reported between the migrated database and application models.
+7.5.4 Tests that remained incomplete
+The following tests were not completed with verified quantitative data:
+Temperature accuracy against a clinical reference thermometer.
+Heart-rate accuracy against a reference pulse oximeter.
+SpO₂ accuracy against a reference pulse oximeter.
+Sampling-period jitter under a controlled measurement procedure.
+Measured on-device alert latency.
+Controlled 5-, 15- and 30-minute offline-buffer trials.
+Twenty controlled Wi-Fi drop-and-restore cycles.
+Dashboard end-to-end delay.
+Percentage of dashboard values matching PostgreSQL.
+DS3231 power-cycle retention.
+Battery endurance and current-consumption testing.
+Clinical validation with neonates.
+7.5.5 Testing objective verdict
+The testing objective was partly achieved.
+The project performed meaningful component, firmware, storage, API, backend and integration tests. Several tests passed and produced reproducible logs. However, the full proposal-level test programme was not completed because reference-instrument accuracy, controlled timing, clinical testing and some dashboard/network metrics were unavailable.
+7.6 Evaluation of the Evaluation Objective
+7.6.1 Objective statement
+The fourth specific objective was to evaluate the test data using real-time performance, sampling accuracy, alert latency, jitter, AI false-alarm rate and detection lead time compared with a threshold-only baseline.
+7.6.2 Evaluation evidence that was produced
+The project produced:
+Firmware run summaries.
+Sensor signal observations.
+SD storage results.
+HTTP response results.
+AI training and test metrics.
+AI confusion matrix.
+AI event sensitivity.
+AI warning precision.
+AI false-warning rate.
+AI detection lead time.
+Threshold-only baseline comparison.
+PCB ERC and DRC verification.
+Backend test results.
+7.6.3 AI evaluation results
+The AI model was evaluated using 480 synthetic sessions split into 288 training, 96 validation and 96 test sessions.
+The synthetic test results were:
+Precision: 0.9377.
+Recall/sensitivity: 0.8177.
+ROC-AUC: 0.9748.
+Average precision: 0.9475.
+Brier score: 0.0476.
+True positives: 4,395.
+True negatives: 13,605.
+False positives: 292.
+False negatives: 980.
+Event sensitivity: 0.8980.
+Median simulated lead time: 107.5 seconds.
+False-warning episodes per simulated hour: 1.4197.
+The threshold-only comparison showed:
+Precision: 0.9940.
+Recall: 0.7669.
+ROC-AUC: 0.8825.
+Event sensitivity: 0.5102.
+Median lead time: 0 seconds.
+False-warning episodes per hour: 0.7472.
+The AI detected more simulated events earlier, but produced more warning episodes and had lower warning-episode precision.
+7.6.4 Evaluation limitations
+The following evaluation limitations remained:
+The AI test data was synthetic.
+The AI labels were derived from simulation thresholds.
+The Kaggle risk labels were not verified clinical outcomes.
+Sensor measurements were not compared against calibrated instruments.
+Jitter and latency were not measured through a complete controlled timing dataset.
+Clinical false-alarm performance was not established.
+The AI did not provide clinical probability calibration.
+7.6.5 Evaluation objective verdict
+The evaluation objective was partly achieved.
+The project produced a complete synthetic AI evaluation and comparison with a threshold-only baseline. However, it did not complete the full real-world measurement programme required to establish sensor accuracy, clinical alert performance and deployment readiness.
+7.7 Overall Objectives Achievement Table
+Specific objective
+Verdict
+Evidence
+Design hardware
+Achieved at prototype integration level
+Final pin map, schematic, PCB, I2C checks, display, SD, RGB and buzzer tests
+Develop software
+Achieved as a working prototype
+Firmware, local alerts, SD queueing, API, PostgreSQL, dashboard and AI integration
+Test system
+Partly achieved
+Build/upload, unit tests, SD, I2C, backend and smoke tests passed; accuracy and some controlled tests remained incomplete
+Evaluate system
+Partly achieved
+Synthetic AI metrics and baseline comparison were completed; clinical and reference-instrument metrics were unavailable
+7.8 Discussion of Results
+The project achieved stronger evidence for system integration than for clinical measurement performance. The firmware, storage, backend and AI data paths were implemented and tested. The most important architectural achievement was the separation between local safety alerts and network-dependent services.
+The AI evaluation showed that the model detected more simulated events earlier than the threshold-only baseline. However, the AI also produced more warning episodes per simulated hour. This demonstrated a sensitivity-versus-warning-burden trade-off rather than universal superiority.
+The hardware testing also revealed important limitations. The MAX30102 generated usable raw signals, but the heart-rate estimates were unstable. The temperature sensor produced changing readings, but the warm-target interaction rule did not trigger under the tested conditions. These results prevented the system from being described as clinically accurate.
+7.9 Limitations Encountered
+The main limitations were:
+No real neonatal participants.
+No calibrated reference instruments.
+Synthetic AI training data.
+Unverified Kaggle source labels.
+Unresolved heart-rate instability.
+No completed battery or current test.
+No complete jitter and latency dataset.
+No full controlled offline-duration experiment.
+No verified dashboard delay measurement.
+No clinical validation or medical certification.
+7.10 Recommendations for Future Work
+Future work should:
+Compare temperature, heart rate and SpO₂ with calibrated reference instruments.
+Collect ethically approved clinical data with timestamped outcomes.
+Re-train and validate the AI model on real clinical time-series data.
+Measure sampling period, jitter and alert latency using instrumented GPIO and timestamp capture.
+Repeat offline buffering at 5, 15 and 30 minutes.
+Perform controlled Wi-Fi drop-and-restore cycles.
+Measure dashboard delay and database consistency.
+Investigate MAX30102 signal-quality and motion-artifact handling.
+Confirm buzzer driver behaviour during automatic events.
+Complete battery, charger and current-consumption qualification.
+Produce a final manufacturing PCB with verified power and antenna layout.
+Obtain independent clinical and ethical review before deployment.
+
+CHAPTER 8: CONCLUSION AND RECOMMENDATIONS
+8.1 Conclusion
+The project designed and implemented an offline-first neonatal vital-sign monitoring prototype that combined embedded sensing, local alerting, offline storage, Wi-Fi synchronisation, backend persistence, dashboard visualisation and exploratory artificial-intelligence risk scoring.
+The implemented hardware used an ESP32-S3 as the central controller. The MAX30102 provided optical pulse and oxygenation signals, while the MLX90614 provided non-contact temperature readings. The final implementation also included an ST7789 SPI display, SD storage, RGB status indication, buzzer output and a DS1302-style timekeeping interface.
+The final firmware performed the following operations:
+Initialised the sensing and display hardware.
+Read pulse, SpO₂ and temperature information.
+Applied quality checks to incoming values.
+Applied local threshold logic.
+Updated the display and RGB indicators.
+Controlled the buzzer path.
+Stored readings locally.
+Queued readings for later synchronisation.
+Sent readings to the backend when Wi-Fi was available.
+The local alert path remained independent of Wi-Fi, the backend and the AI model. This was an important design decision because a network outage or unavailable AI service did not automatically disable the device-level warning path.
+The backend implemented authenticated REST routes, PostgreSQL persistence, device and session handling, alert storage, synchronisation logic and risk-score access. The React dashboard provided the intended path for live and historical monitoring.
+The AI component was implemented as an exploratory backend service. Kaggle-derived datasets were audited and de-identified, but their source labels were not treated as verified clinical outcomes. The deployed model was therefore trained using 480 synthetic sessions across eight scenarios. It used causal time-series features and logistic regression to produce a risk score and explanation.
+The synthetic test results showed:
+Precision: 0.9377.
+Recall/sensitivity: 0.8177.
+ROC-AUC: 0.9748.
+Average precision: 0.9475.
+Brier score: 0.0476.
+True positives: 4,395.
+True negatives: 13,605.
+False positives: 292.
+False negatives: 980.
+Simulated event sensitivity: 0.8980.
+Median simulated lead time: 107.5 seconds.
+False-warning episodes per simulated monitoring hour: 1.4197.
+The AI detected more simulated events earlier than the threshold-only baseline. However, it also produced more warning episodes per hour and lower warning-episode precision. These results described synthetic scenarios only and did not establish clinical performance.
+The hardware and software evidence showed that the prototype was integrated successfully at proof-of-concept level. Firmware compilation and upload passed, I2C sensor acquisition passed, display operation passed, repeated SD diagnostics passed, backend tests passed at the recorded checkpoint, and runtime, heartbeat and synchronisation requests returned HTTP 200 in the analysed runs. The validated SPI carrier PCB recorded zero reported ERC violations, DRC violations, unrouted items and schematic-parity differences.
+The project did not establish:
+Clinical temperature accuracy.
+Clinical heart-rate accuracy.
+Clinical SpO₂ accuracy.
+Long-term battery performance.
+Complete sampling jitter.
+Measured alert latency.
+Controlled offline-duration synchronisation results.
+Full Wi-Fi reconnection performance.
+Dashboard delay and database-consistency percentages.
+Clinical AI calibration.
+Medical-device certification.
+The final conclusion was therefore that the project produced a reproducible embedded research prototype, not a clinically deployable diagnostic system.
+8.2 Recommendations
+The following recommendations were made before the system could be used beyond research and bench testing.
+8.2.1 Sensor validation
+The MAX30102 and MLX90614 should be compared against calibrated reference instruments.
+Temperature testing should include:
+At least 100 paired readings.
+A calibrated digital thermometer.
+Mean absolute error.
+Bias.
+Standard deviation.
+Minimum and maximum error.
+Tests across the expected neonatal temperature range.
+Heart-rate and SpO₂ testing should include paired measurements from a reference pulse oximeter and should report the number of samples, MAE, bias, standard deviation and error range.
+8.2.2 Timing and alert validation
+The system should be instrumented to measure:
+Actual sampling period.
+Mean interval.
+Minimum and maximum interval.
+Sampling standard deviation.
+Jitter percentage.
+Threshold-breach timestamp.
+Alert-output timestamp.
+Mean alert latency.
+Maximum alert latency.
+The results should be compared with the proposal target of one sampling period plus processing time.
+8.2.3 Offline and connectivity validation
+Controlled offline tests should be completed for:
+Five-minute outages.
+Fifteen-minute outages.
+Thirty-minute outages.
+Each test should report:
+Number of readings generated.
+Number delivered.
+Delivery percentage.
+In-order delivery percentage.
+Duplicate count.
+Overflow count.
+Buffer-clear time.
+Wi-Fi drop-and-restore testing should also be repeated over a defined number of cycles, with reconnection success rate and mean reconnection time calculated.
+8.2.4 Power and battery qualification
+The final power design should be measured and documented.
+The following should be recorded:
+3.3 V rail voltage.
+5 V rail voltage.
+Average current.
+Peak current.
+Charging current.
+Battery capacity.
+Battery runtime.
+Regulator temperature.
+USB-C protection behaviour.
+Battery cut-off behaviour.
+The exact ESP32-S3 module, LiPo battery and charger should be selected before manufacturing the final PCB.
+8.2.5 AI validation
+The AI model should be retrained and evaluated using ethically approved, de-identified clinical time-series data.
+Future AI testing should include:
+Independent clinical training and test cohorts.
+Clinical event labels.
+Subject-level separation.
+Confusion matrices.
+Calibration analysis.
+Sensitivity.
+Specificity.
+Precision.
+Recall.
+F1-score.
+ROC-AUC.
+Precision-recall AUC.
+False alarms per monitoring hour.
+Detection lead time.
+Feature-importance review by clinical experts.
+The synthetic results should remain clearly separated from clinical results.
+8.2.6 Hardware refinement
+The unstable heart-rate estimates should be investigated through:
+Improved sensor placement.
+Motion-artifact rejection.
+Signal-quality thresholds.
+Contact detection.
+Window-length evaluation.
+Comparison with reference pulse oximeters.
+Additional filtering and stability gates.
+The automatic event-triggered buzzer path should also be tested independently to confirm the driver, duration and timing.
+8.2.7 PCB and enclosure development
+The validated carrier design should be transferred into a final manufacturing-ready PCB after:
+Confirming the ESP32-S3 module dimensions.
+Confirming antenna clearance.
+Finalising the USB-C connector.
+Finalising the charger and regulator.
+Confirming battery dimensions.
+Confirming display mounting.
+Adding mounting holes.
+Reviewing ground-plane and return-current paths.
+Running final ERC and DRC checks.
+Generating manufacturing files.
+The enclosure should protect the electronics, provide safe sensor placement and support cleaning in a clinical environment.
+8.2.8 Clinical and ethical approval
+Before use with neonates, the project should obtain:
+Institutional ethical approval.
+Informed-consent procedures.
+Clinical supervision.
+Data-protection review.
+Medical-device safety review.
+Independent validation.
+Clear escalation procedures for abnormal readings.
+The system should remain an early-warning aid and should not replace nurses, doctors or approved clinical equipment.
+8.3 Future Work
+Future development should proceed in the following stages.
+Stage 1: Complete engineering validation
+The first stage should complete:
+Sensor calibration.
+Reference-instrument comparisons.
+Alert-latency measurement.
+Sampling-jitter measurement.
+Offline-buffer testing.
+Wi-Fi reconnection testing.
+Dashboard delay testing.
+Battery and charger qualification.
+Stage 2: Improve signal quality
+The firmware should be improved to:
+Detect motion artefacts.
+Detect poor sensor contact.
+Reject unstable heart-rate windows.
+Identify stale readings.
+Separate display estimates from AI-eligible readings.
+Record quality reasons in the backend.
+Stage 3: Complete the manufacturing design
+The project should finalise:
+Onboard ESP32-S3 placement.
+USB-C charging.
+LiPo battery integration.
+Power protection.
+Display mounting.
+Sensor connectors.
+Enclosure.
+Final PCB manufacturing files.
+Stage 4: Expand the AI dataset
+The AI dataset should be expanded using:
+Clinically reviewed data.
+Multiple devices.
+Multiple monitoring sessions.
+Realistic sensor noise.
+Motion and contact artefacts.
+Missing-data scenarios.
+Recovery scenarios.
+Independent clinical labels.
+The existing synthetic model should be retained as a development baseline, but its results should not be mixed with clinical results.
+Stage 5: Clinical evaluation
+The final system should be tested under clinical supervision with:
+Approved participants.
+Calibrated reference equipment.
+Defined inclusion and exclusion criteria.
+Timestamped paired readings.
+Independent clinical labels.
+Blinded evaluation where appropriate.
+Safety monitoring.
+Documented failure handling.
+Stage 6: Deployment and maintenance
+If future validation supports deployment, the system should include:
+Secure firmware updates.
+Model-version management.
+Audit logs.
+Device-health monitoring.
+Battery-health reporting.
+Network-failure alerts.
+Data-export tools.
+User training.
+Maintenance procedures.
+Periodic recalibration.
+The project therefore provided a reproducible foundation for further embedded, AI and clinical-technology research. Its next stage should focus on measurement validation, power and enclosure engineering, clinical data collection and independent AI evaluation.
+
+REFERENCES
+Mukunya, D., Tumwine, J. K., Nankabirwa, V., et al. (2021). Neonatal hypothermia in Northern Uganda: A community-based cross-sectional study. BMJ Open, 11, e041723. https://doi.org/10.1136/bmjopen-2020-041723.
+McAbee, L., Mundagowa, P. T., Agbinko-Djobalar, B., et al. (2023). Evaluation of a device to detect neonatal hypothermia in a clinical setting in Ghana. PLOS Global Public Health, 3(10), e0001681. https://doi.org/10.1371/journal.pgph.0001681.
+De, D., Mukherjee, A., Sau, A., & Bhakta, I. (2016). Design of smart neonatal health monitoring system using sensor mobile cloud computing. Healthcare Technology Letters, 4(1), 13–19. https://doi.org/10.1049/htl.2016.0054.
+Abd El-Aziz, R. M., & Taloba, A. I. (2021). Real-time monitoring and control of neonatal incubator using IoT. International Journal of Grid and Distributed Computing, 14(1), 2117–2127.
+Rahmawati, I., Widyawati, M. N., Kurnianingsih, K., & Walin, W. (2024). Hypothermia management in newborns artificial intelligence based: Systematic review. Journal of Maternal and Child Health, 9(3), 421–432.
+American Academy of Pediatrics & American Heart Association. (2021). Textbook of Neonatal Resuscitation (8th ed.). American Academy of Pediatrics.
+Oxygen saturation reference ranges for healthy newborns within 24 hours at 1,800 m altitude, Nairobi, Kenya. PubMed Central record PMC5474098.
+Using intermittent pulse oximetry to guide neonatal oxygen therapy in a low-resource context. PubMed Central record PMC7363784.
+Alarm Fatigue Reduction in a Single Patient Room Neonatal Intensive Care Unit. Online Journal of Nursing Informatics.
+The alarm fatigue challenge in the neonatal intensive care unit: A before-and-after study. PubMed record 37339673.
+Multidimensional analysis of alarm management in the neonatal intensive care unit: Alarm frequencies, actionable alarms and nurse perceptions. Nursing in Critical Care (2026).
+Kaggle dataset archive.zip. Newborn health monitoring with risk dataset: newborn_health_monitoring_with_risk.csv (3,000 records; 100 baby identifiers). Local project archive used for audit and exploratory benchmarking; source labels and measurement units were treated as unverified.
+Kaggle dataset archive_1.zip. Hypothermia dataset: Hypothermia.csv (200 records). Local project archive used for audit; field meanings and clinical provenance were treated as unverified.
+Espressif Systems. ESP32-S3 documentation and technical reference manual. https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/.
+Analog Devices. MAX30102 high-sensitivity pulse oximeter and heart-rate sensor data sheet.
+Melexis. MLX90614 family infrared thermometer data sheet.
+Electronic Industries Association. DS1302 trickle-charge timekeeping chip data sheet.
+KiCad Developers. KiCad EDA documentation. https://docs.kicad.org/.
+Flask Documentation. Pallets Projects. https://flask.palletsprojects.com/.
+SQLAlchemy Documentation. https://docs.sqlalchemy.org/.
+PostgreSQL Global Development Group. PostgreSQL Documentation. https://www.postgresql.org/docs/.
+React Documentation. https://react.dev/.
+Chart.js Documentation. https://www.chartjs.org/docs/.
+Pedregosa, F., et al. (2011). Scikit-learn: Machine learning in Python. Journal of Machine Learning Research, 12, 2825–2830.
+McKinney, W. (2010). Data structures for statistical computing in Python. Proceedings of the 9th Python in Science Conference.
+Joblib Developers. Joblib: Running Python functions as pipeline jobs. https://joblib.readthedocs.io/.
+NeoGuard project workspace. Firmware, backend, frontend, AI, schematic, PCB, test logs and verification records, C:\Users\AKENA\Desktop\neonatal, accessed 9 November 2026.
+REPORT LANGUAGE AND EVIDENCE REVIEW
+The report was revised to describe completed implementation and observed results in the past tense. Future-oriented wording was retained only in the recommendations and future-work sections, where it correctly identifies work that remained outstanding. Statements about clinical performance, sensor accuracy, dashboard screenshots, battery qualification and clinical deployment were not presented as completed because the workspace did not contain verified evidence for them.

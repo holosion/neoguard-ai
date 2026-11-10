@@ -1,27 +1,17 @@
-# LCD-C verification record
+# SPI-D validation — 29 October 2026
 
-22 October 2026. KiCad 10.0.4. This record applies only to the design in this folder.
+KiCad 10.0.4 checks on the regenerated SPI revision:
 
-## Checks completed
+- Schematic ERC: zero reported errors, warnings or exclusions.
+- PCB DRC: zero reported violations, zero unconnected items, zero schematic-parity differences.
+- Independent comparison: 26 carrier parts, 99 carrier pins, 18 firmware GPIO assignments and all 40 logical controller pins match the manifest/netlist/board.
+- Intentional no-connects: 20 controller connections and 2 carrier connections (J1 pin22 and MAX30102 INT at J2 pin5).
+- Two copper layers, 140 × 105 mm, filled ground pours and stitching vias.
 
-- Native schematic ERC: **0 reported violations**, including errors and warnings, on all three sheets.
-- Native PCB DRC: **0 reported violations, 0 unconnected items, 0 schematic parity issues**, including errors and warnings.
-- Independent manifest-to-schematic-to-PCB comparison: **134 electrical pins across 30 components**, no mismatch; **7 intentional no-connects** verified.
-- Firmware comparison: **19 GPIO assignments**, no mismatch with the LCD integration sketch.
-- Two copper layers; **140 x 105 mm** board outline. **63 non-ground routing connections** complete. Ground uses filled F.Cu/B.Cu zones with **80 stitching vias** and isolated-island removal.
-- Signal width 0.30mm; power width 0.60mm; via diameter/drill 0.80/0.40mm; zone clearance 0.25mm. Default thermal gap/spoke 0.30/0.40mm. LCD RW pad5 uses a solid zone connection to avoid a starved thermal at this permanently grounded pin.
-- LCD footprint has 16 numbered electrical pads, four nonplated 2.7mm mounting holes and a project-local STEP model. Four further 3.2mm mounting holes belong to the carrier board itself.
-- Three PDF schematic pages rendered and visually reviewed. Final board preview generated with native KiCad 3D rendering; copper SVG exported from the board.
-- The final design and its local LCD footprint are consistent with the schematic. Intentional NC net names match KiCad's schematic netlist.
+Used pins connect through wires and named global nets. Matching global labels are electrical connections across the three sheets. Unused external controller connections have explicit KiCad no-connect X symbols.
 
-## Scope of the reports
+The project retains its existing rule configuration. The JSON reports list ignored categories, including single global labels, SPICE model checks, footprint filters, missing courtyard and via centering; no new exclusions were added to obtain these results. U1 is a logical external interface with passive pin types, not a model of the development board's internal electronics. ERC cannot validate that internal circuitry.
 
-The raw ERC/DRC JSON files retain KiCad's own ignored-check metadata. Default ignored categories are not represented as checked; no new error exclusions were added to hide a failure. Native command-line runs emitted Windows registry preference warnings but successfully read the designs, generated reports, and produced the exports.
+The display is the firmware-confirmed ST7789 240×280 SPI module, previously called OLED. Screen supply is 3.3V; SPI signals use GPIO8–12. GPIO13 is unused. Backlight JP4 is normally open pending confirmation of the breakout's backlight input.
 
-## Mechanical assumptions and unverified hardware
-
-The assumed LCD is WC1602A-style, 80 x 36mm, with approximately 75 x 31mm mounting-hole centres and a 2.54mm-pitch, 16-pin header. The actual user's LCD has not been measured or positively identified. Spacer/socket height, screw clearance, module tolerances and enclosure fit are unverified.
-
-J1 is a functional controller cable, not an ESP32 development-board socket. Sensor/SD/RTC/RGB/buzzer headers are functional harness interfaces, not verified purchased-module mounting patterns. Check module connector order, logic compatibility, supply ratings, current budget, reverse-power behaviour, RGB polarity and transistor pinout before fabrication or power-up.
-
-No board has been ordered, fabricated, assembled, powered or medically validated. Clean design checks do not establish real sensor accuracy, patient safety or manufacturing approval. No fabrication Gerber release is included.
+The exact purchased ESP32-S3 board, display/module header orders, mounting dimensions and current budget remain unconfirmed. J1 and J5 are functional cable headers, not fitted module sockets. The generated PCB has not been fabricated or powered. These checks do not prove hardware operation or medical suitability. No manufacturing files or order were released.

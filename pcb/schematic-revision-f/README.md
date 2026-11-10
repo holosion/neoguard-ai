@@ -1,0 +1,1 @@
+Revision E-POWER: onboard ESP32-S3-WROOM-1, USB-C power-only input, BQ24074 1-cell LiPo charger/power path, battery NTC, TPS63001 3.3V buck-boost. Target: protected 3.7V smartwatch-style LiPo. Charge current 0.8A via 1.13k ISET. PCB migration follows schematic review.

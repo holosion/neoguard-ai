@@ -30,7 +30,7 @@ for c in m['components']:
             if actual!=net:issues.append(f'PCB {c["ref"]}.{pin}: {actual} != {net}')
             if sch!=net:issues.append(f'Schematic {c["ref"]}.{pin}: {sch} != {net}')
 
-expected={'SDA_PIN':4,'SCL_PIN':5,'RTC_CLK':6,'RTC_DAT':7,'RTC_RST':14,'LCD_RS':8,'LCD_EN':9,'LCD_D4':10,'LCD_D5':11,'LCD_D6':12,'LCD_D7':13,'SD_CS':21,'SD_SCK':40,'SD_MOSI':41,'SD_MISO':42,'BUZZER':15,'RED_LED':16,'GREEN_LED':17,'BLUE_LED':18}
+expected={'SDA_PIN':4,'SCL_PIN':5,'RTC_CLK':6,'RTC_DAT':7,'RTC_RST':14,'TFT_RST':8,'TFT_DC':9,'TFT_CS':10,'TFT_MOSI':11,'TFT_SCK':12,'SD_CS':21,'SD_SCK':40,'SD_MOSI':41,'SD_MISO':42,'BUZZER':15,'RED_LED':16,'GREEN_LED':17,'BLUE_LED':18}
 firmware=(root.parent/'akena firmware/akena_firmware/akena_firmware.ino').read_text()
 for name,number in expected.items():
     if not re.search(r'\b'+name+r'\s*=\s*'+str(number)+r'\b',firmware):issues.append('Firmware pin mismatch '+name)
@@ -38,11 +38,16 @@ for name,number in expected.items():
     if net is None:issues.append('No net for GPIO'+str(number))
     elif schematic.get(('U1',str(number)))!=net:issues.append('Logical controller mismatch GPIO'+str(number))
 
-lcd=fps['J5']
-lcdholes=[pa for pa in lcd.Pads() if not pa.GetNumber() and pa.GetAttribute()==p.PAD_ATTRIB_NPTH]
-if len(lcdholes)!=4:issues.append('LCD needs four mounting holes')
-if len(list(lcd.Models()))<1:issues.append('LCD 3D model missing')
-out={'revision':'LCD-C','KiCad':p.Version(),'components':len(m['components']),'electrical_pins_checked':pins,'intentional_no_connects':nc,'firmware_gpio_assignments_checked':len(expected),'board_dimensions_mm':[140,105],'copper_layers':board.GetCopperLayerCount(),'lcd':{'footprint':str(lcd.GetFPID().GetLibItemName()),'module_dimensions_assumed_mm':[80,36],'hole_centres_assumed_mm':[75,31],'npth_holes':len(lcdholes),'drill_mm':2.7,'actual_module_fit_confirmed':False},'issues':issues}
+ids=json.loads((root/'schematic_ids.json').read_text())
+controller=ids['logical_controller']['pin_nets']
+nc_expected=nc+sum(n is None for n in controller.values())
+nc_actual=sum((root/name).read_text().count('(no_connect ') for name in ['NeoGuard.kicad_sch','NeoGuard-display.kicad_sch','NeoGuard-power.kicad_sch'])
+if nc_actual!=nc_expected:issues.append(f'No-connect symbol count {nc_actual} != {nc_expected}')
+for pin,net in controller.items():
+    actual=schematic.get(('U1',pin),'').lstrip('/')
+    if net and actual!=net:issues.append('Controller net mismatch '+pin)
+    if net is None and actual and not actual.startswith('unconnected-'):issues.append('Unused controller pin connected '+pin)
+out={'revision':'SPI-D','KiCad':p.Version(),'components':len(m['components']),'electrical_pins_checked':pins,'carrier_no_connects':nc,'controller_no_connects':sum(n is None for n in controller.values()),'firmware_gpio_assignments_checked':len(expected),'board_dimensions_mm':[140,105],'copper_layers':board.GetCopperLayerCount(),'display':'ST7789 240x280 SPI; functional cable header','physical_fit_confirmed':False,'issues':issues}
 (root/'verification_summary.json').write_text(json.dumps(out,indent=2))
 with (root/'BOM.csv').open('w',newline='') as f:
     w=csv.writer(f);w.writerow(['Reference','Value','Footprint','Fit'])

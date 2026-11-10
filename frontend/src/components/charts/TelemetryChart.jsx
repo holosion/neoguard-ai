@@ -5,7 +5,9 @@ export default function TelemetryChart({ data, label, unit, domain, threshold })
   if (data.length < 2) {
     return (
       <p className="py-10 text-center text-sm text-slate-500">
-        {data.length === 1 ? `Latest ${label.toLowerCase()}: ${data[0].v} ${unit}. ` : 'No readings yet. '}History is not available because the backend stores only the latest value.
+        {data.length === 1
+          ? `Latest ${label.toLowerCase()}: ${data[0].v} ${unit}. Waiting for another report to draw the graph.`
+          : `No ${label.toLowerCase()} reports received in the last 24 hours.`}
       </p>
     );
   }

@@ -2,14 +2,14 @@
 <export version="E">
   <design>
     <source>C:\Users\AKENA\Desktop\neonatal\pcb\NeoGuard.kicad_sch</source>
-    <date>2026-10-22T20:26:29</date>
+    <date>2026-10-29T16:17:02</date>
     <tool>Eeschema 10.0.4</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
-        <title>Akena NeoGuard - LCD System</title>
+        <title>Akena NeoGuard - SPI System</title>
         <company>NeoGuard research prototype</company>
-        <rev>LCD-C</rev>
-        <date>2026-10-22</date>
+        <rev>SPI-D</rev>
+        <date>2026-10-29</date>
         <source>NeoGuard.kicad_sch</source>
         <comment number="1" value="GPIO names are logical signals; verify actual module headers and voltages"/>
         <comment number="2" value=""/>
@@ -22,13 +22,13 @@
         <comment number="9" value=""/>
       </title_block>
     </sheet>
-    <sheet number="2" name="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/">
+    <sheet number="2" name="/SPI display/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/">
       <title_block>
-        <title>Akena NeoGuard - Mounted LCD and Logic Buffer</title>
+        <title>Akena NeoGuard - ST7789 Display</title>
         <company>NeoGuard research prototype</company>
-        <rev>LCD-C</rev>
-        <date>2026-10-22</date>
-        <source>NeoGuard-lcd.kicad_sch</source>
+        <rev>SPI-D</rev>
+        <date>2026-10-29</date>
+        <source>NeoGuard-display.kicad_sch</source>
         <comment number="1" value="GPIO names are logical signals; verify actual module headers and voltages"/>
         <comment number="2" value=""/>
         <comment number="3" value=""/>
@@ -44,8 +44,8 @@
       <title_block>
         <title>Akena NeoGuard - Power and Controller Cable</title>
         <company>NeoGuard research prototype</company>
-        <rev>LCD-C</rev>
-        <date>2026-10-22</date>
+        <rev>SPI-D</rev>
+        <date>2026-10-29</date>
         <source>NeoGuard-power.kicad_sch</source>
         <comment number="1" value="GPIO names are logical signals; verify actual module headers and voltages"/>
         <comment number="2" value=""/>
@@ -404,6 +404,26 @@
       <units>
         <unit name="A">
           <pins>
+            <pin num="0"/>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="13"/>
+            <pin num="19"/>
+            <pin num="20"/>
+            <pin num="35"/>
+            <pin num="36"/>
+            <pin num="37"/>
+            <pin num="38"/>
+            <pin num="39"/>
+            <pin num="43"/>
+            <pin num="44"/>
+            <pin num="45"/>
+            <pin num="46"/>
+            <pin num="47"/>
+            <pin num="48"/>
+            <pin num="EN"/>
+            <pin num="5V"/>
             <pin num="4"/>
             <pin num="5"/>
             <pin num="6"/>
@@ -414,7 +434,6 @@
             <pin num="10"/>
             <pin num="11"/>
             <pin num="12"/>
-            <pin num="13"/>
             <pin num="15"/>
             <pin num="16"/>
             <pin num="17"/>
@@ -429,159 +448,23 @@
         </unit>
       </units>
     </comp>
-    <comp ref="C5">
-      <value>100nF U2 BYPASS</value>
-      <footprint>Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</footprint>
-      <fields>
-        <field name="Footprint">Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm</field>
-        <field name="Datasheet"/>
-        <field name="Description"/>
-      </fields>
-      <libsource lib="NeoGuard" part="C" description="Unpolarized capacitor"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="cap capacitor"/>
-      <property name="ki_fp_filters" value="C_*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
-      <tstamps>3ba9ff24-d624-51e6-9b03-298a428f6bf2</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="C6">
-      <value>10uF 10V LCD</value>
-      <footprint>Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</footprint>
-      <fields>
-        <field name="Footprint">Capacitor_THT:CP_Radial_D6.3mm_P2.50mm</field>
-        <field name="Datasheet"/>
-        <field name="Description"/>
-      </fields>
-      <libsource lib="NeoGuard" part="C_Polarized" description="Polarized capacitor"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="cap capacitor"/>
-      <property name="ki_fp_filters" value="CP_*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
-      <tstamps>6cb6b5f3-a12a-5709-87b0-32b0222a76b2</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
     <comp ref="J5">
-      <value>WC1602A LCD 16x2 - VERIFY ACTUAL MODULE</value>
-      <footprint>Akena_LCD:LCD1602_80x36_Mounting</footprint>
+      <value>ST7789 240x280 TFT - 3V3</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical</footprint>
       <fields>
-        <field name="Footprint">Akena_LCD:LCD1602_80x36_Mounting</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
         <field name="Description"/>
       </fields>
-      <libsource lib="NeoGuard" part="WC1602A" description="LCD 16x2 Alphanumeric , 8 bit parallel bus, 5V VDD"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="display LCD dot-matrix"/>
-      <property name="ki_fp_filters" value="*WC*1602A*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
+      <libsource lib="NeoGuard" part="ST7789_Interface" description=""/>
+      <property name="Sheetname" value="SPI display"/>
+      <property name="Sheetfile" value="NeoGuard-display.kicad_sch"/>
+      <sheetpath names="/SPI display/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
       <tstamps>09232654-161b-5ddf-8590-78be8bd765cc</tstamps>
       <units>
         <unit name="A">
           <pins>
-            <pin num="6"/>
-            <pin num="5"/>
-            <pin num="4"/>
-            <pin num="7"/>
-            <pin num="8"/>
-            <pin num="9"/>
-            <pin num="10"/>
-            <pin num="11"/>
-            <pin num="12"/>
-            <pin num="13"/>
-            <pin num="14"/>
-            <pin num="2"/>
             <pin num="1"/>
-            <pin num="3"/>
-            <pin num="15"/>
-            <pin num="16"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="R8">
-      <value>220 LCD BACKLIGHT</value>
-      <footprint>Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</footprint>
-      <fields>
-        <field name="Footprint">Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal</field>
-        <field name="Datasheet"/>
-        <field name="Description"/>
-      </fields>
-      <libsource lib="NeoGuard" part="R" description="Resistor"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="R res resistor"/>
-      <property name="ki_fp_filters" value="R_*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
-      <tstamps>f9bbaf08-3c27-5b06-9171-59ce06571a3e</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="RV1">
-      <value>10k LCD CONTRAST</value>
-      <footprint>Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical</footprint>
-      <fields>
-        <field name="Footprint">Potentiometer_THT:Potentiometer_Bourns_3296W_Vertical</field>
-        <field name="Datasheet"/>
-        <field name="Description"/>
-      </fields>
-      <libsource lib="NeoGuard" part="R_Potentiometer" description="Potentiometer"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="resistor variable"/>
-      <property name="ki_fp_filters" value="Potentiometer*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
-      <tstamps>e6993b97-d4e0-5818-91a5-b8b8d348c286</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
-            <pin num="1"/>
-            <pin num="3"/>
-            <pin num="2"/>
-          </pins>
-        </unit>
-      </units>
-    </comp>
-    <comp ref="U2">
-      <value>SN74AHCT245N - NOT 74HC245</value>
-      <footprint>Package_DIP:DIP-20_W7.62mm</footprint>
-      <fields>
-        <field name="Footprint">Package_DIP:DIP-20_W7.62mm</field>
-        <field name="Datasheet"/>
-        <field name="Description"/>
-      </fields>
-      <libsource lib="NeoGuard" part="SN74AHCT245_AtoB" description="Octal BUS Transceivers, 3-State outputs"/>
-      <property name="Sheetname" value="LCD on carrier"/>
-      <property name="Sheetfile" value="NeoGuard-lcd.kicad_sch"/>
-      <property name="ki_keywords" value="HCMOS BUS 3State"/>
-      <property name="ki_fp_filters" value="DIP?20*"/>
-      <sheetpath names="/LCD on carrier/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
-      <tstamps>0aa48126-5b29-5941-a68a-93fb27454616</tstamps>
-      <units>
-        <unit name="A">
-          <pins>
             <pin num="2"/>
             <pin num="3"/>
             <pin num="4"/>
@@ -589,19 +472,31 @@
             <pin num="6"/>
             <pin num="7"/>
             <pin num="8"/>
-            <pin num="9"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="JP4">
+      <value>TFT BL - OPEN UNTIL VERIFIED</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <fields>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="NeoGuard" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="Sheetname" value="SPI display"/>
+      <property name="Sheetfile" value="NeoGuard-display.kicad_sch"/>
+      <property name="dnp"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/SPI display/" tstamps="/4d4ee843-c730-55ae-8b3c-f88922eca36a/"/>
+      <tstamps>c1a4225c-9bd6-5bf2-980b-13a9b1babb4d</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
             <pin num="1"/>
-            <pin num="19"/>
-            <pin num="20"/>
-            <pin num="10"/>
-            <pin num="18"/>
-            <pin num="17"/>
-            <pin num="16"/>
-            <pin num="15"/>
-            <pin num="14"/>
-            <pin num="13"/>
-            <pin num="12"/>
-            <pin num="11"/>
+            <pin num="2"/>
           </pins>
         </unit>
       </units>
@@ -1097,26 +992,45 @@
         <field name="Description"/>
       </fields>
       <pins>
-        <pin num="3V3" name="DEV3V3" type="passive"/>
-        <pin num="4" name="I2C_SDA_/_GPIO4" type="passive"/>
-        <pin num="5" name="I2C_SCL_/_GPIO5" type="passive"/>
-        <pin num="6" name="RTC_CLK_/_GPIO6" type="passive"/>
-        <pin num="7" name="RTC_DAT_/_GPIO7" type="passive"/>
-        <pin num="8" name="LCD_RS_/_GPIO8" type="passive"/>
-        <pin num="9" name="LCD_EN_/_GPIO9" type="passive"/>
-        <pin num="10" name="LCD_D4_/_GPIO10" type="passive"/>
-        <pin num="11" name="LCD_D5_/_GPIO11" type="passive"/>
-        <pin num="12" name="LCD_D6_/_GPIO12" type="passive"/>
-        <pin num="13" name="LCD_D7_/_GPIO13" type="passive"/>
-        <pin num="14" name="RTC_CE_/_GPIO14" type="passive"/>
-        <pin num="15" name="BUZZ_/_GPIO15" type="passive"/>
-        <pin num="16" name="LED_R_/_GPIO16" type="passive"/>
-        <pin num="17" name="LED_G_/_GPIO17" type="passive"/>
-        <pin num="18" name="LED_B_/_GPIO18" type="passive"/>
-        <pin num="21" name="SD_CS_/_GPIO21" type="passive"/>
-        <pin num="40" name="SD_SCK_/_GPIO40" type="passive"/>
-        <pin num="41" name="SD_MOSI_/_GPIO41" type="passive"/>
-        <pin num="42" name="SD_MISO_/_GPIO42" type="passive"/>
+        <pin num="0" name="GPIO0" type="passive"/>
+        <pin num="1" name="GPIO1" type="passive"/>
+        <pin num="2" name="GPIO2" type="passive"/>
+        <pin num="3" name="GPIO3" type="passive"/>
+        <pin num="3V3" name="3V3" type="passive"/>
+        <pin num="4" name="GPIO4" type="passive"/>
+        <pin num="5" name="GPIO5" type="passive"/>
+        <pin num="5V" name="5V" type="passive"/>
+        <pin num="6" name="GPIO6" type="passive"/>
+        <pin num="7" name="GPIO7" type="passive"/>
+        <pin num="8" name="GPIO8" type="passive"/>
+        <pin num="9" name="GPIO9" type="passive"/>
+        <pin num="10" name="GPIO10" type="passive"/>
+        <pin num="11" name="GPIO11" type="passive"/>
+        <pin num="12" name="GPIO12" type="passive"/>
+        <pin num="13" name="GPIO13" type="passive"/>
+        <pin num="14" name="GPIO14" type="passive"/>
+        <pin num="15" name="GPIO15" type="passive"/>
+        <pin num="16" name="GPIO16" type="passive"/>
+        <pin num="17" name="GPIO17" type="passive"/>
+        <pin num="18" name="GPIO18" type="passive"/>
+        <pin num="19" name="GPIO19" type="passive"/>
+        <pin num="20" name="GPIO20" type="passive"/>
+        <pin num="21" name="GPIO21" type="passive"/>
+        <pin num="35" name="GPIO35" type="passive"/>
+        <pin num="36" name="GPIO36" type="passive"/>
+        <pin num="37" name="GPIO37" type="passive"/>
+        <pin num="38" name="GPIO38" type="passive"/>
+        <pin num="39" name="GPIO39" type="passive"/>
+        <pin num="40" name="GPIO40" type="passive"/>
+        <pin num="41" name="GPIO41" type="passive"/>
+        <pin num="42" name="GPIO42" type="passive"/>
+        <pin num="43" name="GPIO43" type="passive"/>
+        <pin num="44" name="GPIO44" type="passive"/>
+        <pin num="45" name="GPIO45" type="passive"/>
+        <pin num="46" name="GPIO46" type="passive"/>
+        <pin num="47" name="GPIO47" type="passive"/>
+        <pin num="48" name="GPIO48" type="passive"/>
+        <pin num="EN" name="EN" type="passive"/>
         <pin num="GND" name="GND" type="passive"/>
       </pins>
     </libpart>
@@ -1158,93 +1072,23 @@
         <pin num="2" name="" type="passive"/>
       </pins>
     </libpart>
-    <libpart lib="NeoGuard" part="R_Potentiometer">
-      <description>Potentiometer</description>
-      <footprints>
-        <fp>Potentiometer*</fp>
-      </footprints>
+    <libpart lib="NeoGuard" part="ST7789_Interface">
       <fields>
-        <field name="Reference">RV</field>
-        <field name="Value">R_Potentiometer</field>
+        <field name="Reference">J</field>
+        <field name="Value">ST7789_Interface</field>
         <field name="Footprint"/>
         <field name="Datasheet"/>
-        <field name="Description">Potentiometer</field>
-        <field name="Sim.Device">R</field>
-        <field name="Sim.Type">POT</field>
-        <field name="Sim.Pins">1=r0 2=wiper 3=r1</field>
+        <field name="Description"/>
       </fields>
       <pins>
-        <pin num="1" name="1" type="passive"/>
-        <pin num="2" name="2" type="passive"/>
-        <pin num="3" name="3" type="passive"/>
-      </pins>
-    </libpart>
-    <libpart lib="NeoGuard" part="SN74AHCT245_AtoB">
-      <description>Octal BUS Transceivers, 3-State outputs</description>
-      <docs>http://www.ti.com/lit/gpn/sn74HC245</docs>
-      <footprints>
-        <fp>DIP?20*</fp>
-      </footprints>
-      <fields>
-        <field name="Reference">U</field>
-        <field name="Value">74HC245</field>
-        <field name="Footprint"/>
-        <field name="Datasheet">http://www.ti.com/lit/gpn/sn74HC245</field>
-        <field name="Description">Octal BUS Transceivers, 3-State outputs</field>
-      </fields>
-      <pins>
-        <pin num="1" name="A-&gt;B" type="input"/>
-        <pin num="2" name="A0" type="input"/>
-        <pin num="3" name="A1" type="input"/>
-        <pin num="4" name="A2" type="input"/>
-        <pin num="5" name="A3" type="input"/>
-        <pin num="6" name="A4" type="input"/>
-        <pin num="7" name="A5" type="input"/>
-        <pin num="8" name="A6" type="input"/>
-        <pin num="9" name="A7" type="input"/>
-        <pin num="10" name="GND" type="power_in"/>
-        <pin num="11" name="B7" type="output"/>
-        <pin num="12" name="B6" type="output"/>
-        <pin num="13" name="B5" type="output"/>
-        <pin num="14" name="B4" type="output"/>
-        <pin num="15" name="B3" type="output"/>
-        <pin num="16" name="B2" type="output"/>
-        <pin num="17" name="B1" type="output"/>
-        <pin num="18" name="B0" type="output"/>
-        <pin num="19" name="CE" type="input"/>
-        <pin num="20" name="VCC" type="power_in"/>
-      </pins>
-    </libpart>
-    <libpart lib="NeoGuard" part="WC1602A">
-      <description>LCD 16x2 Alphanumeric , 8 bit parallel bus, 5V VDD</description>
-      <docs>http://www.wincomlcd.com/pdf/WC1602A-SFYLYHTC06.pdf</docs>
-      <footprints>
-        <fp>*WC*1602A*</fp>
-      </footprints>
-      <fields>
-        <field name="Reference">DS</field>
-        <field name="Value">WC1602A</field>
-        <field name="Footprint">Display:WC1602A</field>
-        <field name="Datasheet">http://www.wincomlcd.com/pdf/WC1602A-SFYLYHTC06.pdf</field>
-        <field name="Description">LCD 16x2 Alphanumeric , 8 bit parallel bus, 5V VDD</field>
-      </fields>
-      <pins>
-        <pin num="1" name="VSS" type="power_in"/>
-        <pin num="2" name="VDD" type="power_in"/>
-        <pin num="3" name="VO" type="input"/>
-        <pin num="4" name="RS" type="input"/>
-        <pin num="5" name="R/W" type="input"/>
-        <pin num="6" name="E" type="input"/>
-        <pin num="7" name="D0" type="input"/>
-        <pin num="8" name="D1" type="input"/>
-        <pin num="9" name="D2" type="input"/>
-        <pin num="10" name="D3" type="input"/>
-        <pin num="11" name="D4" type="input"/>
-        <pin num="12" name="D5" type="input"/>
-        <pin num="13" name="D6" type="input"/>
-        <pin num="14" name="D7" type="input"/>
-        <pin num="15" name="LED(+)" type="power_in"/>
-        <pin num="16" name="LED(-)" type="power_in"/>
+        <pin num="1" name="GND" type="passive"/>
+        <pin num="2" name="VCC_3V3" type="passive"/>
+        <pin num="3" name="SCK_/_SCL" type="passive"/>
+        <pin num="4" name="MOSI_/_SDA" type="passive"/>
+        <pin num="5" name="RST_/_RES" type="passive"/>
+        <pin num="6" name="DC" type="passive"/>
+        <pin num="7" name="CS" type="passive"/>
+        <pin num="8" name="BL_/_BLK" type="passive"/>
       </pins>
     </libpart>
   </libparts>
@@ -1262,7 +1106,7 @@
     <net code="2" name="BUZZ_GPIO15" class="Default">
       <node ref="J1" pin="13" pinfunction="Pin_13_13" pintype="passive"/>
       <node ref="R6" pin="1" pintype="passive"/>
-      <node ref="U1" pin="15" pinfunction="BUZZ_/_GPIO15_15" pintype="passive"/>
+      <node ref="U1" pin="15" pinfunction="GPIO15_15" pintype="passive"/>
     </net>
     <net code="3" name="BUZZ_SW" class="Default">
       <node ref="D1" pin="2" pinfunction="A_2" pintype="passive"/>
@@ -1277,31 +1121,22 @@
     <net code="5" name="DEV3V3" class="Default">
       <node ref="J1" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="JP1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
-      <node ref="U1" pin="3V3" pinfunction="DEV3V3_3V3" pintype="passive"/>
+      <node ref="U1" pin="3V3" pinfunction="3V3_3V3" pintype="passive"/>
     </net>
     <net code="6" name="EXT3V3" class="Default">
       <node ref="J9" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="JP1" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
     </net>
     <net code="7" name="EXT5V" class="Default">
-      <node ref="C5" pin="1" pintype="passive"/>
-      <node ref="C6" pin="1" pintype="passive"/>
-      <node ref="J5" pin="2" pinfunction="VDD_2" pintype="power_in"/>
       <node ref="J9" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="JP2" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="JP3" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
-      <node ref="R8" pin="1" pintype="passive"/>
-      <node ref="RV1" pin="1" pinfunction="1_1" pintype="passive"/>
-      <node ref="U2" pin="1" pinfunction="A-&gt;B_1" pintype="input"/>
-      <node ref="U2" pin="20" pinfunction="VCC_20" pintype="power_in"/>
     </net>
     <net code="8" name="GND" class="Default">
       <node ref="C1" pin="2" pintype="passive"/>
       <node ref="C2" pin="2" pintype="passive"/>
       <node ref="C3" pin="2" pintype="passive"/>
       <node ref="C4" pin="2" pintype="passive"/>
-      <node ref="C5" pin="2" pintype="passive"/>
-      <node ref="C6" pin="2" pintype="passive"/>
       <node ref="J1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="J1" pin="21" pinfunction="Pin_21_21" pintype="passive"/>
       <node ref="J1" pin="23" pinfunction="Pin_23_23" pintype="passive"/>
@@ -1309,197 +1144,204 @@
       <node ref="J2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J3" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J4" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
-      <node ref="J5" pin="1" pinfunction="VSS_1" pintype="power_in"/>
-      <node ref="J5" pin="16" pinfunction="LED(-)_16" pintype="power_in"/>
-      <node ref="J5" pin="5" pinfunction="R/W_5" pintype="input"/>
+      <node ref="J5" pin="1" pinfunction="GND_1" pintype="passive"/>
       <node ref="J6" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J7" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J9" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="Q1" pin="1" pinfunction="E_1" pintype="passive"/>
       <node ref="R7" pin="2" pintype="passive"/>
-      <node ref="RV1" pin="3" pinfunction="3_3" pintype="passive"/>
       <node ref="U1" pin="GND" pinfunction="GND_GND" pintype="passive"/>
-      <node ref="U2" pin="10" pinfunction="GND_10" pintype="power_in"/>
-      <node ref="U2" pin="19" pinfunction="CE_19" pintype="input"/>
-      <node ref="U2" pin="8" pinfunction="A6_8" pintype="input"/>
-      <node ref="U2" pin="9" pinfunction="A7_9" pintype="input"/>
     </net>
     <net code="9" name="I2C_SCL_GPIO5" class="Default">
       <node ref="J1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J2" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J3" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="R2" pin="2" pintype="passive"/>
-      <node ref="U1" pin="5" pinfunction="I2C_SCL_/_GPIO5_5" pintype="passive"/>
+      <node ref="U1" pin="5" pinfunction="GPIO5_5" pintype="passive"/>
     </net>
     <net code="10" name="I2C_SDA_GPIO4" class="Default">
       <node ref="J1" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="J2" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="J3" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="R1" pin="2" pintype="passive"/>
-      <node ref="U1" pin="4" pinfunction="I2C_SDA_/_GPIO4_4" pintype="passive"/>
+      <node ref="U1" pin="4" pinfunction="GPIO4_4" pintype="passive"/>
     </net>
-    <net code="11" name="LCD_CONTRAST" class="Default">
-      <node ref="J5" pin="3" pinfunction="VO_3" pintype="input"/>
-      <node ref="RV1" pin="2" pinfunction="2_2" pintype="passive"/>
-    </net>
-    <net code="12" name="LCD_D4_5V" class="Default">
-      <node ref="J5" pin="11" pinfunction="D4_11" pintype="input"/>
-      <node ref="U2" pin="16" pinfunction="B2_16" pintype="output"/>
-    </net>
-    <net code="13" name="LCD_D4_GPIO10" class="Default">
-      <node ref="J1" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
-      <node ref="U1" pin="10" pinfunction="LCD_D4_/_GPIO10_10" pintype="passive"/>
-      <node ref="U2" pin="4" pinfunction="A2_4" pintype="input"/>
-    </net>
-    <net code="14" name="LCD_D5_5V" class="Default">
-      <node ref="J5" pin="12" pinfunction="D5_12" pintype="input"/>
-      <node ref="U2" pin="15" pinfunction="B3_15" pintype="output"/>
-    </net>
-    <net code="15" name="LCD_D5_GPIO11" class="Default">
-      <node ref="J1" pin="11" pinfunction="Pin_11_11" pintype="passive"/>
-      <node ref="U1" pin="11" pinfunction="LCD_D5_/_GPIO11_11" pintype="passive"/>
-      <node ref="U2" pin="5" pinfunction="A3_5" pintype="input"/>
-    </net>
-    <net code="16" name="LCD_D6_5V" class="Default">
-      <node ref="J5" pin="13" pinfunction="D6_13" pintype="input"/>
-      <node ref="U2" pin="14" pinfunction="B4_14" pintype="output"/>
-    </net>
-    <net code="17" name="LCD_D6_GPIO12" class="Default">
-      <node ref="J1" pin="12" pinfunction="Pin_12_12" pintype="passive"/>
-      <node ref="U1" pin="12" pinfunction="LCD_D6_/_GPIO12_12" pintype="passive"/>
-      <node ref="U2" pin="6" pinfunction="A4_6" pintype="input"/>
-    </net>
-    <net code="18" name="LCD_D7_5V" class="Default">
-      <node ref="J5" pin="14" pinfunction="D7_14" pintype="input"/>
-      <node ref="U2" pin="13" pinfunction="B5_13" pintype="output"/>
-    </net>
-    <net code="19" name="LCD_D7_GPIO13" class="Default">
-      <node ref="J1" pin="22" pinfunction="Pin_22_22" pintype="passive"/>
-      <node ref="U1" pin="13" pinfunction="LCD_D7_/_GPIO13_13" pintype="passive"/>
-      <node ref="U2" pin="7" pinfunction="A5_7" pintype="input"/>
-    </net>
-    <net code="20" name="LCD_EN_5V" class="Default">
-      <node ref="J5" pin="6" pinfunction="E_6" pintype="input"/>
-      <node ref="U2" pin="17" pinfunction="B1_17" pintype="output"/>
-    </net>
-    <net code="21" name="LCD_EN_GPIO9" class="Default">
-      <node ref="J1" pin="9" pinfunction="Pin_9_9" pintype="passive"/>
-      <node ref="U1" pin="9" pinfunction="LCD_EN_/_GPIO9_9" pintype="passive"/>
-      <node ref="U2" pin="3" pinfunction="A1_3" pintype="input"/>
-    </net>
-    <net code="22" name="LCD_LED_A" class="Default">
-      <node ref="J5" pin="15" pinfunction="LED(+)_15" pintype="power_in"/>
-      <node ref="R8" pin="2" pintype="passive"/>
-    </net>
-    <net code="23" name="LCD_RS_5V" class="Default">
-      <node ref="J5" pin="4" pinfunction="RS_4" pintype="input"/>
-      <node ref="U2" pin="18" pinfunction="B0_18" pintype="output"/>
-    </net>
-    <net code="24" name="LCD_RS_GPIO8" class="Default">
-      <node ref="J1" pin="8" pinfunction="Pin_8_8" pintype="passive"/>
-      <node ref="U1" pin="8" pinfunction="LCD_RS_/_GPIO8_8" pintype="passive"/>
-      <node ref="U2" pin="2" pinfunction="A0_2" pintype="input"/>
-    </net>
-    <net code="25" name="LED_B_A" class="Default">
+    <net code="11" name="LED_B_A" class="Default">
       <node ref="J7" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
       <node ref="R5" pin="2" pintype="passive"/>
     </net>
-    <net code="26" name="LED_B_GPIO18" class="Default">
+    <net code="12" name="LED_B_GPIO18" class="Default">
       <node ref="J1" pin="16" pinfunction="Pin_16_16" pintype="passive"/>
       <node ref="R5" pin="1" pintype="passive"/>
-      <node ref="U1" pin="18" pinfunction="LED_B_/_GPIO18_18" pintype="passive"/>
+      <node ref="U1" pin="18" pinfunction="GPIO18_18" pintype="passive"/>
     </net>
-    <net code="27" name="LED_G_A" class="Default">
+    <net code="13" name="LED_G_A" class="Default">
       <node ref="J7" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="R4" pin="2" pintype="passive"/>
     </net>
-    <net code="28" name="LED_G_GPIO17" class="Default">
+    <net code="14" name="LED_G_GPIO17" class="Default">
       <node ref="J1" pin="15" pinfunction="Pin_15_15" pintype="passive"/>
       <node ref="R4" pin="1" pintype="passive"/>
-      <node ref="U1" pin="17" pinfunction="LED_G_/_GPIO17_17" pintype="passive"/>
+      <node ref="U1" pin="17" pinfunction="GPIO17_17" pintype="passive"/>
     </net>
-    <net code="29" name="LED_R_A" class="Default">
+    <net code="15" name="LED_R_A" class="Default">
       <node ref="J7" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="R3" pin="2" pintype="passive"/>
     </net>
-    <net code="30" name="LED_R_GPIO16" class="Default">
+    <net code="16" name="LED_R_GPIO16" class="Default">
       <node ref="J1" pin="14" pinfunction="Pin_14_14" pintype="passive"/>
       <node ref="R3" pin="1" pintype="passive"/>
-      <node ref="U1" pin="16" pinfunction="LED_R_/_GPIO16_16" pintype="passive"/>
+      <node ref="U1" pin="16" pinfunction="GPIO16_16" pintype="passive"/>
     </net>
-    <net code="31" name="RTC_CE_GPIO14" class="Default">
+    <net code="17" name="RTC_CE_GPIO14" class="Default">
       <node ref="J1" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
       <node ref="J4" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
-      <node ref="U1" pin="14" pinfunction="RTC_CE_/_GPIO14_14" pintype="passive"/>
+      <node ref="U1" pin="14" pinfunction="GPIO14_14" pintype="passive"/>
     </net>
-    <net code="32" name="RTC_CLK_GPIO6" class="Default">
+    <net code="18" name="RTC_CLK_GPIO6" class="Default">
       <node ref="J1" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
       <node ref="J4" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
-      <node ref="U1" pin="6" pinfunction="RTC_CLK_/_GPIO6_6" pintype="passive"/>
+      <node ref="U1" pin="6" pinfunction="GPIO6_6" pintype="passive"/>
     </net>
-    <net code="33" name="RTC_DAT_GPIO7" class="Default">
+    <net code="19" name="RTC_DAT_GPIO7" class="Default">
       <node ref="J1" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
       <node ref="J4" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
-      <node ref="U1" pin="7" pinfunction="RTC_DAT_/_GPIO7_7" pintype="passive"/>
+      <node ref="U1" pin="7" pinfunction="GPIO7_7" pintype="passive"/>
     </net>
-    <net code="34" name="SD_CS_GPIO21" class="Default">
+    <net code="20" name="SD_CS_GPIO21" class="Default">
       <node ref="J1" pin="17" pinfunction="Pin_17_17" pintype="passive"/>
       <node ref="J6" pin="6" pinfunction="Pin_6_6" pintype="passive"/>
-      <node ref="U1" pin="21" pinfunction="SD_CS_/_GPIO21_21" pintype="passive"/>
+      <node ref="U1" pin="21" pinfunction="GPIO21_21" pintype="passive"/>
     </net>
-    <net code="35" name="SD_MISO_GPIO42" class="Default">
+    <net code="21" name="SD_MISO_GPIO42" class="Default">
       <node ref="J1" pin="20" pinfunction="Pin_20_20" pintype="passive"/>
       <node ref="J6" pin="5" pinfunction="Pin_5_5" pintype="passive"/>
-      <node ref="U1" pin="42" pinfunction="SD_MISO_/_GPIO42_42" pintype="passive"/>
+      <node ref="U1" pin="42" pinfunction="GPIO42_42" pintype="passive"/>
     </net>
-    <net code="36" name="SD_MOSI_GPIO41" class="Default">
+    <net code="22" name="SD_MOSI_GPIO41" class="Default">
       <node ref="J1" pin="19" pinfunction="Pin_19_19" pintype="passive"/>
       <node ref="J6" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
-      <node ref="U1" pin="41" pinfunction="SD_MOSI_/_GPIO41_41" pintype="passive"/>
+      <node ref="U1" pin="41" pinfunction="GPIO41_41" pintype="passive"/>
     </net>
-    <net code="37" name="SD_SCK_GPIO40" class="Default">
+    <net code="23" name="SD_SCK_GPIO40" class="Default">
       <node ref="J1" pin="18" pinfunction="Pin_18_18" pintype="passive"/>
       <node ref="J6" pin="3" pinfunction="Pin_3_3" pintype="passive"/>
-      <node ref="U1" pin="40" pinfunction="SD_SCK_/_GPIO40_40" pintype="passive"/>
+      <node ref="U1" pin="40" pinfunction="GPIO40_40" pintype="passive"/>
     </net>
-    <net code="38" name="SD_VCC" class="Default">
+    <net code="24" name="SD_VCC" class="Default">
       <node ref="C3" pin="1" pintype="passive"/>
       <node ref="C4" pin="1" pintype="passive"/>
       <node ref="J6" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="JP2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
     </net>
-    <net code="39" name="V3V3" class="Default">
+    <net code="25" name="TFT_BL" class="Default">
+      <node ref="J5" pin="8" pinfunction="BL_/_BLK_8" pintype="passive"/>
+      <node ref="JP4" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+    </net>
+    <net code="26" name="TFT_CS_GPIO10" class="Default">
+      <node ref="J1" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
+      <node ref="J5" pin="7" pinfunction="CS_7" pintype="passive"/>
+      <node ref="U1" pin="10" pinfunction="GPIO10_10" pintype="passive"/>
+    </net>
+    <net code="27" name="TFT_DC_GPIO9" class="Default">
+      <node ref="J1" pin="9" pinfunction="Pin_9_9" pintype="passive"/>
+      <node ref="J5" pin="6" pinfunction="DC_6" pintype="passive"/>
+      <node ref="U1" pin="9" pinfunction="GPIO9_9" pintype="passive"/>
+    </net>
+    <net code="28" name="TFT_MOSI_GPIO11" class="Default">
+      <node ref="J1" pin="11" pinfunction="Pin_11_11" pintype="passive"/>
+      <node ref="J5" pin="4" pinfunction="MOSI_/_SDA_4" pintype="passive"/>
+      <node ref="U1" pin="11" pinfunction="GPIO11_11" pintype="passive"/>
+    </net>
+    <net code="29" name="TFT_RST_GPIO8" class="Default">
+      <node ref="J1" pin="8" pinfunction="Pin_8_8" pintype="passive"/>
+      <node ref="J5" pin="5" pinfunction="RST_/_RES_5" pintype="passive"/>
+      <node ref="U1" pin="8" pinfunction="GPIO8_8" pintype="passive"/>
+    </net>
+    <net code="30" name="TFT_SCK_GPIO12" class="Default">
+      <node ref="J1" pin="12" pinfunction="Pin_12_12" pintype="passive"/>
+      <node ref="J5" pin="3" pinfunction="SCK_/_SCL_3" pintype="passive"/>
+      <node ref="U1" pin="12" pinfunction="GPIO12_12" pintype="passive"/>
+    </net>
+    <net code="31" name="V3V3" class="Default">
       <node ref="C1" pin="1" pintype="passive"/>
       <node ref="C2" pin="1" pintype="passive"/>
       <node ref="J2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="J3" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="J4" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="VCC_3V3_2" pintype="passive"/>
       <node ref="JP1" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="JP2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="JP3" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="JP4" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="R1" pin="1" pintype="passive"/>
       <node ref="R2" pin="1" pintype="passive"/>
     </net>
-    <net code="40" name="unconnected-(J2-Pin_5-Pad5)" class="Default">
+    <net code="32" name="unconnected-(J1-Pin_22-Pad22)" class="Default">
+      <node ref="J1" pin="22" pinfunction="Pin_22_22" pintype="passive+no_connect"/>
+    </net>
+    <net code="33" name="unconnected-(J2-Pin_5-Pad5)" class="Default">
       <node ref="J2" pin="5" pinfunction="Pin_5_5" pintype="passive+no_connect"/>
     </net>
-    <net code="41" name="unconnected-(J5-D0-Pad7)" class="Default">
-      <node ref="J5" pin="7" pinfunction="D0_7" pintype="input+no_connect"/>
+    <net code="34" name="unconnected-(U1-GPIO0-Pad0)" class="Default">
+      <node ref="U1" pin="0" pinfunction="GPIO0_0" pintype="passive+no_connect"/>
     </net>
-    <net code="42" name="unconnected-(J5-D1-Pad8)" class="Default">
-      <node ref="J5" pin="8" pinfunction="D1_8" pintype="input+no_connect"/>
+    <net code="35" name="unconnected-(U1-GPIO1-Pad1)" class="Default">
+      <node ref="U1" pin="1" pinfunction="GPIO1_1" pintype="passive+no_connect"/>
     </net>
-    <net code="43" name="unconnected-(J5-D2-Pad9)" class="Default">
-      <node ref="J5" pin="9" pinfunction="D2_9" pintype="input+no_connect"/>
+    <net code="36" name="unconnected-(U1-GPIO2-Pad2)" class="Default">
+      <node ref="U1" pin="2" pinfunction="GPIO2_2" pintype="passive+no_connect"/>
     </net>
-    <net code="44" name="unconnected-(J5-D3-Pad10)" class="Default">
-      <node ref="J5" pin="10" pinfunction="D3_10" pintype="input+no_connect"/>
+    <net code="37" name="unconnected-(U1-GPIO3-Pad3)" class="Default">
+      <node ref="U1" pin="3" pinfunction="GPIO3_3" pintype="passive+no_connect"/>
     </net>
-    <net code="45" name="unconnected-(U2-B6-Pad12)" class="Default">
-      <node ref="U2" pin="12" pinfunction="B6_12" pintype="output+no_connect"/>
+    <net code="38" name="unconnected-(U1-GPIO13-Pad13)" class="Default">
+      <node ref="U1" pin="13" pinfunction="GPIO13_13" pintype="passive+no_connect"/>
     </net>
-    <net code="46" name="unconnected-(U2-B7-Pad11)" class="Default">
-      <node ref="U2" pin="11" pinfunction="B7_11" pintype="output+no_connect"/>
+    <net code="39" name="unconnected-(U1-GPIO19-Pad19)" class="Default">
+      <node ref="U1" pin="19" pinfunction="GPIO19_19" pintype="passive+no_connect"/>
+    </net>
+    <net code="40" name="unconnected-(U1-GPIO20-Pad20)" class="Default">
+      <node ref="U1" pin="20" pinfunction="GPIO20_20" pintype="passive+no_connect"/>
+    </net>
+    <net code="41" name="unconnected-(U1-GPIO35-Pad35)" class="Default">
+      <node ref="U1" pin="35" pinfunction="GPIO35_35" pintype="passive+no_connect"/>
+    </net>
+    <net code="42" name="unconnected-(U1-GPIO36-Pad36)" class="Default">
+      <node ref="U1" pin="36" pinfunction="GPIO36_36" pintype="passive+no_connect"/>
+    </net>
+    <net code="43" name="unconnected-(U1-GPIO37-Pad37)" class="Default">
+      <node ref="U1" pin="37" pinfunction="GPIO37_37" pintype="passive+no_connect"/>
+    </net>
+    <net code="44" name="unconnected-(U1-GPIO38-Pad38)" class="Default">
+      <node ref="U1" pin="38" pinfunction="GPIO38_38" pintype="passive+no_connect"/>
+    </net>
+    <net code="45" name="unconnected-(U1-GPIO39-Pad39)" class="Default">
+      <node ref="U1" pin="39" pinfunction="GPIO39_39" pintype="passive+no_connect"/>
+    </net>
+    <net code="46" name="unconnected-(U1-GPIO43-Pad43)" class="Default">
+      <node ref="U1" pin="43" pinfunction="GPIO43_43" pintype="passive+no_connect"/>
+    </net>
+    <net code="47" name="unconnected-(U1-GPIO44-Pad44)" class="Default">
+      <node ref="U1" pin="44" pinfunction="GPIO44_44" pintype="passive+no_connect"/>
+    </net>
+    <net code="48" name="unconnected-(U1-GPIO45-Pad45)" class="Default">
+      <node ref="U1" pin="45" pinfunction="GPIO45_45" pintype="passive+no_connect"/>
+    </net>
+    <net code="49" name="unconnected-(U1-GPIO46-Pad46)" class="Default">
+      <node ref="U1" pin="46" pinfunction="GPIO46_46" pintype="passive+no_connect"/>
+    </net>
+    <net code="50" name="unconnected-(U1-GPIO47-Pad47)" class="Default">
+      <node ref="U1" pin="47" pinfunction="GPIO47_47" pintype="passive+no_connect"/>
+    </net>
+    <net code="51" name="unconnected-(U1-GPIO48-Pad48)" class="Default">
+      <node ref="U1" pin="48" pinfunction="GPIO48_48" pintype="passive+no_connect"/>
+    </net>
+    <net code="52" name="unconnected-(U1-Pad5V)" class="Default">
+      <node ref="U1" pin="5V" pinfunction="5V_5V" pintype="passive+no_connect"/>
+    </net>
+    <net code="53" name="unconnected-(U1-PadEN)" class="Default">
+      <node ref="U1" pin="EN" pinfunction="EN_EN" pintype="passive+no_connect"/>
     </net>
   </nets>
 </export>

@@ -1,7 +1,7 @@
 {
     "$schema": "https://schemas.kicad.org/erc.v1.json",
     "coordinate_units": "mm",
-    "date": "2026-10-22T20:27:24",
+    "date": "2026-10-29T16:17:26",
     "ignored_checks": [
         {
             "description": "Global label only appears once in the schematic",
@@ -33,7 +33,7 @@
             "violations": []
         },
         {
-            "path": "/LCD on carrier/",
+            "path": "/SPI display/",
             "uuid_path": "/769181f3-d007-5029-b11b-c55a316d92e7/4d4ee843-c730-55ae-8b3c-f88922eca36a",
             "violations": []
         },
