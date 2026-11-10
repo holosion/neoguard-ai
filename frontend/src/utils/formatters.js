@@ -11,4 +11,6 @@ export function timeAgo(iso) {
   return `${Math.floor(m / 60)} h ${m % 60} min ago`;
 }
 
-export const clock = (iso) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+export const clock = (iso) => new Date(iso).toLocaleTimeString('en-GB', {
+  timeZone: 'Africa/Nairobi', hour: '2-digit', minute: '2-digit', hour12: false,
+});
